@@ -61,6 +61,29 @@ export type ItemTooltipData = {
   originalUrl?: string;
 };
 
+export type WowheadBisItem = {
+  slot: string;
+  slotKey: string;
+  itemId: number;
+  name: string;
+  source: string;
+  iconUrl?: string;
+  quality?: string;
+  qualityType?: string;
+  itemLevelText?: string;
+  wowheadUrl: string;
+};
+
+export type WowheadBisReport = {
+  spec: string;
+  title: string;
+  sourceUrl: string;
+  fetchedAt: string;
+  modifiedAt?: string;
+  items: WowheadBisItem[];
+  warnings?: string[];
+};
+
 export type Character = {
   id: string;
   name: string;
@@ -301,4 +324,5 @@ export type V8Settings = {
   lastBnetSyncSummary?: BnetSyncResponse["summary"];
   lastBnetSyncWarnings?: BnetSyncWarning[];
   lastRioRefreshAt?: string;
+  lastWowheadBisRefreshAt?: string;
 };

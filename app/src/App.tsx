@@ -37,7 +37,7 @@ import {
 } from "firebase/firestore";
 import { AiRequestError, requestTodayPlan } from "./api/ai";
 import { auth, db } from "./api/firebase";
-import { requestItemTooltip } from "./api/items";
+import { requestItemTooltip, requestWowheadBis } from "./api/items";
 import { ConfirmDialog, DataCard, EmptyState, Field, LockState, MetricCard, Panel, StatusPill, Toast } from "./components/ui";
 import { dungeonGuideCatalog, legacyDiagramInfo, WOW_KR_YOUTUBE } from "./domain/dungeonCatalog";
 import type { RichDungeonGuide } from "./domain/dungeonCatalog";
@@ -69,6 +69,8 @@ import type {
   TodayTask,
   V8Settings,
   View,
+  WowheadBisItem,
+  WowheadBisReport,
 } from "./types";
 
 type RioProfile = {
@@ -487,6 +489,94 @@ function TargetItemIcon({ target, className = "", placeholder = "목표" }: { ta
       className={`item-icon ${className} ${target.icon ? "" : "placeholder"}`}
       placeholder={placeholder}
     />
+  );
+}
+
+function BisItemIcon({ item }: { item?: WowheadBisItem }) {
+  if (!item) return <span className="item-icon placeholder">BIS</span>;
+  return (
+    <ItemTooltipAnchor
+      target={{ id: `bis-${item.itemId}`, slot: item.slotKey, slotLabel: item.slot, priority: 0, type: "dungeon", target: item.name, icon: item.iconUrl || "", itemId: item.itemId, wowheadUrl: item.wowheadUrl, source: "Wowhead", boss: item.source, reason: "Wowhead BIS 기준", check: "내 장비와 비교" }}
+      label={item.name}
+      iconUrl={item.iconUrl || ""}
+      className={`item-icon bis-list-icon ${item.iconUrl ? "" : "placeholder"}`}
+      placeholder="BIS"
+    />
+  );
+}
+
+function itemIdValue(item?: EquipmentItem | null) {
+  const value = Number(item?.id || 0);
+  return Number.isInteger(value) && value > 0 ? value : 0;
+}
+
+function BisComparisonPanel({
+  rows,
+  report,
+  loading,
+  error,
+  onRefresh,
+  disabled,
+}: {
+  rows: EquipmentRow[];
+  report: WowheadBisReport | null;
+  loading: boolean;
+  error: string;
+  onRefresh: () => void;
+  disabled: boolean;
+}) {
+  const bisBySlot = new Map((report?.items || []).map((item) => [item.slotKey, item]));
+  const comparable = rows.filter((row) => bisBySlot.has(row.slotKey));
+  const matched = comparable.filter((row) => itemIdValue(row.equippedItem) === bisBySlot.get(row.slotKey)?.itemId).length;
+  const targetMatched = comparable.filter((row) => row.target?.itemId && row.target.itemId === bisBySlot.get(row.slotKey)?.itemId).length;
+  const fetched = report?.fetchedAt ? new Date(report.fetchedAt).toLocaleString("ko-KR") : "아직 없음";
+  const topRows = comparable.slice().sort((a, b) => {
+    const aBis = bisBySlot.get(a.slotKey);
+    const bBis = bisBySlot.get(b.slotKey);
+    const aMatch = itemIdValue(a.equippedItem) === aBis?.itemId ? 1 : 0;
+    const bMatch = itemIdValue(b.equippedItem) === bBis?.itemId ? 1 : 0;
+    return aMatch - bMatch || b.score - a.score;
+  }).slice(0, 8);
+
+  return (
+    <section className="panel bis-panel">
+      <div className="section-head">
+        <div>
+          <p className="eyebrow">Wowhead BIS</p>
+          <h2>BIS 비교</h2>
+        </div>
+        <div className="command-actions">
+          {report?.sourceUrl ? <a className="link-btn" href={report.sourceUrl} target="_blank" rel="noreferrer">Wowhead 보기</a> : null}
+          <button type="button" onClick={onRefresh} disabled={disabled || loading}>{loading ? <Loader2 className="spin" size={16} /> : <RefreshCw size={16} />} BIS 새로고침</button>
+        </div>
+      </div>
+      <div className="bis-summary">
+        <MetricCard title="현재 BIS 일치" value={report ? `${matched}/${comparable.length}` : "-"} detail="착용 장비" />
+        <MetricCard title="목표와 일치" value={report ? targetMatched : "-"} detail="등록 목표 기준" />
+        <MetricCard title="Wowhead 갱신" value={report ? "불러옴" : "대기"} detail={fetched} />
+      </div>
+      {error ? <div className="error-box">{error}</div> : null}
+      {!report ? (
+        <EmptyState title="Wowhead BIS 비교 대기" body="버튼을 누르면 Wowhead 암살 도적 BIS 표를 읽어 현재 장비와 비교합니다." />
+      ) : (
+        <div className="bis-list">
+          {topRows.map((row) => {
+            const bis = bisBySlot.get(row.slotKey);
+            const currentMatch = itemIdValue(row.equippedItem) === bis?.itemId;
+            const targetMatch = row.target?.itemId === bis?.itemId;
+            return (
+              <article key={row.slotKey} className={currentMatch ? "match" : targetMatch ? "target-match" : ""}>
+                <div className="slot-cell"><small>{row.slotLabel}</small><b>{currentMatch ? "착용중" : targetMatch ? "목표 있음" : "차이 있음"}</b></div>
+                <div className="item-cell"><GearItemIcon item={row.equippedItem} label={row.slotLabel} /><div><b>{row.equippedItem?.name || "장비 없음"}</b><span>{itemMeta(row.equippedItem)}</span></div></div>
+                <div className="target-cell"><BisItemIcon item={bis} /><div><b>{bis?.name || "BIS 없음"}</b><span>{bis ? `${bis.source} · ${bis.itemLevelText || "Wowhead 기준"}` : "Wowhead 표에서 찾지 못함"}</span></div></div>
+                <StatusPill tone={currentMatch ? "ok" : targetMatch ? "warn" : "err"}>{currentMatch ? "일치" : targetMatch ? "목표" : "확인"}</StatusPill>
+              </article>
+            );
+          })}
+        </div>
+      )}
+      {report?.warnings?.length ? <p className="bis-warning">일부 아이템 세부 정보 조회 실패: {report.warnings.slice(0, 2).join(" / ")}</p> : null}
+    </section>
   );
 }
 
@@ -1129,6 +1219,10 @@ function GearView({
   heroImage,
   filter,
   setFilter,
+  bisReport,
+  bisLoading,
+  bisError,
+  onRefreshBis,
   onDone,
   onJump,
   disabled,
@@ -1138,6 +1232,10 @@ function GearView({
   heroImage: string;
   filter: ItemFilter;
   setFilter: (filter: ItemFilter) => void;
+  bisReport: WowheadBisReport | null;
+  bisLoading: boolean;
+  bisError: string;
+  onRefreshBis: () => void;
   onDone: (id?: string | null) => void;
   onJump: (view: View) => void;
   disabled: boolean;
@@ -1173,6 +1271,7 @@ function GearView({
           <MetricCard title="치/가/특/유" value={`${fmt(stats.crit)} · ${fmt(stats.haste)}`} detail={`${fmt(stats.mastery)} · ${fmt(stats.vers)}`} />
         </div>
       </section>
+      <BisComparisonPanel rows={rows} report={bisReport} loading={bisLoading} error={bisError} onRefresh={onRefreshBis} disabled={disabled} />
       {showDataWarning ? (
         <section className="sync-empty panel">
           <div>
@@ -1580,6 +1679,9 @@ export default function App() {
   const [rio, setRio] = useState<RioProfile | null>(null);
   const [rioError, setRioError] = useState("");
   const [rioFetchedAt, setRioFetchedAt] = useState("");
+  const [bisReport, setBisReport] = useState<WowheadBisReport | null>(null);
+  const [bisLoading, setBisLoading] = useState(false);
+  const [bisError, setBisError] = useState("");
   const [cloudReady, setCloudReady] = useState(false);
   const [view, setView] = useState<View>("today");
   const [preferences, setPreferences] = useState<AiPreferences>(defaultPreferences());
@@ -1700,6 +1802,11 @@ export default function App() {
   }, [loggedIn, cloudReady, hasSelectedCharacter, character.id]);
 
   useEffect(() => {
+    if (!loggedIn || !cloudReady || !user) return;
+    void refreshWowheadBis(false, true);
+  }, [loggedIn, cloudReady, user?.uid]);
+
+  useEffect(() => {
     if (!loggedIn || !cloudReady || !user || !hasSelectedCharacter) {
       setAutoState(loggedIn ? "idle" : "blocked");
       return;
@@ -1785,6 +1892,29 @@ export default function App() {
       setRio(null);
       setRioError(err instanceof Error ? err.message : "Raider.IO 조회 실패");
       if (force) setToast("Raider.IO에서 캐릭터를 찾지 못했습니다.");
+    }
+  }
+
+  async function refreshWowheadBis(force = true, silent = false) {
+    if (!loggedIn || !user) {
+      if (!silent) await googleLogin();
+      return;
+    }
+    setBisLoading(true);
+    setBisError("");
+    try {
+      if (force && !silent) setToast("Wowhead BIS 새로고침 중");
+      const token = await user.getIdToken(true);
+      const report = await requestWowheadBis(token, force);
+      setBisReport(report);
+      await saveSettings({ lastWowheadBisRefreshAt: report.fetchedAt });
+      if (force && !silent) setToast("Wowhead BIS 비교 갱신 완료");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Wowhead BIS 조회 실패";
+      setBisError(message);
+      if (!silent) setToast(message);
+    } finally {
+      setBisLoading(false);
     }
   }
 
@@ -2064,7 +2194,22 @@ export default function App() {
           </div>
         ) : null}
 
-        {view === "gear" ? <GearView character={character} rows={snapshot.equipmentRows} heroImage={avatar} filter={itemFilter} setFilter={setItemFilter} onDone={toggleDone} onJump={jump} disabled={!loggedIn} /> : null}
+        {view === "gear" ? (
+          <GearView
+            character={character}
+            rows={snapshot.equipmentRows}
+            heroImage={avatar}
+            filter={itemFilter}
+            setFilter={setItemFilter}
+            bisReport={bisReport}
+            bisLoading={bisLoading}
+            bisError={bisError}
+            onRefreshBis={() => refreshWowheadBis(true, false)}
+            onDone={toggleDone}
+            onJump={jump}
+            disabled={!loggedIn}
+          />
+        ) : null}
         {view === "dungeons" ? <DungeonsView recommendations={snapshot.dungeonRecommendations} /> : null}
         {view === "notes" ? (
           <SettingsView

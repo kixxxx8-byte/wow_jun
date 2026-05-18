@@ -16,6 +16,16 @@
   - `/api/ai/today-plan` rewrite 동작
   - `/api/bnet/sync` rewrite 동작
   - `/api/items/tooltip`은 현재 라이브에서 404
+- Wowhead BIS 비교 기능을 추가했습니다.
+  - `/api/items/bis`에서 로그인 사용자만 Wowhead 암살 도적 BIS 표를 새로고침할 수 있게 했습니다.
+  - 12시간 캐시를 두고, 사용자가 `BIS 새로고침`을 누르면 강제 갱신합니다.
+  - `아이템 최적화` 화면에 현재 착용 장비와 Wowhead BIS를 슬롯별로 비교하는 패널을 추가했습니다.
+- 검증 추가:
+  - Wowhead BIS 원문 표 파싱: 16개 슬롯 확인
+  - App unit tests: 통과
+  - App TypeScript build: 통과
+  - Functions TypeScript build: 통과
+  - Vite production build: 통과
 
 ## 남은 작업
 

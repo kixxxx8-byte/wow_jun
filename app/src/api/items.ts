@@ -1,4 +1,4 @@
-import type { ItemTooltipData } from "../types";
+import type { ItemTooltipData, WowheadBisReport } from "../types";
 
 export class ItemTooltipError extends Error {
   constructor(message: string, public status = 0) {
@@ -15,5 +15,16 @@ export async function requestItemTooltip(itemId: number, region = "kr", locale =
   const res = await fetch(`/api/items/tooltip?${params.toString()}`);
   const data = (await res.json().catch(() => ({}))) as ItemTooltipData & { error?: string };
   if (!res.ok) throw new ItemTooltipError(data.error || `아이템 툴팁 조회 실패 (${res.status})`, res.status);
+  return data;
+}
+
+export async function requestWowheadBis(token: string, force = false, spec = "assassination-rogue"): Promise<WowheadBisReport> {
+  const params = new URLSearchParams({ spec });
+  if (force) params.set("force", "1");
+  const res = await fetch(`/api/items/bis?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = (await res.json().catch(() => ({}))) as WowheadBisReport & { error?: string };
+  if (!res.ok) throw new ItemTooltipError(data.error || `Wowhead BIS 조회 실패 (${res.status})`, res.status);
   return data;
 }

@@ -307,6 +307,10 @@ export const api = onRequest({ region, cors: true, secrets: [geminiApiKey, ...bn
       await handleItemTooltip(req, res);
       return;
     }
+    if (["/api/items/bis", "/items/bis"].includes(req.path)) {
+      await handleWowheadBis(req, res);
+      return;
+    }
     if (req.method !== "POST") throw new HttpError(405, "Only POST requests are allowed.");
     if (!["/api/ai/today-plan", "/ai/today-plan"].includes(req.path)) {
       throw new HttpError(404, "Unknown API path.");
@@ -382,6 +386,8 @@ const BNET_HYDRATE_CONCURRENCY = 3;
 const BNET_ITEM_MEDIA_CONCURRENCY = 4;
 const BNET_ITEM_MEDIA_LIMIT = 160;
 const ITEM_TOOLTIP_CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
+const WOWHEAD_BIS_CACHE_TTL_MS = 1000 * 60 * 60 * 12;
+const WOWHEAD_ASSASSINATION_BIS_URL = "https://www.wowhead.com/guide/classes/rogue/assassination/bis-gear";
 
 let bnetClientTokenCache: { accessToken: string; expiresAt: number } | null = null;
 
@@ -652,6 +658,191 @@ async function handleItemTooltip(req: { method: string; query: Record<string, un
   if (!/^[a-z]{2}_[A-Z]{2}$/.test(locale)) throw new HttpError(400, "locale is invalid.");
   const tooltip = await cachedItemTooltip(itemId, regionName, locale);
   res.status(200).json(tooltip);
+}
+
+function wowheadBisRef(spec: string) {
+  return db.collection("wowheadBis").doc(safeDocId(spec));
+}
+
+function cleanWowheadText(value: string) {
+  return value
+    .replace(/\\\//g, "/")
+    .replace(/\\r\\n/g, "\n")
+    .replace(/\\"/g, "\"")
+    .replace(/&amp;/g, "&")
+    .replace(/&#039;/g, "'")
+    .replace(/&quot;/g, "\"")
+    .replace(/\[url[^\]]*\]([\s\S]*?)\[\/url\]/g, "$1")
+    .replace(/\[[^\]]+\]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function unescapeWowheadMarkup(value: string) {
+  return value
+    .replace(/\\\//g, "/")
+    .replace(/\\r\\n/g, "\n")
+    .replace(/\\"/g, "\"")
+    .replace(/&amp;/g, "&")
+    .replace(/&#039;/g, "'")
+    .replace(/&quot;/g, "\"");
+}
+
+function wowheadModifiedAt(html: string) {
+  const match = html.match(/"dateModified":"([^"]+)"/);
+  return match?.[1] || "";
+}
+
+function bisSlotKey(slot: string, slotCounts: Record<string, number>) {
+  const normalized = slot.toLowerCase();
+  const direct: Record<string, string> = {
+    weapon: "MAIN_HAND",
+    offhand: "OFF_HAND",
+    head: "HEAD",
+    neck: "NECK",
+    shoulders: "SHOULDER",
+    shoulder: "SHOULDER",
+    cloak: "BACK",
+    back: "BACK",
+    chest: "CHEST",
+    wrist: "WRIST",
+    wrists: "WRIST",
+    gloves: "HANDS",
+    hands: "HANDS",
+    belt: "WAIST",
+    waist: "WAIST",
+    legs: "LEGS",
+    boots: "FEET",
+    feet: "FEET",
+  };
+  if (direct[normalized]) return direct[normalized];
+  if (normalized === "ring") {
+    slotCounts.ring = (slotCounts.ring || 0) + 1;
+    return slotCounts.ring > 1 ? "FINGER_2" : "FINGER_1";
+  }
+  if (normalized === "trinket") {
+    slotCounts.trinket = (slotCounts.trinket || 0) + 1;
+    return slotCounts.trinket > 1 ? "TRINKET_2" : "TRINKET_1";
+  }
+  return slot.toUpperCase().replace(/[^A-Z0-9]+/g, "_");
+}
+
+function parseWowheadBisRows(html: string) {
+  const normalized = unescapeWowheadMarkup(html)
+    .replace(/\[\/td\]/g, "[/td]")
+    .replace(/\[\/tr\]/g, "[/tr]")
+    .replace(/\[\/table\]/g, "[/table]")
+    .replace(/\[\/tab\]/g, "[/tab]");
+  const start = normalized.indexOf("Best in Slot Gear for Assassination Rogue");
+  if (start < 0) throw new HttpError(502, "Wowhead BIS table was not found.");
+  const end = normalized.indexOf("[/tab]", start);
+  const section = normalized.slice(start, end > start ? end : start + 12000);
+  const slotCounts: Record<string, number> = {};
+  const rows: Array<{ slot: string; slotKey: string; itemId: number; source: string; wowheadUrl: string }> = [];
+  const rowPattern = /\[tr\]\[td\]([^[\]]+)\[\/td\]\[td\]\[item=(\d+)[^\]]*\]\[\/td\]\[td\]([\s\S]*?)\[\/td\]\[\/tr\]/g;
+  let match: RegExpExecArray | null;
+  while ((match = rowPattern.exec(section))) {
+    const slot = cleanWowheadText(match[1]);
+    const itemId = Number(match[2]);
+    const source = cleanWowheadText(match[3]);
+    if (!slot || !Number.isInteger(itemId)) continue;
+    rows.push({
+      slot,
+      slotKey: bisSlotKey(slot, slotCounts),
+      itemId,
+      source,
+      wowheadUrl: `https://www.wowhead.com/item=${itemId}`,
+    });
+  }
+  if (rows.length < 10) throw new HttpError(502, "Wowhead BIS table did not include enough item rows.");
+  return rows;
+}
+
+async function buildWowheadBisReport(spec: string, regionName: string, locale: string) {
+  if (spec !== "assassination-rogue") throw new HttpError(400, "Only assassination-rogue BIS is supported right now.");
+  const res = await fetch(WOWHEAD_ASSASSINATION_BIS_URL, {
+    headers: {
+      "User-Agent": "WJ-Command/1.0 personal dashboard",
+      Accept: "text/html",
+    },
+  });
+  const html = await res.text();
+  if (!res.ok) throw new HttpError(502, `Wowhead BIS page request failed (${res.status}).`);
+  const parsedRows = parseWowheadBisRows(html);
+  const warnings: string[] = [];
+  const items = await Promise.all(parsedRows.map(async (row) => {
+    try {
+      const tooltip = await cachedItemTooltip(row.itemId, regionName, locale);
+      return {
+        ...row,
+        name: String(tooltip.name || `Item ${row.itemId}`),
+        iconUrl: String(tooltip.iconUrl || ""),
+        quality: String(tooltip.quality || ""),
+        qualityType: String(tooltip.qualityType || ""),
+        itemLevelText: String(tooltip.itemLevelText || ""),
+      };
+    } catch (err) {
+      warnings.push(`${row.slot} item ${row.itemId}: ${err instanceof Error ? err.message : "tooltip failed"}`);
+      return {
+        ...row,
+        name: `Item ${row.itemId}`,
+        iconUrl: "",
+        quality: "",
+        qualityType: "",
+        itemLevelText: "",
+      };
+    }
+  }));
+  return {
+    spec,
+    title: "Wowhead Assassination Rogue Overall BIS",
+    sourceUrl: WOWHEAD_ASSASSINATION_BIS_URL,
+    modifiedAt: wowheadModifiedAt(html),
+    fetchedAt: new Date().toISOString(),
+    items,
+    warnings,
+  };
+}
+
+async function cachedWowheadBis(spec: string, force: boolean, regionName: string, locale: string) {
+  const ref = wowheadBisRef(spec);
+  const cached = await ref.get();
+  if (!force && cached.exists) {
+    const data = cached.data() as Record<string, unknown>;
+    const fetchedAt = data.fetchedAt as admin.firestore.Timestamp | undefined;
+    if (!fetchedAt || Date.now() - fetchedAt.toMillis() < WOWHEAD_BIS_CACHE_TTL_MS) return data;
+  }
+  const report = await buildWowheadBisReport(spec, regionName, locale);
+  await ref.set({
+    ...report,
+    fetchedAt: admin.firestore.FieldValue.serverTimestamp(),
+    fetchedAtIso: report.fetchedAt,
+  }, { merge: true });
+  return report;
+}
+
+async function handleWowheadBis(
+  req: { method: string; query: Record<string, unknown>; headers: Record<string, string | string[] | undefined> },
+  res: { status: (status: number) => { json: (body: unknown) => void } },
+) {
+  if (req.method !== "GET") throw new HttpError(405, "Only GET requests are allowed.");
+  const token = getBearer(req);
+  await admin.auth().verifyIdToken(token);
+  const { region: defaultRegion, locale: defaultLocale } = bnetConfig();
+  const spec = stringQuery(req.query.spec) || "assassination-rogue";
+  const force = ["1", "true", "yes"].includes(stringQuery(req.query.force).toLowerCase());
+  const regionName = (stringQuery(req.query.region) || defaultRegion).toLowerCase();
+  const locale = stringQuery(req.query.locale) || defaultLocale;
+  if (!/^[a-z]{2}$/.test(regionName)) throw new HttpError(400, "region is invalid.");
+  if (!/^[a-z]{2}_[A-Z]{2}$/.test(locale)) throw new HttpError(400, "locale is invalid.");
+  const report = await cachedWowheadBis(spec, force, regionName, locale);
+  const fetchedTimestamp = (report as { fetchedAt?: admin.firestore.Timestamp }).fetchedAt;
+  res.status(200).json({
+    ...report,
+    fetchedAt: typeof (report as { fetchedAt?: unknown }).fetchedAt === "string"
+      ? (report as { fetchedAt: string }).fetchedAt
+      : fetchedTimestamp?.toDate().toISOString() || String((report as { fetchedAtIso?: string }).fetchedAtIso || new Date().toISOString()),
+  });
 }
 
 function mediaAssets(data: Record<string, unknown>) {

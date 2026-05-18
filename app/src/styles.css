@@ -1253,6 +1253,70 @@ a {
   font-size: 12px;
 }
 
+.bis-panel {
+  overflow: hidden;
+}
+
+.bis-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 0 16px 14px;
+}
+
+.bis-list {
+  display: grid;
+  gap: 8px;
+  padding: 0 16px 16px;
+}
+
+.bis-list article {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1.05fr) minmax(0, 1.15fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 66px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.bis-list article.match {
+  border-color: rgba(15, 118, 110, 0.34);
+  background: var(--teal-soft);
+}
+
+.bis-list article.target-match {
+  border-color: rgba(183, 121, 31, 0.36);
+  background: var(--amber-soft);
+}
+
+.bis-list .item-cell,
+.bis-list .target-cell {
+  min-width: 0;
+}
+
+.bis-list .item-cell b,
+.bis-list .target-cell b,
+.bis-list .item-cell span,
+.bis-list .target-cell span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bis-list-icon {
+  box-shadow: 0 0 0 1px rgba(183, 121, 31, 0.34), 0 0 18px rgba(183, 121, 31, 0.18);
+}
+
+.bis-warning {
+  margin: -4px 16px 16px;
+  color: var(--amber);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .gear-map-panel {
   overflow: hidden;
 }
@@ -2544,6 +2608,7 @@ a {
   .data-grid,
   .now-actions,
   .gear-summary,
+  .bis-summary,
   .guide-metrics,
   .dungeon-brief-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2570,6 +2635,10 @@ a {
 
   .gear-row {
     grid-template-columns: 90px minmax(220px, 1.2fr) minmax(220px, 1fr);
+  }
+
+  .bis-list article {
+    grid-template-columns: 90px minmax(0, 1fr) minmax(0, 1fr) auto;
   }
 
   .enhance-cell,
@@ -2625,6 +2694,7 @@ a {
   .now-actions,
   .field-grid,
   .gear-summary,
+  .bis-summary,
   .guide-metrics,
   .macro-grid,
   .locked-guide-grid,
@@ -2650,6 +2720,11 @@ a {
 
   .gear-map-bottom {
     grid-template-columns: 1fr;
+  }
+
+  .bis-list article {
+    grid-template-columns: 1fr;
+    align-items: start;
   }
 
   .gear-map-hero,
