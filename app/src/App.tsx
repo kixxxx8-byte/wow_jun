@@ -1147,10 +1147,14 @@ function GearSlotNode({
   const hasTarget = Boolean(row.target);
   return (
     <article className={`gear-map-slot ${row.enhancement.tone} ${hasTarget ? "has-target" : ""}`}>
+      <div className="gear-map-slot-head">
+        <b>{row.slotLabel}</b>
+        <span>{hasTarget ? "교체 후보" : row.enhancement.label}</span>
+      </div>
       <div className="gear-map-current">
         <GearItemIcon item={row.equippedItem} label={row.slotLabel} className="map-icon" />
         <div>
-          <small>{row.slotLabel}</small>
+          <small>현재</small>
           <b>{row.equippedItem?.name || "장비 없음"}</b>
           <span>{row.equippedItem ? itemMeta(row.equippedItem) : row.enhancement.detail}</span>
         </div>
