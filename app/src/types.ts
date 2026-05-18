@@ -1,4 +1,4 @@
-export type View = "today" | "ai" | "gear" | "dungeons" | "guides" | "notes";
+export type View = "today" | "ai" | "gear" | "wythic" | "dungeons" | "guides" | "notes";
 export type TimeBudget = "30m" | "60m" | "120m" | "custom";
 export type Goal = "gear" | "score" | "light" | "push" | "maintenance";
 export type Energy = "low" | "normal" | "high";

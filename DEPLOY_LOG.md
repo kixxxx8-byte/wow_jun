@@ -16,6 +16,7 @@
   - Wowhead BIS 기반 장비표 표시와 한국어 툴팁/링크 배포 완료
   - 로그인 후 대표 캐릭터 자동 선택 복구 배포 완료
   - 장비 조감도 캐릭터 확대/슬롯 카드 재디자인 배포 완료
+  - Wythic 하이브리드 탭 배포 완료
 - 메모:
   - 받은 ZIP 작업본의 툴팁 fallback 구현과 현재 라이브 번들이 완전히 일치하지 않을 가능성이 있음
   - 다음 배포 전 `npm run build`, `functions build`, `/api/items/tooltip` 확인 필요

@@ -2111,6 +2111,67 @@ a {
   background: var(--teal);
 }
 
+.wythic-shell {
+  align-items: stretch;
+}
+
+.wythic-command {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.7fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 16px;
+}
+
+.wythic-command h1 {
+  margin: 0;
+  font-size: clamp(30px, 3.8vw, 48px);
+  line-height: 1;
+}
+
+.wythic-command p:not(.eyebrow) {
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.wythic-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.wythic-frame-panel {
+  overflow: hidden;
+  padding: 0;
+  background: #090d14;
+}
+
+.wythic-frame-panel iframe {
+  display: block;
+  width: 100%;
+  min-height: max(760px, calc(100vh - 230px));
+  border: 0;
+  background: #090d14;
+}
+
+.wythic-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+.wythic-fallback b {
+  white-space: nowrap;
+}
+
+.wythic-fallback span {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
 .guide-shell {
   align-items: start;
 }
@@ -2625,6 +2686,7 @@ a {
   .split-grid,
   .ai-grid,
   .settings-grid,
+  .wythic-command,
   .guide-grid {
     grid-template-columns: 1fr;
   }
@@ -2668,6 +2730,10 @@ a {
 
   .topbar nav {
     overflow-x: auto;
+  }
+
+  .wythic-command .command-actions {
+    justify-content: flex-start;
   }
 
   .data-grid,
@@ -2770,8 +2836,18 @@ a {
   .time-plan-grid,
   .detail-grid,
   .dungeon-brief-grid,
-  .boss-grid {
+  .boss-grid,
+  .wythic-metrics {
     grid-template-columns: 1fr;
+  }
+
+  .wythic-fallback {
+    display: grid;
+    justify-items: stretch;
+  }
+
+  .wythic-frame-panel iframe {
+    min-height: 620px;
   }
 
   .gear-map-layout,

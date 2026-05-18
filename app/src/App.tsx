@@ -144,6 +144,7 @@ const views: Array<{ id: View; label: string }> = [
   { id: "today", label: "오늘" },
   { id: "ai", label: "AI 작전실" },
   { id: "gear", label: "장비" },
+  { id: "wythic", label: "Wythic" },
   { id: "dungeons", label: "던전" },
   { id: "guides", label: "가이드" },
   { id: "notes", label: "메모/설정" },
@@ -255,6 +256,13 @@ function numericItemId(item?: EquipmentItem | null, target?: Target | null) {
 
 function wowheadUrl(itemId: number, target?: Target | null) {
   return itemId ? `https://www.wowhead.com/ko/item=${itemId}` : target?.wowheadUrl || "https://www.wowhead.com/ko/";
+}
+
+function wythicCharacterUrl(character: Character) {
+  const region = (character.region || "kr").toLowerCase();
+  const realm = normalizeRealm(character.realmSlug || character.realm || "azshara");
+  const name = encodeURIComponent(character.name || "");
+  return `https://wythic.com/ko/character/${region}/${realm}/${name}`;
 }
 
 function tooltipItemLevelText(data: ItemTooltipData) {
@@ -1529,6 +1537,58 @@ function DungeonGuideCard({ guide, priority }: { guide: RichDungeonGuide; priori
   );
 }
 
+function WythicView({
+  character,
+  score,
+  ilvl,
+  onJump,
+}: {
+  character: Character;
+  score: number;
+  ilvl: ReturnType<typeof itemLevelInfo>;
+  onJump: (view: View) => void;
+}) {
+  const [frameKey, setFrameKey] = useState(0);
+  const url = useMemo(() => wythicCharacterUrl(character), [character.id, character.name, character.realm, character.realmSlug, character.region]);
+  return (
+    <div className="view-stack wythic-shell">
+      <section className="panel wythic-command">
+        <div>
+          <p className="eyebrow">Wythic Hybrid</p>
+          <h1>{character.name}</h1>
+          <p>{character.realm || character.realmSlug || "아즈샤라"} · {character.specName || character.spec || "전문화"} · {(character.region || "kr").toUpperCase()}</p>
+        </div>
+        <div className="wythic-metrics">
+          <MetricCard title="RIO" value={score ? fmt(Math.round(score)) : "-"} detail="Raider.IO" />
+          <MetricCard title="ILVL" value={ilvl.value ? fmt(Math.round(ilvl.value)) : "-"} detail={ilvl.source || "Battle.net"} />
+        </div>
+        <div className="command-actions">
+          <button type="button" onClick={() => setFrameKey((value) => value + 1)}><RefreshCw size={16} /> Wythic 새로고침</button>
+          <a className="link-btn primary-link" href={url} target="_blank" rel="noreferrer">원본 새 창</a>
+          <button type="button" onClick={() => onJump("gear")}>장비 화면</button>
+          <button type="button" onClick={() => onJump("today")}>오늘 판단</button>
+        </div>
+      </section>
+
+      <section className="panel wythic-frame-panel">
+        <iframe
+          key={`${url}-${frameKey}`}
+          title={`${character.name} Wythic 분석`}
+          src={url}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+        />
+      </section>
+
+      <section className="panel wythic-fallback">
+        <b>iframe이 비어 보이면</b>
+        <span>Wythic 쪽 정책이나 브라우저 보안 설정 때문에 내장 화면이 막힌 것입니다. 이 경우 원본 새 창으로 열어 확인하면 됩니다.</span>
+        <a className="link-btn" href={url} target="_blank" rel="noreferrer">Wythic 원본 열기</a>
+      </section>
+    </div>
+  );
+}
+
 function GuidesView() {
   return (
     <div className="view-stack guide-shell">
@@ -2290,6 +2350,7 @@ export default function App() {
             disabled={!loggedIn}
           />
         ) : null}
+        {view === "wythic" ? <WythicView character={character} score={score} ilvl={ilvl} onJump={jump} /> : null}
         {view === "dungeons" ? <DungeonsView recommendations={snapshot.dungeonRecommendations} /> : null}
         {view === "notes" ? (
           <SettingsView
