@@ -1,0 +1,21 @@
+{
+  "name": "wj-v8-functions",
+  "private": true,
+  "version": "0.1.0",
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "..\\.tools\\node-v24.14.0-win-x64\\node.exe ../node_modules/typescript/bin/tsc",
+    "serve": "npm run build && ..\\.tools\\node-v24.14.0-win-x64\\node.exe ../scripts/firebase-tools.mjs emulators:start --only functions --project hokkaido-trip-c1907",
+    "deploy": "npm run build && ..\\.tools\\node-v24.14.0-win-x64\\node.exe ../scripts/firebase-tools.mjs deploy --only functions --project hokkaido-trip-c1907"
+  },
+  "engines": {
+    "node": "22"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.6.0",
+    "firebase-functions": "^7.0.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

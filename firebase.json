@@ -1,0 +1,54 @@
+{
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "runtime": "nodejs22"
+    }
+  ],
+  "hosting": {
+    "public": "dist",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      {
+        "source": "/auth/bnet/start",
+        "function": {
+          "functionId": "bnetStart",
+          "region": "asia-northeast3"
+        }
+      },
+      {
+        "source": "/auth/bnet/callback",
+        "function": {
+          "functionId": "bnetCallback",
+          "region": "asia-northeast3"
+        }
+      },
+      {
+        "source": "/api/bnet/sync",
+        "function": {
+          "functionId": "bnetSync",
+          "region": "asia-northeast3"
+        }
+      },
+      {
+        "source": "/api/ai/**",
+        "function": {
+          "functionId": "api",
+          "region": "asia-northeast3"
+        }
+      },
+      {
+        "source": "/api/items/**",
+        "function": {
+          "functionId": "api",
+          "region": "asia-northeast3"
+        }
+      },
+      {
+        "source": "/v8/**",
+        "destination": "/v8/index.html"
+      }
+    ]
+  }
+}
