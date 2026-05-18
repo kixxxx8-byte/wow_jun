@@ -84,16 +84,16 @@ const enhancementDetails: Record<string, string> = {
 };
 
 export const targets: Target[] = [
-  { id: "trinket-box", slot: "trinket", slotLabel: "장신구", priority: 100, type: "dungeon", target: "알게타르 보관함", tooltipName: "알게타르 수수께끼 상자", itemId: 193701, icon: icon("inv_misc_lockbox_1"), source: "알게타르 대학", boss: "도라고사", reason: "장신구는 체감이 커서 오늘 판단의 최상위 후보입니다.", check: "현재 장신구 조합과 단일/광역 상황별 효율 비교" },
-  { id: "trinket-sun", slot: "trinket2", slotLabel: "장신구 2", priority: 96, type: "dungeon", target: "태양섬광 분광경", itemId: 252420, icon: icon("inv_misc_orb_05"), source: "하늘탑", boss: "루크란", reason: "두 번째 장신구 후보를 다른 던전 목표로 분리해 추적합니다.", check: "장신구 1번과 중복 효과 여부 확인" },
-  { id: "ring-star", slot: "finger", slotLabel: "반지", priority: 92, type: "dungeon", target: "백금 별의 고리", itemId: 193708, icon: icon("inv_jewelry_ring_161"), source: "알게타르 대학", boss: "벡사무스", reason: "반지는 템렙과 마부 누락이 자주 겹치는 부위입니다.", check: "반지 두 칸의 템렙과 마부 상태 확인" },
-  { id: "ring-void", slot: "finger2", slotLabel: "반지 2", priority: 89, type: "dungeon", target: "공허 맞물림", tooltipName: "공허의 맞물림", itemId: 251217, icon: icon("inv_jewelry_ring_162"), source: "공결탑 제나스", boss: "막넴", reason: "두 번째 반지 후보를 별도 획득처로 추적합니다.", check: "기존 반지와 2차 스탯 비교" },
-  { id: "weapon-krick", slot: "weapon", slotLabel: "무기", priority: 88, type: "dungeon", target: "크리크의 단도", tooltipName: "크리크의 딱정벌레 단도", itemId: 133491, icon: icon("inv_weapon_shortblade_101"), source: "사론의 구덩이", boss: "크리크", reason: "무기는 작은 교체도 체감이 커서 우선순위가 높습니다.", check: "주무기/보조무기 마부와 템렙 차이 확인" },
-  { id: "weapon-offhand", slot: "offhand", slotLabel: "보조무기", priority: 82, type: "dungeon", target: "찬란한 분리검", itemId: 251212, icon: icon("inv_weapon_shortblade_100"), source: "공결탑 제나스", boss: "2넴", reason: "보조무기는 주무기와 별도 후보로 비교합니다.", check: "보조무기 DPS와 마부 상태 확인" },
-  { id: "feet-boots", slot: "feet", slotLabel: "발", priority: 76, type: "dungeon", target: "무위길잡이의 신발", tooltipName: "Wayfinder Boots", itemId: 72849, icon: icon("inv_boots_leather_10"), source: "경매장/제작", boss: "가격 확인", reason: "가격이 괜찮다면 파밍 시간을 줄일 수 있습니다.", check: "신발 마부와 현재 템렙 확인" },
-  { id: "legs-craft", slot: "legs", slotLabel: "다리", priority: 74, type: "craft", target: "다리 방어구 강화", icon: icon("inv_pants_leather_15"), source: "제작", boss: "가죽세공", reason: "다리 강화는 한 번 처리하면 즉시 효율이 납니다.", check: "다리 방어구 강화 적용 여부 확인" },
-  { id: "wrist-craft", slot: "wrist", slotLabel: "손목", priority: 68, type: "craft", target: "손목 마법부여", icon: icon("inv_bracer_24"), source: "제작", boss: "마법부여", reason: "낮은 비용으로 스탯 방향을 맞추기 좋습니다.", check: "손목 마부 적용 여부 확인" },
-  { id: "hands-dungeon", slot: "hands", slotLabel: "손", priority: 61, type: "dungeon", target: "분리검 장갑", tooltipName: "Corewright's Zappers", icon: icon("inv_glove_leather_raidrogue_s_01"), source: "공결탑 제나스", boss: "3넴", reason: "손 부위 템렙이 낮으면 빠른 교체 후보입니다.", check: "현재 장갑 템렙과 세트/스탯 비교" },
+  { id: "trinket-alnseer", slot: "trinket", slotLabel: "장신구", priority: 100, type: "dungeon", target: "알른 선견자의 응시", itemId: 249343, icon: icon("inv_eye_02"), source: "레이드", boss: "키마이루스", reason: "Wowhead 암살 도적 BIS 기준 최상위 장신구입니다.", check: "현재 장신구 두 칸에 이미 같은 아이템이 있는지 먼저 확인" },
+  { id: "trinket-box", slot: "trinket2", slotLabel: "장신구 2", priority: 96, type: "dungeon", target: "알게타르 수수께끼 상자", itemId: 193701, icon: icon("inv_misc_lockbox_1"), source: "알게타르 대학", boss: "도라고사", reason: "Wowhead BIS 보조 장신구 후보입니다. 현재 시즌 표에 있을 때만 유지합니다.", check: "다른 장신구와 중복 추천하지 않고, 이미 착용 중이면 제외" },
+  { id: "ring-hope", slot: "finger", slotLabel: "반지", priority: 92, type: "dungeon", target: "희망의 신도레이 고리", itemId: 249919, icon: icon("inv_jewelry_ring_161"), source: "레이드", boss: "벨로렌", reason: "Wowhead BIS 첫 번째 반지 후보입니다.", check: "반지 두 칸 전체 착용 아이템과 중복 여부 확인" },
+  { id: "ring-midnight-eye", slot: "finger2", slotLabel: "반지 2", priority: 89, type: "dungeon", target: "한밤의 눈", itemId: 249920, icon: icon("inv_jewelry_ring_162"), source: "한밤의 몰락", boss: "드랍처 확인", reason: "두 번째 반지는 같은 아이템 반복이 아니라 별도 BIS 후보로 추적합니다.", check: "이미 다른 반지 칸에 있으면 오늘 목표에서 제외" },
+  { id: "weapon-victory", slot: "weapon", slotLabel: "주무기", priority: 88, type: "dungeon", target: "굶주린 승리", itemId: 249925, icon: icon("inv_weapon_shortblade_101"), source: "레이드", boss: "보라시우스", reason: "Wowhead BIS 주무기 후보입니다.", check: "주무기/보조무기 전체에서 이미 착용 중이면 중복 추천 제외" },
+  { id: "weapon-mercy", slot: "offhand", slotLabel: "보조무기", priority: 82, type: "craft", target: "원정순찰대원의 자비", itemId: 237837, icon: icon("inv_knife_1h_artifactfangs_d_06"), source: "제작", boss: "전문기술", reason: "Wowhead BIS 보조무기 후보입니다.", check: "주무기와 같은 아이템을 반복 추천하지 않음" },
+  { id: "cloak-terrace", slot: "back", slotLabel: "망토", priority: 78, type: "dungeon", target: "저항하는 수호자의 외투", itemId: 260312, icon: icon("inv_cape_special_ardenweald_d_01"), source: "마법학자의 정원", boss: "드랍처 확인", reason: "현재 시즌 BIS 표에 있는 던전 망토 후보입니다.", check: "낡은 과거 시즌 망토 후보 대신 현재 시즌 표 기준으로 확인" },
+  { id: "legs-windrunner", slot: "legs", slotLabel: "다리", priority: 74, type: "dungeon", target: "머무는 유산의 다리싸개", itemId: 251087, icon: icon("inv_pants_leather_raidrogue_s_01"), source: "윈드러너 첨탑", boss: "드랍처 확인", reason: "현재 시즌 BIS 표에 있는 던전 다리 후보입니다.", check: "다리 강화보다 아이템 교체가 먼저 필요한지 확인" },
+  { id: "wrist-craft", slot: "wrist", slotLabel: "손목", priority: 68, type: "craft", target: "실버문 요원의 굴절보호대", itemId: 244576, icon: icon("inv_bracer_leather_raidrogue_s_01"), source: "제작", boss: "전문기술", reason: "Wowhead BIS 제작 손목 후보입니다.", check: "제작 전 현재 손목 마부와 제작 비용 확인" },
+  { id: "feet-cosmos", slot: "feet", slotLabel: "발", priority: 64, type: "dungeon", target: "나무 지붕 방랑자의 발등싸개", itemId: 249382, icon: icon("inv_boots_leather_raidrogue_s_01"), source: "공결탑 제나스", boss: "Crown of the Cosmos", reason: "현재 시즌 BIS 표에 있는 발 후보입니다.", check: "신발 마부와 현재 템렙을 같이 확인" },
 ];
 
 export const dungeonGuides: DungeonGuide[] = [
@@ -276,8 +276,95 @@ function itemForTarget(character: Character, target: Target) {
     .sort((a, b) => itemLevel(a) - itemLevel(b))[0] || null;
 }
 
-function targetForSlot(slotKey: string) {
-  return targets.find((target) => (slotMap[target.slot] || []).includes(slotKey)) || null;
+function numericItemId(item?: EquipmentItem | null) {
+  const value = Number(item?.id || 0);
+  return Number.isInteger(value) && value > 0 ? value : 0;
+}
+
+function targetItemId(target?: Target | null) {
+  const value = Number(target?.itemId || 0);
+  return Number.isInteger(value) && value > 0 ? value : 0;
+}
+
+function slotItemId(character: Character, slotKey: string) {
+  return numericItemId(character.equipment?.[slotKey] || null);
+}
+
+function targetGroup(target: Target) {
+  const keys = slotMap[target.slot] || [];
+  if (keys.includes("FINGER_1") || keys.includes("FINGER_2")) return "finger";
+  if (keys.includes("TRINKET_1") || keys.includes("TRINKET_2")) return "trinket";
+  if (keys.includes("MAIN_HAND") || keys.includes("OFF_HAND")) return "weapon";
+  return keys[0] || target.slot;
+}
+
+function slotGroup(slotKey: string) {
+  if (slotKey === "FINGER_1" || slotKey === "FINGER_2") return "finger";
+  if (slotKey === "TRINKET_1" || slotKey === "TRINKET_2") return "trinket";
+  if (slotKey === "MAIN_HAND" || slotKey === "OFF_HAND") return "weapon";
+  return slotKey;
+}
+
+function preferredSlot(target: Target) {
+  const keys = slotMap[target.slot] || [];
+  if (target.slot.endsWith("2")) return keys[1] || keys[0] || "";
+  return keys[0] || "";
+}
+
+function openSlotsByNeed(character: Character, slotKeys: string[]) {
+  return slotKeys
+    .slice()
+    .sort((a, b) => {
+      const aLevel = itemLevel(character.equipment?.[a] || null);
+      const bLevel = itemLevel(character.equipment?.[b] || null);
+      if (aLevel !== bLevel) return aLevel - bLevel;
+      return slotKeys.indexOf(a) - slotKeys.indexOf(b);
+    });
+}
+
+function buildTargetAssignments(character: Character, done: Record<string, boolean> = {}, hidden: Record<string, boolean> = {}) {
+  const assignments = new Map<string, Target>();
+  const usedTargetIds = new Set<string>();
+  const allGroups = Array.from(new Set(equipmentSlots.map((slot) => slotGroup(slot.key))));
+
+  allGroups.forEach((group) => {
+    const slotKeys = equipmentSlots.map((slot) => slot.key).filter((key) => slotGroup(key) === group);
+    const equippedIds = new Set(slotKeys.map((key) => slotItemId(character, key)).filter(Boolean));
+    const usedIds = new Set(equippedIds);
+
+    const candidates = targets
+      .filter((target) => !done[target.id] && !hidden[target.id] && targetGroup(target) === group)
+      .filter((target) => {
+        const id = targetItemId(target);
+        return !id || !usedIds.has(id);
+      })
+      .sort((a, b) => b.priority - a.priority);
+
+    candidates.forEach((target) => {
+      if (usedTargetIds.has(target.id)) return;
+      const id = targetItemId(target);
+      if (id && usedIds.has(id)) return;
+      const preferred = preferredSlot(target);
+      const orderedSlots = preferred
+        ? [preferred, ...openSlotsByNeed(character, slotKeys).filter((key) => key !== preferred)]
+        : openSlotsByNeed(character, slotKeys);
+      const slotKey = orderedSlots.find((key) => !assignments.has(key));
+      if (!slotKey) return;
+      assignments.set(slotKey, target);
+      usedTargetIds.add(target.id);
+      if (id) usedIds.add(id);
+    });
+  });
+
+  return assignments;
+}
+
+function activeTargetList(character: Character, done: Record<string, boolean> = {}, hidden: Record<string, boolean> = {}) {
+  const assignedIds = new Set(Array.from(buildTargetAssignments(character, done, hidden).values()).map((target) => target.id));
+  return targets
+    .filter((target) => assignedIds.has(target.id))
+    .map((target) => ({ ...target, score: target.priority }))
+    .sort((a, b) => b.score - a.score);
 }
 
 function enhancementStatus(slot: EquipmentSlot, item: EquipmentItem | null) {
@@ -287,9 +374,10 @@ function enhancementStatus(slot: EquipmentSlot, item: EquipmentItem | null) {
 }
 
 export function equipmentRows(character: Character, done: Record<string, boolean> = {}): EquipmentRow[] {
+  const targetAssignments = buildTargetAssignments(character, done);
   return equipmentSlots.map((slot) => {
     const equippedItem = character.equipment?.[slot.key] || null;
-    const target = targetForSlot(slot.key);
+    const target = targetAssignments.get(slot.key) || null;
     const comparisonItem = target ? itemForTarget(character, target) : null;
     const lowLevelPenalty = equippedItem && itemLevel(equippedItem) > 0 && itemLevel(equippedItem) < 255 ? 16 : 0;
     const score = target && !done[target.id] ? target.priority + lowLevelPenalty : slot.enchant || slot.gem ? 35 : 10;
@@ -309,12 +397,8 @@ export function equipmentRows(character: Character, done: Record<string, boolean
   });
 }
 
-export function activeTargets(done: Record<string, boolean> = {}, hidden: Record<string, boolean> = {}, limit = Infinity) {
-  return targets
-    .filter((target) => !done[target.id] && !hidden[target.id])
-    .map((target) => ({ ...target, score: target.priority }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit);
+export function activeTargets(character: Character = defaultCharacter, done: Record<string, boolean> = {}, hidden: Record<string, boolean> = {}, limit = Infinity) {
+  return activeTargetList(character, done, hidden).slice(0, limit);
 }
 
 export function maintenanceRows(character: Character, done: Record<string, boolean> = {}): MaintenanceRow[] {
@@ -336,8 +420,8 @@ function targetMatchesDungeon(target: Target, guide: DungeonGuide) {
   return target.source.includes(guide.name) || guide.name.includes(target.source) || target.source.includes(guide.short);
 }
 
-export function dungeonRecommendations(done: Record<string, boolean> = {}, hidden: Record<string, boolean> = {}, limit = 4): DungeonRecommendation[] {
-  const visible = activeTargets(done, hidden, Infinity);
+export function dungeonRecommendations(character: Character = defaultCharacter, done: Record<string, boolean> = {}, hidden: Record<string, boolean> = {}, limit = 4): DungeonRecommendation[] {
+  const visible = activeTargets(character, done, hidden, Infinity);
   return dungeonGuideCatalog
     .map((guide) => {
       const matched = visible.filter((target) => targetMatchesDungeon(target, guide));
@@ -377,7 +461,7 @@ export function todayTasks(character: Character, done: Record<string, boolean> =
     });
   }
 
-  activeTargets(done, hidden, 6).forEach((target) => {
+  activeTargets(character, done, hidden, 6).forEach((target) => {
     rows.push({
       id: target.id,
       title: `${target.slotLabel} 교체 후보`,
@@ -465,7 +549,7 @@ export function buildTodaySnapshot(input: {
     equipmentRows: equipmentRows(input.character, done),
     todayTasks: todayTasks(input.character, done, hidden),
     maintenanceRows: maintenanceRows(input.character, done),
-    dungeonRecommendations: dungeonRecommendations(done, hidden, 4),
+    dungeonRecommendations: dungeonRecommendations(input.character, done, hidden, 4),
     recentRuns,
     dataFreshness: dataFreshness(input.character, recentRuns, Boolean(input.cloudReady), input.rioError, input.lastRioRefreshAt),
   };

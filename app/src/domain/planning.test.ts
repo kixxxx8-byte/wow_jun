@@ -86,12 +86,40 @@ describe("today planning domain", () => {
   });
 
   it("has real item ids for primary target tooltips and explicit labels for pending targets", () => {
-    const primaryIds = ["trinket-box", "trinket-sun", "ring-star", "ring-void", "weapon-krick", "weapon-offhand", "feet-boots"];
+    const primaryIds = ["trinket-alnseer", "trinket-box", "ring-hope", "ring-midnight-eye", "weapon-victory", "weapon-mercy", "cloak-terrace"];
     primaryIds.forEach((id) => {
       const target = targets.find((row) => row.id === id);
       expect(target?.itemId).toBeTypeOf("number");
     });
-    expect(targets.find((row) => row.id === "hands-dungeon")?.tooltipName).toBeTruthy();
+    expect(targets.some((row) => row.source === "사론의 구덩이")).toBe(false);
+  });
+
+  it("does not recommend an item that is already equipped in the paired slot group", () => {
+    const rows = equipmentRows({
+      ...defaultCharacter,
+      equipment: {
+        TRINKET_1: { id: 249343, name: "알른 선견자의 응시", level: 272 },
+        TRINKET_2: { id: 193701, name: "알게타르 수수께끼 상자", level: 272 },
+        FINGER_1: { id: 249919, name: "희망의 신도레이 고리", level: 285 },
+      },
+    });
+    const trinketTargets = rows.filter((row) => row.slot.group === "trinket").map((row) => row.target?.itemId).filter(Boolean);
+    const ringTargets = rows.filter((row) => row.slot.group === "jewelry" && row.slotKey.startsWith("FINGER")).map((row) => row.target?.itemId).filter(Boolean);
+
+    expect(trinketTargets).not.toContain(249343);
+    expect(trinketTargets).not.toContain(193701);
+    expect(ringTargets).not.toContain(249919);
+    expect(ringTargets).toContain(249920);
+  });
+
+  it("assigns different targets to paired equipment slots", () => {
+    const rows = equipmentRows(defaultCharacter);
+    const pairedTargets = rows
+      .filter((row) => ["FINGER_1", "FINGER_2", "TRINKET_1", "TRINKET_2", "MAIN_HAND", "OFF_HAND"].includes(row.slotKey))
+      .map((row) => row.target?.itemId)
+      .filter(Boolean);
+
+    expect(new Set(pairedTargets).size).toBe(pairedTargets.length);
   });
 
   it("uses the rich dungeon catalog as the canonical guide source", () => {
