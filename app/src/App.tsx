@@ -243,7 +243,12 @@ function numericItemId(item?: EquipmentItem | null, target?: Target | null) {
 }
 
 function wowheadUrl(itemId: number, target?: Target | null) {
-  return target?.wowheadUrl || (itemId ? `https://www.wowhead.com/item=${itemId}` : "https://www.wowhead.com/");
+  return itemId ? `https://www.wowhead.com/ko/item=${itemId}` : target?.wowheadUrl || "https://www.wowhead.com/ko/";
+}
+
+function tooltipItemLevelText(data: ItemTooltipData) {
+  if (data.itemLevel && data.itemLevel < 100) return "";
+  return data.itemLevelText || (data.itemLevel ? `아이템 레벨 ${data.itemLevel}` : "");
 }
 
 function loadWowheadTooltips() {
@@ -356,7 +361,7 @@ function TooltipFallbackCard({
       ) : data ? (
         <>
           <b className={qualityClass}>{tooltipName}</b>
-          {data.itemLevelText || data.itemLevel ? <p>{data.itemLevelText || `아이템 레벨 ${data.itemLevel}`}</p> : null}
+          {tooltipItemLevelText(data) ? <p>{tooltipItemLevelText(data)}</p> : null}
           <small>{[data.binding, data.inventoryType, data.itemSubclass || data.itemClass].filter(Boolean).join(" · ")}</small>
           {data.armor ? <span>{data.armor}</span> : null}
           {(data.weapon || []).map((line) => <span key={line}>{line}</span>)}
@@ -366,7 +371,7 @@ function TooltipFallbackCard({
           {data.setName ? <span>{data.setName}</span> : null}
           {data.description ? <em>{data.description}</em> : null}
           {(data.requirements || []).map((line) => <small key={line}>{line}</small>)}
-          <a href={data.originalUrl || wowheadUrl(itemId)} target="_blank" rel="noreferrer">Wowhead에서 보기</a>
+          <a href={wowheadUrl(itemId)} target="_blank" rel="noreferrer">Wowhead에서 보기</a>
         </>
       ) : null}
     </section>
@@ -390,7 +395,6 @@ function ItemTooltipAnchor({
 }) {
   const itemId = numericItemId(item, target);
   const name = item?.name || target?.tooltipName || target?.target || label;
-  const ready = useWowheadTooltips(String(itemId || name));
   const [fallbackOpen, setFallbackOpen] = useState(false);
   const [pinned, setPinned] = useState(false);
   const [position, setPosition] = useState<CSSProperties>({});
@@ -450,7 +454,7 @@ function ItemTooltipAnchor({
         target="_blank"
         rel="noreferrer"
         aria-label={`${name} 아이템 툴팁`}
-        onMouseEnter={() => { if (!ready) openFallback(false); }}
+        onMouseEnter={() => openFallback(false)}
         onFocus={() => openFallback(true)}
         onClick={(event) => {
           event.preventDefault();
@@ -496,13 +500,66 @@ function BisItemIcon({ item }: { item?: WowheadBisItem }) {
   if (!item) return <span className="item-icon placeholder">BIS</span>;
   return (
     <ItemTooltipAnchor
-      target={{ id: `bis-${item.itemId}`, slot: item.slotKey, slotLabel: item.slot, priority: 0, type: "dungeon", target: item.name, icon: item.iconUrl || "", itemId: item.itemId, wowheadUrl: item.wowheadUrl, source: "Wowhead", boss: item.source, reason: "Wowhead BIS 기준", check: "내 장비와 비교" }}
+      target={{ id: `bis-${item.itemId}`, slot: item.slotKey, slotLabel: item.slot, priority: 0, type: "dungeon", target: item.name, icon: item.iconUrl || "", itemId: item.itemId, wowheadUrl: wowheadUrl(item.itemId), source: "Wowhead", boss: item.source, reason: "Wowhead BIS 기준", check: "내 장비와 비교" }}
       label={item.name}
       iconUrl={item.iconUrl || ""}
       className={`item-icon bis-list-icon ${item.iconUrl ? "" : "placeholder"}`}
       placeholder="BIS"
     />
   );
+}
+
+function bisSlotPriority(slotKey: string) {
+  if (slotKey.startsWith("TRINKET")) return 100;
+  if (slotKey.startsWith("FINGER")) return 92;
+  if (slotKey.includes("HAND")) return 88;
+  if (["HEAD", "CHEST", "LEGS", "SHOULDER", "HANDS"].includes(slotKey)) return 76;
+  return 68;
+}
+
+function pairedSlotKeys(slotKey: string) {
+  if (slotKey.startsWith("FINGER")) return ["FINGER_1", "FINGER_2"];
+  if (slotKey.startsWith("TRINKET")) return ["TRINKET_1", "TRINKET_2"];
+  if (slotKey === "MAIN_HAND" || slotKey === "OFF_HAND") return ["MAIN_HAND", "OFF_HAND"];
+  return [slotKey];
+}
+
+function targetFromBis(item: WowheadBisItem): Target {
+  const source = item.source === "Crafting" ? "제작" : item.source;
+  return {
+    id: `wowhead-bis-${item.slotKey}-${item.itemId}`,
+    slot: item.slotKey,
+    slotLabel: item.slot,
+    priority: bisSlotPriority(item.slotKey),
+    type: source.includes("제작") ? "craft" : "dungeon",
+    target: item.name,
+    icon: item.iconUrl || "",
+    itemId: item.itemId,
+    wowheadUrl: wowheadUrl(item.itemId),
+    source: "Wowhead BIS",
+    boss: source,
+    reason: "Wowhead 암살 도적 BIS 표 기준 목표입니다.",
+    check: "현재 착용 장비와 같은 부위군 전체를 비교합니다.",
+  };
+}
+
+function rowsWithWowheadBisTargets(rows: EquipmentRow[], report: WowheadBisReport | null) {
+  if (!report?.items?.length) return rows;
+  const bisBySlot = new Map(report.items.map((item) => [item.slotKey, item]));
+  const equippedIdsBySlot = new Map(rows.map((row) => [row.slotKey, itemIdValue(row.equippedItem)]));
+  return rows.map((row) => {
+    const bis = bisBySlot.get(row.slotKey);
+    if (!bis) return { ...row, target: null, type: "none" as const, score: row.enhancement.tone === "warn" ? 35 : 10 };
+    const pairedIds = pairedSlotKeys(row.slotKey).map((key) => equippedIdsBySlot.get(key) || 0).filter(Boolean);
+    const alreadyOwnedInGroup = pairedIds.includes(bis.itemId);
+    const target = alreadyOwnedInGroup ? null : targetFromBis(bis);
+    return {
+      ...row,
+      target,
+      type: target?.type || "none" as const,
+      score: target ? target.priority + (row.enhancement.tone === "warn" ? 8 : 0) : row.enhancement.tone === "warn" ? 35 : 10,
+    };
+  });
 }
 
 function itemIdValue(item?: EquipmentItem | null) {
@@ -568,7 +625,7 @@ function BisComparisonPanel({
               <article key={row.slotKey} className={currentMatch ? "match" : targetMatch ? "target-match" : ""}>
                 <div className="slot-cell"><small>{row.slotLabel}</small><b>{currentMatch ? "착용중" : targetMatch ? "목표 있음" : "차이 있음"}</b></div>
                 <div className="item-cell"><GearItemIcon item={row.equippedItem} label={row.slotLabel} /><div><b>{row.equippedItem?.name || "장비 없음"}</b><span>{itemMeta(row.equippedItem)}</span></div></div>
-                <div className="target-cell"><BisItemIcon item={bis} /><div><b>{bis?.name || "BIS 없음"}</b><span>{bis ? `${bis.source} · ${bis.itemLevelText || "Wowhead 기준"}` : "Wowhead 표에서 찾지 못함"}</span></div></div>
+                <div className="target-cell"><BisItemIcon item={bis} /><div><b>{bis?.name || "BIS 없음"}</b><span>{bis ? `${bis.source} · 시즌 BIS` : "Wowhead 표에서 찾지 못함"}</span></div></div>
                 <StatusPill tone={currentMatch ? "ok" : targetMatch ? "warn" : "err"}>{currentMatch ? "일치" : targetMatch ? "목표" : "확인"}</StatusPill>
               </article>
             );
@@ -1240,10 +1297,11 @@ function GearView({
   onJump: (view: View) => void;
   disabled: boolean;
 }) {
+  const displayRows = useMemo(() => rowsWithWowheadBisTargets(rows, bisReport), [rows, bisReport]);
   const stats = statTotals(rows);
-  const readiness = gearReadinessScore(rows);
+  const readiness = gearReadinessScore(displayRows);
   const { urgent, missingEnhance } = readiness;
-  const filtered = rows.filter((row) => {
+  const filtered = displayRows.filter((row) => {
     if (filter === "all") return true;
     if (filter === "urgent") return row.score >= 75 || row.enhancement.tone === "warn";
     if (filter === "craft") return row.type === "craft" || row.enhancement.tone === "warn";
@@ -1255,7 +1313,7 @@ function GearView({
 
   return (
     <div className="view-stack">
-      <GearMapPreview rows={rows} heroImage={heroImage} readiness={readiness} disabled={disabled} onDone={onDone} onJump={onJump} />
+      <GearMapPreview rows={displayRows} heroImage={heroImage} readiness={readiness} disabled={disabled} onDone={onDone} onJump={onJump} />
       <section className="panel">
         <div className="section-head">
           <div><p className="eyebrow">Gear</p><h2>장비 최적화</h2></div>
@@ -1271,7 +1329,7 @@ function GearView({
           <MetricCard title="치/가/특/유" value={`${fmt(stats.crit)} · ${fmt(stats.haste)}`} detail={`${fmt(stats.mastery)} · ${fmt(stats.vers)}`} />
         </div>
       </section>
-      <BisComparisonPanel rows={rows} report={bisReport} loading={bisLoading} error={bisError} onRefresh={onRefreshBis} disabled={disabled} />
+      <BisComparisonPanel rows={displayRows} report={bisReport} loading={bisLoading} error={bisError} onRefresh={onRefreshBis} disabled={disabled} />
       {showDataWarning ? (
         <section className="sync-empty panel">
           <div>

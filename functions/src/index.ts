@@ -616,19 +616,22 @@ function parseTooltipData(itemData: Record<string, unknown>, iconUrl: string, re
     ].filter(Boolean),
     description: String(preview.description || ""),
     setName: localizedName(itemSet),
-    originalUrl: `https://www.wowhead.com/item=${itemId}`,
+    originalUrl: locale === "ko_KR" ? `https://www.wowhead.com/ko/item=${itemId}` : `https://www.wowhead.com/item=${itemId}`,
     updatedAt: new Date().toISOString(),
   };
 }
 
-async function cachedItemTooltip(itemId: number, regionName: string, locale: string) {
+async function cachedItemTooltip(itemId: number, regionName: string, locale: string): Promise<Record<string, unknown>> {
   const ref = itemTooltipRef(regionName, locale, itemId);
   const cached = await ref.get();
   if (cached.exists) {
     const data = cached.data() as Record<string, unknown>;
     const updatedAt = data.updatedAt as admin.firestore.Timestamp | undefined;
     if (!updatedAt || Date.now() - updatedAt.toMillis() < ITEM_TOOLTIP_CACHE_TTL_MS) {
-      return data;
+      return {
+        ...data,
+        originalUrl: locale === "ko_KR" ? `https://www.wowhead.com/ko/item=${itemId}` : `https://www.wowhead.com/item=${itemId}`,
+      };
     }
   }
 
@@ -751,7 +754,7 @@ function parseWowheadBisRows(html: string) {
       slotKey: bisSlotKey(slot, slotCounts),
       itemId,
       source,
-      wowheadUrl: `https://www.wowhead.com/item=${itemId}`,
+      wowheadUrl: `https://www.wowhead.com/ko/item=${itemId}`,
     });
   }
   if (rows.length < 10) throw new HttpError(502, "Wowhead BIS table did not include enough item rows.");

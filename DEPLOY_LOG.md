@@ -13,6 +13,7 @@
   - Wowhead BIS 지원 배포 완료: `functions:api`, `hosting`
   - `/api/items/bis`는 로그인 없이 401 응답 확인
   - 추천 알고리즘 재구성 배포 완료: 오래된 수동 후보 제거, 두 칸 부위 중복 추천 방지
+  - Wowhead BIS 기반 장비표 표시와 한국어 툴팁/링크 배포 완료
 - 메모:
   - 받은 ZIP 작업본의 툴팁 fallback 구현과 현재 라이브 번들이 완전히 일치하지 않을 가능성이 있음
   - 다음 배포 전 `npm run build`, `functions build`, `/api/items/tooltip` 확인 필요
