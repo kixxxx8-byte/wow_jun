@@ -162,6 +162,17 @@ function currentCharacter(characters: Character[], activeCharacterId: string) {
   return characters.find((row) => row.id === activeCharacterId) || null;
 }
 
+function defaultCharacterId(characters: Character[], savedId?: string) {
+  if (!characters.length) return "";
+  if (savedId && characters.some((row) => row.id === savedId)) return savedId;
+  const knownMain = characters.find((row) => row.name === "승선을준비하라" && normalizeRealm(row.realmSlug || row.realm) === "azshara");
+  if (knownMain) return knownMain.id;
+  const geared = characters
+    .filter((row) => Object.keys(row.equipment || {}).length || row.itemLevel || row.equipped_item_level)
+    .sort((a, b) => Number(b.itemLevel || b.equipped_item_level || 0) - Number(a.itemLevel || a.equipped_item_level || 0))[0];
+  return geared?.id || characters[0].id;
+}
+
 function characterImage(character: Character, rio: RioProfile | null) {
   const media = character.media || {};
   return media.main || media.inset || media.avatar || rio?.thumbnail_url || "";
@@ -1878,8 +1889,9 @@ export default function App() {
 
   async function loadCloud(nextUser: User) {
     const userRef = doc(db, "wowGuideUsers", nextUser.uid);
-    const [v8Snap, charsSnap, plansSnap, usageSnap] = await Promise.all([
+    const [v8Snap, mainSnap, charsSnap, plansSnap, usageSnap] = await Promise.all([
       getDoc(doc(userRef, "settings", "v8")),
+      getDoc(doc(userRef, "settings", "main")).catch(() => null),
       getDocs(collection(userRef, "characters")),
       getDocs(query(collection(userRef, "aiPlans"), orderBy("generatedAt", "desc"), limit(10))).catch(() => null),
       getDoc(doc(userRef, "aiUsage", todayKey())).catch(() => null),
@@ -1889,9 +1901,11 @@ export default function App() {
     charsSnap.forEach((row) => loadedCharacters.push({ id: row.id, ...(row.data() as Omit<Character, "id">) }));
     const nextCharacters = loadedCharacters;
     const nextSettings = { done: {}, hidden: {}, note: "", lastView: "today", ...(v8Snap.exists() ? v8Snap.data() as V8Settings : {}) };
+    const mainSettings = mainSnap?.exists() ? mainSnap.data() as { activeCharacterId?: string } : {};
+    const nextActiveCharacterId = defaultCharacterId(nextCharacters, nextSettings.activeCharacterId || mainSettings.activeCharacterId);
     setCharacters(nextCharacters);
     setSettings(nextSettings);
-    setActiveCharacterId("");
+    setActiveCharacterId(nextActiveCharacterId);
     setSelectionPhase("idle");
     setShowAiDiagnosis(false);
     setView((views.some((item) => item.id === nextSettings.lastView) ? nextSettings.lastView : "today") as View);
@@ -1994,13 +2008,17 @@ export default function App() {
       if (!res.ok) throw new Error(data.error || `동기화 실패 (${res.status})`);
       if (Array.isArray(data.characters) && data.characters.length) {
         const nextCharacters = data.characters;
+        const nextActiveCharacterId = defaultCharacterId(nextCharacters, activeCharacterId || settings.activeCharacterId);
         setCharacters(nextCharacters);
-        setActiveCharacterId((current) => nextCharacters.some((row) => row.id === current) ? current : "");
-        if (activeCharacterId && nextCharacters.some((row) => row.id === activeCharacterId)) {
+        setActiveCharacterId(nextActiveCharacterId);
+        if (nextActiveCharacterId) {
           setPlan(null);
           setAiError("");
           setAiRateLimitKind(null);
           setAutoState("idle");
+          if (nextActiveCharacterId !== settings.activeCharacterId) {
+            void saveSettings({ activeCharacterId: nextActiveCharacterId });
+          }
         } else if (activeCharacterId) {
           setPlan(null);
           setRio(null);
