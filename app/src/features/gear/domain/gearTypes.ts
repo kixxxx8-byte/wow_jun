@@ -222,7 +222,7 @@ export type RecommendationWarning = {
 export type GearSlotRecommendation = {
   slot: EquipmentSlotKey;
   slotLabelKo: string;
-  status: "replace" | "enhance" | "keep" | "insufficient_data";
+  status: "replace" | "enhance" | "keep" | "no_verified_candidate" | "insufficient_data";
   currentItem?: EquippedItem;
   recommendedItem?: GearCandidate;
   reasonKo: string;

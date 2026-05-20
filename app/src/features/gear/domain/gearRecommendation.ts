@@ -174,9 +174,9 @@ function buildSlotDetails(character: Character, upgrades: PriorityUpgrade[]): Ge
     return {
       slot,
       slotLabelKo: slotLabelKo[slot],
-      status: currentItem ? "keep" : "insufficient_data",
+      status: currentItem ? "no_verified_candidate" : "insufficient_data",
       currentItem,
-      reasonKo: currentItem ? "검증된 교체 후보가 없거나 현재 기준에서 유지합니다." : "현재 장비 정보가 부족합니다.",
+      reasonKo: currentItem ? "아직 이 부위의 검증된 교체 후보가 등록되지 않았습니다. BIS 완료를 의미하지 않습니다." : "현재 장비 정보가 부족합니다.",
     };
   });
 }

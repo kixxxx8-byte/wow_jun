@@ -99,6 +99,24 @@ describe("v9 gear recommendation domain", () => {
     }));
   });
 
+  it("does not label slots without verified candidates as keep", () => {
+    const result = recommendGear({
+      character: {
+        ...defaultCharacter,
+        equipment: {
+          HEAD: { id: 123456, name: "현재 머리", level: 285 },
+        },
+      },
+      mode: "dungeon_craft_only",
+      season: currentSeason,
+      candidates: [],
+    });
+
+    const head = result.slotDetails.find((row) => row.slot === "HEAD");
+    expect(head?.status).toBe("no_verified_candidate");
+    expect(head?.reasonKo).toContain("BIS 완료를 의미하지 않습니다");
+  });
+
   it("marks legacy source conflicts as unsafe for default recommendation", () => {
     const candidate = legacyTargetToGearCandidate({
       id: "legacy-raid-as-dungeon",

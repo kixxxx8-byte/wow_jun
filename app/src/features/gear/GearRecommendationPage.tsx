@@ -54,7 +54,7 @@ export function GearRecommendationPage({
   onRefreshBis,
   onJumpDungeons,
 }: Props) {
-  const [detailsFilter, setDetailsFilter] = useState<"all" | "replace" | "keep" | "insufficient_data">("all");
+  const [detailsFilter, setDetailsFilter] = useState<"all" | "replace" | "keep" | "no_verified_candidate" | "insufficient_data">("all");
   const visibleSlotDetails = result.slotDetails.filter((row) => detailsFilter === "all" || row.status === detailsFilter);
 
   const updatePreferences = (patch: Partial<GearCoachPreferences>) => onPreferencesChange({ ...preferences, ...patch });
@@ -183,9 +183,9 @@ export function GearRecommendationPage({
       <section className="panel">
         <div className="section-head compact"><div><p className="eyebrow">부위</p><h2>부위별 상세</h2></div></div>
         <div className="slot-filter-row">
-          {(["all", "replace", "keep", "insufficient_data"] as const).map((item) => (
+          {(["all", "replace", "keep", "no_verified_candidate", "insufficient_data"] as const).map((item) => (
             <button key={item} type="button" className={detailsFilter === item ? "active" : ""} onClick={() => setDetailsFilter(item)}>
-              {item === "all" ? "전체" : item === "replace" ? "교체 필요" : item === "keep" ? "유지" : "정보 부족"}
+              {item === "all" ? "전체" : item === "replace" ? "교체 필요" : item === "keep" ? "유지" : item === "no_verified_candidate" ? "후보 없음" : "정보 부족"}
             </button>
           ))}
         </div>
@@ -193,7 +193,7 @@ export function GearRecommendationPage({
           {visibleSlotDetails.map((slot) => (
             <article key={slot.slot} className={`slot-detail-card ${slot.status}`}>
               <small>{slot.slotLabelKo}</small>
-              <b>{slot.status === "replace" ? "교체 필요" : slot.status === "keep" ? "유지" : "정보 부족"}</b>
+              <b>{slot.status === "replace" ? "교체 필요" : slot.status === "keep" ? "유지" : slot.status === "no_verified_candidate" ? "후보 없음" : "정보 부족"}</b>
               <span>현재: {slot.currentItem?.name || "장비 정보 없음"}</span>
               <span>추천: {slot.recommendedItem ? getDisplayItemName(slot.recommendedItem) : "등록된 추천 없음"}</span>
               <p>{slot.reasonKo}</p>
