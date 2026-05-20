@@ -25,6 +25,6 @@ export async function requestWowheadBis(token: string, force = false, spec = "as
     headers: { Authorization: `Bearer ${token}` },
   });
   const data = (await res.json().catch(() => ({}))) as WowheadBisReport & { error?: string };
-  if (!res.ok) throw new ItemTooltipError(data.error || `Wowhead BIS 조회 실패 (${res.status})`, res.status);
+  if (!res.ok) throw new ItemTooltipError(data.error || `참고 BIS 조회 실패 (${res.status})`, res.status);
   return data;
 }

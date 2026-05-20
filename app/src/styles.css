@@ -21,6 +21,247 @@
   color-scheme: light;
 }
 
+.gear-coach {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: grid;
+  gap: 16px;
+}
+
+.gear-coach-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.gear-coach-hero h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.4rem);
+}
+
+.gear-coach-hero p,
+.gear-section-copy,
+.gear-score-note p,
+.gear-action-list p,
+.route-list p,
+.upgrade-card p,
+.compact-recommendation p,
+.slot-detail-card p,
+.slot-detail-card span,
+.rejected-list span,
+.reference-bis-panel p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.gear-coach-character,
+.gear-score-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mode-chip-row,
+.slot-filter-row,
+.feedback-actions {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.mode-chip-row button,
+.slot-filter-row button {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 10px 14px;
+}
+
+.mode-chip-row button.active,
+.slot-filter-row button.active {
+  border-color: rgba(107, 209, 255, 0.8);
+  background: rgba(107, 209, 255, 0.13);
+}
+
+.gear-summary-grid,
+.today-gear-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.gear-summary-card,
+.gear-action-list,
+.upgrade-list,
+.route-list,
+.rejected-list,
+.today-gear-coach {
+  display: grid;
+  gap: 10px;
+}
+
+.gear-summary-card b {
+  font-size: 2rem;
+}
+
+.gear-action-list article,
+.route-list article {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.gear-action-list article {
+  grid-template-columns: 34px minmax(0, 1fr);
+}
+
+.upgrade-card,
+.compact-recommendation,
+.slot-detail-card,
+.today-gear-actions article {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.upgrade-card-head {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.upgrade-card dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.upgrade-card dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.upgrade-card dd {
+  margin: 2px 0 0;
+  font-weight: 700;
+}
+
+.source-badge {
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  border: 1px solid var(--line);
+}
+
+.source-badge.craft {
+  background: rgba(120, 255, 190, 0.12);
+}
+
+.source-badge.raid {
+  background: rgba(255, 126, 126, 0.12);
+}
+
+.source-badge.unknown {
+  background: rgba(255, 210, 105, 0.12);
+}
+
+.source-badge.dungeon {
+  background: rgba(107, 209, 255, 0.12);
+}
+
+.trinket-warning,
+.error-copy {
+  color: var(--amber);
+}
+
+.gear-subgrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.slot-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.slot-detail-card {
+  min-height: 150px;
+}
+
+.slot-detail-card.replace {
+  border-color: rgba(107, 209, 255, 0.55);
+}
+
+.rejected-panel summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+}
+
+.rejected-list {
+  margin-top: 12px;
+}
+
+.rejected-list article {
+  display: grid;
+  gap: 3px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.empty-inline {
+  color: var(--muted);
+  padding: 12px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+}
+
+@media (max-width: 860px) {
+  .gear-coach-hero,
+  .gear-score-note {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .gear-summary-grid,
+  .gear-subgrid,
+  .today-gear-actions,
+  .upgrade-card dl,
+  .slot-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .gear-action-list article,
+  .route-list article,
+  .upgrade-card-head {
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+
+  .route-list article button,
+  .upgrade-card-head .source-badge {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
 * {
   box-sizing: border-box;
 }

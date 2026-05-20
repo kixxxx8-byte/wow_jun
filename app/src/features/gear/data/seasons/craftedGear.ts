@@ -1,0 +1,46 @@
+import type { GearCandidate } from "../../domain/gearTypes";
+
+export const craftedGearCandidates: GearCandidate[] = [
+  {
+    itemId: 237837,
+    nameKo: "원정순찰대원의 자비",
+    slot: "OFF_HAND",
+    sourceType: "craft",
+    sourceNameKo: "전문기술 제작",
+    bossNameKo: "제작 주문",
+    isSeasonalReward: false,
+    isCrafted: true,
+    acquisition: {
+      certainty: "guaranteed",
+      timeCost: "medium",
+      weeklyLimited: true,
+      requiresGroup: false,
+      requiresCurrency: true,
+      notesKo: "재료와 주간 제작/강화 자원 확인이 필요합니다.",
+    },
+    dataSource: "curated",
+    confidence: "high",
+    verifiedAt: "2026-05-20",
+  },
+  {
+    itemId: 244576,
+    nameKo: "실버문 요원의 굴절보호대",
+    slot: "WRIST",
+    sourceType: "craft",
+    sourceNameKo: "전문기술 제작",
+    bossNameKo: "제작 주문",
+    isSeasonalReward: false,
+    isCrafted: true,
+    acquisition: {
+      certainty: "guaranteed",
+      timeCost: "medium",
+      weeklyLimited: true,
+      requiresGroup: false,
+      requiresCurrency: true,
+      notesKo: "제작 전 현재 손목 마법부여와 대체 후보를 함께 확인하세요.",
+    },
+    dataSource: "curated",
+    confidence: "medium",
+    verifiedAt: "2026-05-20",
+  },
+];

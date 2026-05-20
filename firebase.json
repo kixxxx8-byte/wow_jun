@@ -46,6 +46,13 @@
         }
       },
       {
+        "source": "/api/gear/**",
+        "function": {
+          "functionId": "api",
+          "region": "asia-northeast3"
+        }
+      },
+      {
         "source": "/v8/**",
         "destination": "/v8/index.html"
       }

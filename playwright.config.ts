@@ -10,7 +10,7 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   webServer: {
-    command: ".\\.tools\\node-v24.14.0-win-x64\\node.exe ./node_modules/vite/bin/vite.js --host 127.0.0.1 --port 5173",
+    command: "node ./node_modules/vite/bin/vite.js --host 127.0.0.1 --port 5173",
     url: "http://127.0.0.1:5173/v8/",
     reuseExistingServer: true,
     timeout: 60_000,

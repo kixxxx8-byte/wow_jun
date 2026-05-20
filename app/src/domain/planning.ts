@@ -85,14 +85,14 @@ const enhancementDetails: Record<string, string> = {
 
 export const targets: Target[] = [
   { id: "trinket-alnseer", slot: "trinket", slotLabel: "장신구", priority: 100, type: "dungeon", target: "알른 선견자의 응시", itemId: 249343, icon: icon("inv_eye_02"), source: "레이드", boss: "키마이루스", reason: "Wowhead 암살 도적 BIS 기준 최상위 장신구입니다.", check: "현재 장신구 두 칸에 이미 같은 아이템이 있는지 먼저 확인" },
-  { id: "trinket-box", slot: "trinket2", slotLabel: "장신구 2", priority: 96, type: "dungeon", target: "알게타르 수수께끼 상자", itemId: 193701, icon: icon("inv_misc_lockbox_1"), source: "알게타르 대학", boss: "도라고사", reason: "Wowhead BIS 보조 장신구 후보입니다. 현재 시즌 표에 있을 때만 유지합니다.", check: "다른 장신구와 중복 추천하지 않고, 이미 착용 중이면 제외" },
-  { id: "ring-hope", slot: "finger", slotLabel: "반지", priority: 92, type: "dungeon", target: "희망의 신도레이 고리", itemId: 249919, icon: icon("inv_jewelry_ring_161"), source: "레이드", boss: "벨로렌", reason: "Wowhead BIS 첫 번째 반지 후보입니다.", check: "반지 두 칸 전체 착용 아이템과 중복 여부 확인" },
+  { id: "trinket-box", slot: "trinket2", slotLabel: "장신구 2", priority: 96, type: "dungeon", target: "알게타르 수수께끼 상자", itemId: 193701, icon: icon("inv_misc_lockbox_1"), source: "알게타르 대학", boss: "도라고사", reason: "참고 BIS 보조 장신구 후보입니다. 현재 시즌 표에 있을 때만 유지합니다.", check: "다른 장신구와 중복 추천하지 않고, 이미 착용 중이면 제외" },
+  { id: "ring-hope", slot: "finger", slotLabel: "반지", priority: 92, type: "dungeon", target: "희망의 신도레이 고리", itemId: 249919, icon: icon("inv_jewelry_ring_161"), source: "레이드", boss: "벨로렌", reason: "참고 BIS 첫 번째 반지 후보입니다.", check: "반지 두 칸 전체 착용 아이템과 중복 여부 확인" },
   { id: "ring-midnight-eye", slot: "finger2", slotLabel: "반지 2", priority: 89, type: "dungeon", target: "한밤의 눈", itemId: 249920, icon: icon("inv_jewelry_ring_162"), source: "한밤의 몰락", boss: "드랍처 확인", reason: "두 번째 반지는 같은 아이템 반복이 아니라 별도 BIS 후보로 추적합니다.", check: "이미 다른 반지 칸에 있으면 오늘 목표에서 제외" },
-  { id: "weapon-victory", slot: "weapon", slotLabel: "주무기", priority: 88, type: "dungeon", target: "굶주린 승리", itemId: 249925, icon: icon("inv_weapon_shortblade_101"), source: "레이드", boss: "보라시우스", reason: "Wowhead BIS 주무기 후보입니다.", check: "주무기/보조무기 전체에서 이미 착용 중이면 중복 추천 제외" },
-  { id: "weapon-mercy", slot: "offhand", slotLabel: "보조무기", priority: 82, type: "craft", target: "원정순찰대원의 자비", itemId: 237837, icon: icon("inv_knife_1h_artifactfangs_d_06"), source: "제작", boss: "전문기술", reason: "Wowhead BIS 보조무기 후보입니다.", check: "주무기와 같은 아이템을 반복 추천하지 않음" },
+  { id: "weapon-victory", slot: "weapon", slotLabel: "주무기", priority: 88, type: "dungeon", target: "굶주린 승리", itemId: 249925, icon: icon("inv_weapon_shortblade_101"), source: "레이드", boss: "보라시우스", reason: "참고 BIS 주무기 후보입니다.", check: "주무기/보조무기 전체에서 이미 착용 중이면 중복 추천 제외" },
+  { id: "weapon-mercy", slot: "offhand", slotLabel: "보조무기", priority: 82, type: "craft", target: "원정순찰대원의 자비", itemId: 237837, icon: icon("inv_knife_1h_artifactfangs_d_06"), source: "제작", boss: "전문기술", reason: "참고 BIS 보조무기 후보입니다.", check: "주무기와 같은 아이템을 반복 추천하지 않음" },
   { id: "cloak-terrace", slot: "back", slotLabel: "망토", priority: 78, type: "dungeon", target: "저항하는 수호자의 외투", itemId: 260312, icon: icon("inv_cape_special_ardenweald_d_01"), source: "마법학자의 정원", boss: "드랍처 확인", reason: "현재 시즌 BIS 표에 있는 던전 망토 후보입니다.", check: "낡은 과거 시즌 망토 후보 대신 현재 시즌 표 기준으로 확인" },
   { id: "legs-windrunner", slot: "legs", slotLabel: "다리", priority: 74, type: "dungeon", target: "머무는 유산의 다리싸개", itemId: 251087, icon: icon("inv_pants_leather_raidrogue_s_01"), source: "윈드러너 첨탑", boss: "드랍처 확인", reason: "현재 시즌 BIS 표에 있는 던전 다리 후보입니다.", check: "다리 강화보다 아이템 교체가 먼저 필요한지 확인" },
-  { id: "wrist-craft", slot: "wrist", slotLabel: "손목", priority: 68, type: "craft", target: "실버문 요원의 굴절보호대", itemId: 244576, icon: icon("inv_bracer_leather_raidrogue_s_01"), source: "제작", boss: "전문기술", reason: "Wowhead BIS 제작 손목 후보입니다.", check: "제작 전 현재 손목 마부와 제작 비용 확인" },
+  { id: "wrist-craft", slot: "wrist", slotLabel: "손목", priority: 68, type: "craft", target: "실버문 요원의 굴절보호대", itemId: 244576, icon: icon("inv_bracer_leather_raidrogue_s_01"), source: "제작", boss: "전문기술", reason: "참고 BIS 제작 손목 후보입니다.", check: "제작 전 현재 손목 마부와 제작 비용 확인" },
   { id: "feet-cosmos", slot: "feet", slotLabel: "발", priority: 64, type: "dungeon", target: "나무 지붕 방랑자의 발등싸개", itemId: 249382, icon: icon("inv_boots_leather_raidrogue_s_01"), source: "공결탑 제나스", boss: "Crown of the Cosmos", reason: "현재 시즌 BIS 표에 있는 발 후보입니다.", check: "신발 마부와 현재 템렙을 같이 확인" },
 ];
 
@@ -610,6 +610,13 @@ export function buildSnapshotHash(snapshot: TodaySnapshot, preferences: AiPrefer
       enhancement: row.enhancement,
     })),
     todayTasks: snapshot.todayTasks.map((task) => ({ id: task.id, done: task.done, score: task.score })),
+    gearRecommendation: snapshot.gearRecommendation ? {
+      mode: snapshot.gearRecommendation.mode,
+      currentScore: snapshot.gearRecommendation.currentScore,
+      targetScore: snapshot.gearRecommendation.targetScore,
+      upgrades: snapshot.gearRecommendation.priorityUpgrades.map((row) => ({ slot: row.slot, itemId: row.recommendedItem.itemId, score: row.recommendationScore })),
+      actions: snapshot.gearRecommendation.weeklyActionPlan.actions.map((row) => ({ id: row.id, priority: row.priority })),
+    } : null,
     recentRuns: snapshot.recentRuns,
     preferences,
   }));

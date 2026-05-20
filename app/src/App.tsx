@@ -7,6 +7,7 @@ import {
   Loader2,
   LogIn,
   LogOut,
+  Map as MapIcon,
   RefreshCw,
   RotateCcw,
   Settings,
@@ -41,6 +42,10 @@ import { requestItemTooltip, requestWowheadBis } from "./api/items";
 import { ConfirmDialog, DataCard, EmptyState, Field, LockState, MetricCard, Panel, StatusPill, Toast } from "./components/ui";
 import { dungeonGuideCatalog, legacyDiagramInfo, WOW_KR_YOUTUBE } from "./domain/dungeonCatalog";
 import type { RichDungeonGuide } from "./domain/dungeonCatalog";
+import { GearRecommendationPage } from "./features/gear/GearRecommendationPage";
+import { useGearRecommendation } from "./features/gear/hooks/useGearRecommendation";
+import { defaultGearCoachPreferences } from "./features/gear/domain/gearRecommendation";
+import type { GearCoachPreferences, GearRecommendationMode } from "./features/gear/domain/gearTypes";
 import {
   appliedEnhancementText,
   buildFallbackPlan,
@@ -519,7 +524,7 @@ function BisItemIcon({ item }: { item?: WowheadBisItem }) {
   if (!item) return <span className="item-icon placeholder">BIS</span>;
   return (
     <ItemTooltipAnchor
-      target={{ id: `bis-${item.itemId}`, slot: item.slotKey, slotLabel: item.slot, priority: 0, type: "dungeon", target: item.name, icon: item.iconUrl || "", itemId: item.itemId, wowheadUrl: wowheadUrl(item.itemId), source: "Wowhead", boss: item.source, reason: "Wowhead BIS 기준", check: "내 장비와 비교" }}
+      target={{ id: `bis-${item.itemId}`, slot: item.slotKey, slotLabel: item.slot, priority: 0, type: "dungeon", target: item.name, icon: item.iconUrl || "", itemId: item.itemId, wowheadUrl: wowheadUrl(item.itemId), source: "참고 BIS", boss: item.source, reason: "참고 BIS 기준", check: "내 장비와 비교" }}
       label={item.name}
       iconUrl={item.iconUrl || ""}
       className={`item-icon bis-list-icon ${item.iconUrl ? "" : "placeholder"}`}
@@ -555,7 +560,7 @@ function targetFromBis(item: WowheadBisItem): Target {
     icon: item.iconUrl || "",
     itemId: item.itemId,
     wowheadUrl: wowheadUrl(item.itemId),
-    source: "Wowhead BIS",
+    source: "참고 BIS",
     boss: source,
     reason: "Wowhead 암살 도적 BIS 표 기준 목표입니다.",
     check: "현재 착용 장비와 같은 부위군 전체를 비교합니다.",
@@ -716,7 +721,7 @@ function BisComparisonPanel({
     <section className="panel bis-panel">
       <div className="section-head">
         <div>
-          <p className="eyebrow">Wowhead BIS</p>
+          <p className="eyebrow">참고 BIS</p>
           <h2>BIS 비교</h2>
         </div>
         <div className="command-actions">
@@ -727,11 +732,11 @@ function BisComparisonPanel({
       <div className="bis-summary">
         <MetricCard title="현재 BIS 일치" value={report ? `${matched}/${comparable.length}` : "-"} detail="착용 장비" />
         <MetricCard title="목표와 일치" value={report ? targetMatched : "-"} detail="등록 목표 기준" />
-        <MetricCard title="Wowhead 갱신" value={report ? "불러옴" : "대기"} detail={fetched} />
+        <MetricCard title="참고 자료 갱신" value={report ? "불러옴" : "대기"} detail={fetched} />
       </div>
       {error ? <div className="error-box">{error}</div> : null}
       {!report ? (
-        <EmptyState title="Wowhead BIS 비교 대기" body="버튼을 누르면 Wowhead 암살 도적 BIS 표를 읽어 현재 장비와 비교합니다." />
+        <EmptyState title="참고 BIS 비교 대기" body="버튼을 누르면 참고 BIS 표를 읽어 현재 장비와 비교합니다." />
       ) : (
         <div className="bis-list">
           {topRows.map((row) => {
@@ -1135,6 +1140,7 @@ function TodayView({
   recentRuns: Array<Record<string, unknown>>;
 }) {
   const aiStatus = aiStatusCopy(autoState, fallback, plan.generatedAt, rateLimitKind);
+  const gearActions = snapshot.gearRecommendation?.weeklyActionPlan.actions || [];
   const snapshotTargets = useMemo(() => {
     const map = new Map<string, Target>();
     snapshot.equipmentRows.forEach((row) => {
@@ -1175,7 +1181,13 @@ function TodayView({
           <h2>지금 할 일 3개</h2>
         </div>
         <div className="now-actions">
-          {plan.actions.slice(0, 3).map((action) => {
+          {gearActions.length ? gearActions.slice(0, 3).map((action, index) => (
+            <article key={action.id}>
+              <span>{index + 1}</span>
+              <b>{action.titleKo}</b>
+              <small>{action.priority} · 장비 코치</small>
+            </article>
+          )) : plan.actions.slice(0, 3).map((action) => {
             const target = targetFor(action.targetId);
             return (
               <article key={`${action.rank}-${action.title}`}>
@@ -1187,6 +1199,20 @@ function TodayView({
           })}
         </div>
       </section>
+      {snapshot.gearRecommendation ? (
+        <section className="panel today-gear-coach">
+          <div className="section-head compact"><div><p className="eyebrow">장비 코치</p><h2>{snapshot.gearRecommendation.modeLabelKo}</h2></div><ShieldCheck size={18} /></div>
+          <p>{snapshot.gearRecommendation.summaryKo}</p>
+          <div className="today-gear-actions">
+            {snapshot.gearRecommendation.priorityUpgrades.slice(0, 3).map((upgrade) => (
+              <article key={`${upgrade.slot}-${upgrade.recommendedItem.itemId}`}>
+                <b>{upgrade.slotLabelKo}</b>
+                <span>{upgrade.recommendedItem.nameKo || "한국어 이름 확인 중"} · {upgrade.sourceNameKo}</span>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
       <div className="data-grid">
         <DataCard title="Battle.net" value={snapshot.dataFreshness.bnet.label} detail={snapshot.dataFreshness.bnet.detail} tone={snapshot.dataFreshness.bnet.tone} />
         <DataCard title="Raider.IO" value={snapshot.dataFreshness.rio.label} detail={snapshot.dataFreshness.rio.detail} tone={snapshot.dataFreshness.rio.tone} />
@@ -1503,7 +1529,7 @@ function GearView({
   );
 }
 
-function DungeonsView({ recommendations }: { recommendations: TodaySnapshot["dungeonRecommendations"] }) {
+function DungeonsView({ recommendations, gearRecommendation }: { recommendations: TodaySnapshot["dungeonRecommendations"]; gearRecommendation?: TodaySnapshot["gearRecommendation"] }) {
   const [query, setQuery] = useState("");
   const [onlyTargets, setOnlyTargets] = useState(false);
   const priorityById = new Map(recommendations.map((row) => [row.id, row]));
@@ -1522,6 +1548,19 @@ function DungeonsView({ recommendations }: { recommendations: TodaySnapshot["dun
   const top = sorted[0];
   return (
     <div className="view-stack">
+      {gearRecommendation?.farmingRoutes.length ? (
+        <section className="panel today-gear-coach">
+          <div className="section-head compact"><div><p className="eyebrow">장비 루트</p><h2>장비 추천 파밍 루트</h2></div><MapIcon size={18} /></div>
+          <div className="today-gear-actions">
+            {gearRecommendation.farmingRoutes.slice(0, 3).map((route) => (
+              <article key={`${route.routeType}-${route.sourceKey || route.sourceNameKo}`}>
+                <b>{route.sourceNameKo}</b>
+                <span>{route.reasonKo}</span>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
       <section className="panel">
         <div className="section-head">
           <div><p className="eyebrow">Dungeon</p><h2>던전 컨닝</h2></div>
@@ -1945,9 +1984,14 @@ export default function App() {
   const character = selectedCharacter || defaultCharacter;
   const hasSelectedCharacter = Boolean(selectedCharacter);
   const recentRuns = rio?.mythic_plus_recent_runs || [];
+  const gearCoachPreferences = useMemo(
+    () => ({ ...defaultGearCoachPreferences(), ...(settings.gearCoachPreferences || {}) }),
+    [settings.gearCoachPreferences],
+  );
+  const gearRecommendation = useGearRecommendation(character, gearCoachPreferences.defaultMode, gearCoachPreferences);
   const snapshot = useMemo(
-    () => snapshotWithWowheadBis(
-      buildTodaySnapshot({
+    () => {
+      const baseSnapshot = buildTodaySnapshot({
         character,
         done: settings.done,
         hidden: settings.hidden,
@@ -1955,12 +1999,11 @@ export default function App() {
         cloudReady,
         rioError,
         lastRioRefreshAt: rioFetchedAt || settings.lastRioRefreshAt,
-      }),
-      bisReport,
-      settings.done,
-      settings.hidden,
-    ),
-    [character, settings.done, settings.hidden, settings.lastRioRefreshAt, recentRuns, cloudReady, rioError, rioFetchedAt, bisReport],
+      });
+      const legacySnapshot = snapshotWithWowheadBis(baseSnapshot, bisReport, settings.done, settings.hidden);
+      return { ...legacySnapshot, gearRecommendation };
+    },
+    [character, settings.done, settings.hidden, settings.lastRioRefreshAt, recentRuns, cloudReady, rioError, rioFetchedAt, bisReport, gearRecommendation],
   );
   const snapshotHash = useMemo(() => buildSnapshotHash(snapshot, preferences), [snapshot, preferences]);
   const fallbackPlan = useMemo(() => buildFallbackPlan(snapshot, preferences), [snapshot, preferences]);
@@ -2150,14 +2193,14 @@ export default function App() {
     setBisLoading(true);
     setBisError("");
     try {
-      if (force && !silent) setToast("Wowhead BIS 새로고침 중");
+      if (force && !silent) setToast("참고 BIS 새로고침 중");
       const token = await user.getIdToken(true);
       const report = await requestWowheadBis(token, force);
       setBisReport(report);
       await saveSettings({ lastWowheadBisRefreshAt: report.fetchedAt });
-      if (force && !silent) setToast("Wowhead BIS 비교 갱신 완료");
+      if (force && !silent) setToast("참고 BIS 비교 갱신 완료");
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Wowhead BIS 조회 실패";
+      const message = err instanceof Error ? err.message : "참고 BIS 조회 실패";
       setBisError(message);
       if (!silent) setToast(message);
     } finally {
@@ -2446,23 +2489,23 @@ export default function App() {
         ) : null}
 
         {view === "gear" ? (
-          <GearView
+          <GearRecommendationPage
             character={character}
-            rows={snapshot.equipmentRows}
-            heroImage={avatar}
-            filter={itemFilter}
-            setFilter={setItemFilter}
+            result={gearRecommendation}
+            mode={gearCoachPreferences.defaultMode}
+            preferences={gearCoachPreferences}
             bisReport={bisReport}
             bisLoading={bisLoading}
             bisError={bisError}
-            onRefreshBis={() => refreshWowheadBis(true, false)}
-            onDone={toggleDone}
-            onJump={jump}
             disabled={!loggedIn}
+            onModeChange={(mode: GearRecommendationMode) => saveSettings({ gearCoachPreferences: { ...gearCoachPreferences, defaultMode: mode } })}
+            onPreferencesChange={(next: GearCoachPreferences) => saveSettings({ gearCoachPreferences: next })}
+            onRefreshBis={() => refreshWowheadBis(true, false)}
+            onJumpDungeons={() => jump("dungeons")}
           />
         ) : null}
         {view === "wythic" ? <WythicView character={character} score={score} ilvl={ilvl} onJump={jump} /> : null}
-        {view === "dungeons" ? <DungeonsView recommendations={snapshot.dungeonRecommendations} /> : null}
+        {view === "dungeons" ? <DungeonsView recommendations={snapshot.dungeonRecommendations} gearRecommendation={snapshot.gearRecommendation} /> : null}
         {view === "notes" ? (
           <SettingsView
             settings={settings}

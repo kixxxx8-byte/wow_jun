@@ -107,6 +107,10 @@ const systemPrompt = [
   "Each action.evidence item must cite concrete data present in the snapshot.",
   "If targetId or dungeonId is unknown, return an empty string.",
   "If web search is off, return an empty sources array.",
+  "If snapshot.gearRecommendation is present, explain and prioritize only those engine results.",
+  "Do not invent item names, dungeon names, sources, or upgrades outside snapshot.gearRecommendation.",
+  "Do not recommend raid items when the gear recommendation mode excludes raid.",
+  "Never describe recommendationScore as DPS or simulated damage.",
 ].join("\n");
 
 function getBearer(req: { headers: Record<string, string | string[] | undefined> }) {
@@ -297,6 +301,60 @@ async function persistPlan(
   return saved;
 }
 
+async function handleGearApi(
+  req: { method: string; path: string; body?: unknown },
+  res: { status: (code: number) => { json: (body: unknown) => void } },
+) {
+  if (["/api/gear/candidates", "/gear/candidates"].includes(req.path)) {
+    if (req.method !== "GET") throw new HttpError(405, "Only GET requests are allowed.");
+    res.status(200).json({
+      candidates: [],
+      messageKo: "v9 Gear Coach 후보 데이터는 클라이언트 보수적 시드와 검증 스크립트에서 관리됩니다.",
+    });
+    return;
+  }
+  if (["/api/gear/recommend", "/gear/recommend"].includes(req.path)) {
+    if (req.method !== "POST") throw new HttpError(405, "Only POST requests are allowed.");
+    res.status(200).json({
+      mode: "dungeon_craft_only",
+      modeLabelKo: "던전 + 제작만",
+      seasonId: "current",
+      seasonLabelKo: "현재 시즌",
+      summaryKo: "v9 추천 엔진은 현재 클라이언트에서 계산됩니다. 서버 API는 단계적으로 연결됩니다.",
+      currentScore: 0,
+      targetScore: 0,
+      targetBestSet: { labelKo: "서버 연결 대기", items: [], recommendationScore: 0 },
+      weeklyActionPlan: { summaryKo: "서버 추천 연결 대기", actions: [] },
+      guaranteedUpgrades: [],
+      rngFarmingTargets: [],
+      priorityUpgrades: [],
+      farmingRoutes: [],
+      slotDetails: [],
+      rejectedCandidates: [],
+      warnings: [{ id: "server-pending", severity: "info", messageKo: "현재 릴리스에서는 클라이언트 v9 엔진 결과를 사용합니다." }],
+    });
+    return;
+  }
+  if (["/api/gear/compare-modes", "/gear/compare-modes", "/api/gear/farming-routes", "/gear/farming-routes"].includes(req.path)) {
+    if (req.method !== "POST") throw new HttpError(405, "Only POST requests are allowed.");
+    res.status(200).json({ results: [], routes: [], messageKo: "v9 Gear Coach 서버 비교 API는 단계적으로 연결됩니다." });
+    return;
+  }
+  if (["/api/gear/explain", "/gear/explain"].includes(req.path)) {
+    if (req.method !== "POST") throw new HttpError(405, "Only POST requests are allowed.");
+    const body = req.body as { result?: { summaryKo?: unknown; weeklyActionPlan?: { summaryKo?: unknown } } } | undefined;
+    res.status(200).json({
+      explanationKo: [
+        typeof body?.result?.summaryKo === "string" ? body.result.summaryKo : "추천 결과를 기준으로 설명합니다.",
+        typeof body?.result?.weeklyActionPlan?.summaryKo === "string" ? body.result.weeklyActionPlan.summaryKo : "",
+        "AI는 추천 결과 밖의 새 아이템이나 던전을 만들지 않습니다.",
+      ].filter(Boolean).join(" "),
+    });
+    return;
+  }
+  throw new HttpError(404, "Unknown gear API path.");
+}
+
 export const api = onRequest({ region, cors: true, secrets: [geminiApiKey, ...bnetSecrets] }, async (req, res) => {
   try {
     if (req.method === "OPTIONS") {
@@ -309,6 +367,10 @@ export const api = onRequest({ region, cors: true, secrets: [geminiApiKey, ...bn
     }
     if (["/api/items/bis", "/items/bis"].includes(req.path)) {
       await handleWowheadBis(req, res);
+      return;
+    }
+    if (req.path.startsWith("/api/gear/") || req.path.startsWith("/gear/")) {
+      await handleGearApi(req, res);
       return;
     }
     if (req.method !== "POST") throw new HttpError(405, "Only POST requests are allowed.");
