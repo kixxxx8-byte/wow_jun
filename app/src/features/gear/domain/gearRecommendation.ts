@@ -47,6 +47,15 @@ function itemLevel(item?: EquippedItem) {
   return Number(item?.level || item?.itemLevel || 0);
 }
 
+function numericItemId(value: unknown) {
+  const id = Number(value || 0);
+  return Number.isInteger(id) && id > 0 ? id : 0;
+}
+
+function equippedItemIds(character: Character) {
+  return new Set(Object.values(character.equipment || {}).map((item) => numericItemId(item?.id)).filter(Boolean));
+}
+
 function baseReject(item: GearCandidate, reason: RejectedCandidate["reason"], reasonKo: string): RejectedCandidate {
   return { itemId: item.itemId, nameKo: item.nameKo, nameEn: item.nameEn, sourceType: item.sourceType, sourceDungeonKey: item.sourceDungeonKey, seasonId: item.seasonId, reason, reasonKo };
 }
@@ -54,6 +63,7 @@ function baseReject(item: GearCandidate, reason: RejectedCandidate["reason"], re
 function rejectCandidate(item: GearCandidate, input: RecommendGearInput): RejectedCandidate | null {
   const profile = gearProfile(input.mode);
   const preferences = input.preferences;
+  if (equippedItemIds(input.character).has(item.itemId)) return baseReject(item, "duplicate_unique_equip", "이미 장착 중인 아이템입니다.");
   if (preferences?.alreadyOwnedItemIds.includes(item.itemId)) return baseReject(item, "duplicate_unique_equip", "이미 획득한 아이템으로 표시되어 기본 추천에서 숨깁니다.");
   if (preferences?.hiddenRecommendationIds.includes(String(item.itemId))) return baseReject(item, "source_not_allowed", "사용자가 숨긴 추천입니다.");
   if (preferences?.excludedSources.includes(item.sourceType)) return baseReject(item, "source_not_allowed", "사용자가 제외한 출처입니다.");

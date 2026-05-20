@@ -77,6 +77,28 @@ describe("v9 gear recommendation domain", () => {
     expect(result.targetBestSet.notesKo).toContain("실제 심크 DPS가 아니라");
   });
 
+  it("does not recommend an item that is already equipped from Battle.net data", () => {
+    const result = recommendGear({
+      character: {
+        ...defaultCharacter,
+        equipment: {
+          OFF_HAND: { id: 237837, name: "원정순찰대원의 자비", level: 285 },
+        },
+      },
+      mode: "dungeon_craft_only",
+      season: currentSeason,
+      candidates: craftedGearCandidates,
+    });
+
+    expect(result.priorityUpgrades.map((row) => row.recommendedItem.itemId)).not.toContain(237837);
+    expect(result.weeklyActionPlan.actions.map((row) => row.relatedItemIds || []).flat()).not.toContain(237837);
+    expect(result.rejectedCandidates).toContainEqual(expect.objectContaining({
+      itemId: 237837,
+      reason: "duplicate_unique_equip",
+      reasonKo: "이미 장착 중인 아이템입니다.",
+    }));
+  });
+
   it("marks legacy source conflicts as unsafe for default recommendation", () => {
     const candidate = legacyTargetToGearCandidate({
       id: "legacy-raid-as-dungeon",
