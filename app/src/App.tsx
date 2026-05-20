@@ -562,7 +562,7 @@ function targetFromBis(item: WowheadBisItem): Target {
   };
 }
 
-function rowsWithWowheadBisTargets(rows: EquipmentRow[], report: WowheadBisReport | null) {
+function rowsWithWowheadBisTargets(rows: EquipmentRow[], report: WowheadBisReport | null, done: Record<string, boolean> = {}) {
   if (!report?.items?.length) return rows;
   const bisBySlot = new Map(report.items.map((item) => [item.slotKey, item]));
   const equippedIdsBySlot = new Map(rows.map((row) => [row.slotKey, itemIdValue(row.equippedItem)]));
@@ -571,7 +571,8 @@ function rowsWithWowheadBisTargets(rows: EquipmentRow[], report: WowheadBisRepor
     if (!bis) return { ...row, target: null, type: "none" as const, score: row.enhancement.tone === "warn" ? 35 : 10 };
     const pairedIds = pairedSlotKeys(row.slotKey).map((key) => equippedIdsBySlot.get(key) || 0).filter(Boolean);
     const alreadyOwnedInGroup = pairedIds.includes(bis.itemId);
-    const target = alreadyOwnedInGroup ? null : targetFromBis(bis);
+    const nextTarget = targetFromBis(bis);
+    const target = alreadyOwnedInGroup || done[nextTarget.id] ? null : nextTarget;
     return {
       ...row,
       target,
@@ -584,6 +585,103 @@ function rowsWithWowheadBisTargets(rows: EquipmentRow[], report: WowheadBisRepor
 function itemIdValue(item?: EquipmentItem | null) {
   const value = Number(item?.id || 0);
   return Number.isInteger(value) && value > 0 ? value : 0;
+}
+
+function guideForTarget(target: Target) {
+  const haystack = [target.source, target.boss, target.reason, target.check].filter(Boolean).join(" ").toLowerCase();
+  return dungeonGuideCatalog.find((guide) => {
+    const names = [guide.name, guide.short, guide.en, guide.id, guide.href.split("/").pop() || ""]
+      .filter(Boolean)
+      .map((value) => String(value).toLowerCase());
+    return names.some((name) => name && haystack.includes(name));
+  });
+}
+
+function todayTasksFromBisRows(rows: EquipmentRow[], base: TodaySnapshot, hidden: Record<string, boolean> = {}) {
+  const tasks: TodayTask[] = [];
+  if (!Object.keys(base.character.equipment || {}).length && !hidden.sync) {
+    const syncTask = base.todayTasks.find((task) => task.command === "sync");
+    if (syncTask) tasks.push(syncTask);
+  }
+
+  const seen = new Set(tasks.map((task) => task.id));
+  rows
+    .filter((row) => row.target && !hidden[row.target.id])
+    .sort((a, b) => b.score - a.score)
+    .forEach((row) => {
+      const target = row.target!;
+      if (seen.has(target.id)) return;
+      seen.add(target.id);
+      tasks.push({
+        id: target.id,
+        title: `${row.slotLabel} BIS 교체 후보`,
+        itemName: target.target,
+        body: `${target.source}${target.boss ? ` · ${target.boss}` : ""}`,
+        detail: target.check || target.reason,
+        type: target.priority >= 90 ? "urgent" : target.type,
+        action: target.type === "craft" ? "제작/마부" : "파밍",
+        icon: target.icon,
+        score: row.score,
+        view: target.type === "craft" ? "gear" : "dungeons",
+        done: false,
+      });
+    });
+
+  base.maintenanceRows
+    .filter((row) => !seen.has(row.todoId) && !hidden[row.todoId])
+    .slice(0, 3)
+    .forEach((row) => {
+      tasks.push({
+        id: row.todoId,
+        title: `${row.slotLabel} 강화 확인`,
+        itemName: row.item?.name || row.enhancement.label,
+        body: row.enhancement.label,
+        detail: row.enhancement.detail,
+        type: "craft",
+        action: "정비",
+        score: row.priority,
+        view: "gear",
+        done: false,
+      });
+    });
+
+  return tasks.sort((a, b) => Number(b.score || 0) - Number(a.score || 0)).slice(0, 6);
+}
+
+function dungeonRecommendationsFromBisRows(rows: EquipmentRow[], base: TodaySnapshot) {
+  const visibleTargets = rows.map((row) => row.target).filter(Boolean) as Target[];
+  const connected = dungeonGuideCatalog
+    .map((guide) => {
+      const matched = visibleTargets.filter((target) => guideForTarget(target)?.id === guide.id);
+      return {
+        id: guide.id,
+        name: guide.name,
+        short: guide.short,
+        href: guide.href,
+        why: guide.overview[0] || guide.route,
+        loot: matched.length ? matched.map((target) => `${target.slotLabel} ${target.target}`).join(", ") : "직접 연결된 오늘 목표 없음",
+        memo: guide.danger,
+        count: matched.length,
+        targets: matched,
+        score: matched.reduce((sum, target) => sum + target.priority, 0),
+        guide,
+      };
+    })
+    .sort((a, b) => b.score - a.score || b.count - a.count || a.name.localeCompare(b.name, "ko"))
+    .slice(0, 4);
+
+  return connected.some((row) => row.count > 0) ? connected : base.dungeonRecommendations;
+}
+
+function snapshotWithWowheadBis(base: TodaySnapshot, report: WowheadBisReport | null, done: Record<string, boolean> = {}, hidden: Record<string, boolean> = {}) {
+  if (!report?.items?.length) return base;
+  const equipmentRows = rowsWithWowheadBisTargets(base.equipmentRows, report, done);
+  return {
+    ...base,
+    equipmentRows,
+    todayTasks: todayTasksFromBisRows(equipmentRows, base, hidden),
+    dungeonRecommendations: dungeonRecommendationsFromBisRows(equipmentRows, base),
+  };
 }
 
 function BisComparisonPanel({
@@ -1037,6 +1135,14 @@ function TodayView({
   recentRuns: Array<Record<string, unknown>>;
 }) {
   const aiStatus = aiStatusCopy(autoState, fallback, plan.generatedAt, rateLimitKind);
+  const snapshotTargets = useMemo(() => {
+    const map = new Map<string, Target>();
+    snapshot.equipmentRows.forEach((row) => {
+      if (row.target) map.set(row.target.id, row.target);
+    });
+    return map;
+  }, [snapshot.equipmentRows]);
+  const targetFor = (id?: string | null) => id ? snapshotTargets.get(id) || targetById(id) : null;
   return (
     <div className="view-stack">
       <section className="today-hero panel">
@@ -1070,7 +1176,7 @@ function TodayView({
         </div>
         <div className="now-actions">
           {plan.actions.slice(0, 3).map((action) => {
-            const target = targetById(action.targetId);
+            const target = targetFor(action.targetId);
             return (
               <article key={`${action.rank}-${action.title}`}>
                 {target ? <TargetItemIcon target={target} className="now-item-icon" /> : <span>{action.rank}</span>}
@@ -1094,7 +1200,7 @@ function TodayView({
           </div>
           <div className="task-list">
             {snapshot.todayTasks.map((task, index) => {
-              const target = targetByTask(task);
+              const target = targetFor(task.id) || targetByTask(task);
               return (
                 <article key={task.id} className={`task-card ${task.done ? "done" : ""} ${target ? "with-icon" : ""}`}>
                   <span className="rank">{index + 1}</span>
@@ -1320,7 +1426,7 @@ function GearView({
   onJump: (view: View) => void;
   disabled: boolean;
 }) {
-  const displayRows = useMemo(() => rowsWithWowheadBisTargets(rows, bisReport), [rows, bisReport]);
+  const displayRows = rows;
   const stats = statTotals(rows);
   const readiness = gearReadinessScore(displayRows);
   const { urgent, missingEnhance } = readiness;
@@ -1840,16 +1946,21 @@ export default function App() {
   const hasSelectedCharacter = Boolean(selectedCharacter);
   const recentRuns = rio?.mythic_plus_recent_runs || [];
   const snapshot = useMemo(
-    () => buildTodaySnapshot({
-      character,
-      done: settings.done,
-      hidden: settings.hidden,
-      recentRuns,
-      cloudReady,
-      rioError,
-      lastRioRefreshAt: rioFetchedAt || settings.lastRioRefreshAt,
-    }),
-    [character, settings.done, settings.hidden, settings.lastRioRefreshAt, recentRuns, cloudReady, rioError, rioFetchedAt],
+    () => snapshotWithWowheadBis(
+      buildTodaySnapshot({
+        character,
+        done: settings.done,
+        hidden: settings.hidden,
+        recentRuns,
+        cloudReady,
+        rioError,
+        lastRioRefreshAt: rioFetchedAt || settings.lastRioRefreshAt,
+      }),
+      bisReport,
+      settings.done,
+      settings.hidden,
+    ),
+    [character, settings.done, settings.hidden, settings.lastRioRefreshAt, recentRuns, cloudReady, rioError, rioFetchedAt, bisReport],
   );
   const snapshotHash = useMemo(() => buildSnapshotHash(snapshot, preferences), [snapshot, preferences]);
   const fallbackPlan = useMemo(() => buildFallbackPlan(snapshot, preferences), [snapshot, preferences]);
