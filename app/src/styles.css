@@ -22,22 +22,24 @@
 }
 
 .gear-coach {
-  max-width: 1280px;
-  margin: 0 auto;
+  width: 100%;
   display: grid;
-  gap: 16px;
+  gap: 14px;
 }
 
 .gear-coach-hero {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 16px;
+  min-height: auto;
 }
 
 .gear-coach-hero h1 {
-  margin: 0;
-  font-size: clamp(2rem, 4vw, 3.4rem);
+  margin: 2px 0 0;
+  font-size: 1.55rem;
+  line-height: 1.15;
+  letter-spacing: 0;
 }
 
 .gear-coach-hero p,
@@ -62,6 +64,12 @@
   gap: 10px;
 }
 
+.gear-coach-character {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-weight: 800;
+}
+
 .mode-chip-row,
 .slot-filter-row,
 .feedback-actions {
@@ -76,8 +84,9 @@
   border: 1px solid var(--line);
   background: var(--surface);
   color: var(--ink);
-  border-radius: 999px;
-  padding: 10px 14px;
+  border-radius: 8px;
+  padding: 9px 13px;
+  font-weight: 800;
 }
 
 .mode-chip-row button.active,
@@ -104,7 +113,8 @@
 }
 
 .gear-summary-card b {
-  font-size: 2rem;
+  font-size: 1.75rem;
+  line-height: 1.05;
 }
 
 .gear-action-list article,
@@ -116,7 +126,7 @@
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface);
 }
 
 .gear-action-list article {
@@ -132,7 +142,7 @@
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface);
 }
 
 .upgrade-card-head {
@@ -160,7 +170,7 @@
 }
 
 .source-badge {
-  border-radius: 999px;
+  border-radius: 7px;
   padding: 6px 10px;
   font-size: 0.78rem;
   border: 1px solid var(--line);
@@ -190,7 +200,7 @@
 .gear-subgrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: 14px;
 }
 
 .slot-detail-grid {
@@ -239,6 +249,10 @@
   .gear-score-note {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .gear-coach-hero h1 {
+    font-size: 1.45rem;
   }
 
   .gear-summary-grid,
