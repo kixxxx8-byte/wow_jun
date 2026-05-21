@@ -2458,7 +2458,7 @@ a {
 
 .spec-switcher {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -2612,6 +2612,49 @@ a {
   background: rgba(255, 255, 255, 0.78);
   font-size: 13px;
   line-height: 1.45;
+}
+
+.source-guide-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.source-guide-card svg {
+  color: var(--teal);
+  flex: 0 0 auto;
+}
+
+.source-guide-card .link-btn {
+  margin-top: 12px;
+}
+
+.slot-candidate-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.slot-candidate-list section {
+  display: grid;
+  gap: 3px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.slot-candidate-list b,
+.slot-candidate-list span,
+.slot-candidate-list small {
+  display: block;
+}
+
+.slot-candidate-list span,
+.slot-candidate-list small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .locked-guide-grid {

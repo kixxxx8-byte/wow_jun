@@ -46,6 +46,7 @@ import { GearRecommendationPage } from "./features/gear/GearRecommendationPage";
 import { useGearRecommendation } from "./features/gear/hooks/useGearRecommendation";
 import { defaultGearCoachPreferences } from "./features/gear/domain/gearRecommendation";
 import type { GearCoachPreferences, GearRecommendationMode } from "./features/gear/domain/gearTypes";
+import { classGuides, guideSpecOrder, specLabel, specProfiles } from "./features/gear/domain/specGuides";
 import {
   appliedEnhancementText,
   buildFallbackPlan,
@@ -109,46 +110,10 @@ const preferenceLabels = {
   risk: { safe: "안전", balanced: "균형", aggressive: "공격적" },
 };
 
-const subtletyTalentBuilds = [
-  {
-    label: "단일 대상 · 기만자 추천",
-    note: "대부분의 실전 보스와 쐐기 기본 선택지",
-    import: "CUQAAAAAAAAAAAAAAAAAAAAAAAgx2MAAAAAwsMGLTMbbjxMjZwMzMzYMbDzYbbmZmZmZMYMz2AAAAwgxAGzmhBGYW0CtYDzAmZwMGA",
-  },
-  {
-    label: "단일 대상 · 죽음추적자",
-    note: "순수 단일만 앞서지만 2타겟 이상에서 빠르게 밀림",
-    import: "CUQAAAAAAAAAAAAAAAAAAAAAAAgx2MAAAAAwsMGLTMbbjxMjZwMzMzYMbDzMbbjZMzMjBjZWGAAAAGMmFzyADYBsMMhMLYGmZAmZGA",
-  },
-  {
-    label: "쐐기 · 기만자 추천",
-    note: "쐐기 기본 빌드",
-    import: "CUQAAAAAAAAAAAAAAAAAAAAAAAgx2MAAAAAwsMGLTMbbjxMjZMegZmZGjZbYGbbzMzMzMjBjZWGAAAAGMGwY2MMwAziWoFbYGwMDmxA",
-  },
-];
-
-const subtletyRotation = [
-  "어둠의 춤은 은밀한 기술이 준비됐거나 어둠의 칼날이 켜졌을 때 사용",
-  "어둠의 칼날은 어둠의 춤 안에서 사용",
-  "은밀한 기술은 어둠의 춤 중 6+ 콤보 포인트에서 사용",
-  "최후의 일격은 6+ 콤보 포인트 소모기로 사용",
-  "2타겟 이하는 절개, 3타겟 이상은 검은 화약",
-  "어둠의 춤 안에서는 1-3타겟 그림자 일격, 그 이상은 표창 폭풍",
-  "어둠의 춤 밖에서는 1타겟 기습, 광역은 표창 폭풍",
-];
-
-const subtletyOptimizations = [
-  "풀링 전 어둠의 춤 1회로 강화 콤보 포인트 2개를 들고 시작 가능",
-  "어둠의 칼날 쿨이 10초 미만이면 어둠의 춤 + 은밀한 기술을 잠시 묶어 두 번의 어둠의 춤을 맞추기",
-  "어둠의 춤 직전에는 마무리 일격을 급하게 쓰지 말고 그림자 기술 스택을 조금 남기기",
-  "기만자는 어둠의 춤 진입 시 풀 콤보 포인트, 죽음추적자는 낮은 콤보 포인트 진입을 선호",
-  "큰 광역에서는 특화 물약이 더 나을 수 있고, 빛의 부대기 사용 전 물약을 먼저 쓰기",
-];
-
 const views: Array<{ id: View; label: string }> = [
   { id: "today", label: "오늘" },
   { id: "ai", label: "AI 작전실" },
-  { id: "gear", label: "장비" },
+  { id: "gear", label: "장비 점검" },
   { id: "wythic", label: "Wythic" },
   { id: "dungeons", label: "던전" },
   { id: "guides", label: "가이드" },
@@ -1735,127 +1700,89 @@ function WythicView({
 }
 
 function GuidesView() {
+  const [activeSpec, setActiveSpec] = useState(guideSpecOrder[0]);
+  const profile = specProfiles[activeSpec];
+  const guide = classGuides[activeSpec];
+
   return (
     <div className="view-stack guide-shell">
       <section className="panel guide-hero">
         <div>
           <p className="eyebrow">직업 가이드</p>
-          <h1>도적 가이드</h1>
-          <p>우선 잠행 도적만 열어두고, 암살과 무법은 자리만 잡아 잠금 처리했습니다. 내용은 사용자가 제공한 미드나이트 기준 메모를 사이트용 실전 요약으로 정리했습니다.</p>
+          <h1>한밤 시즌1 전문화 가이드</h1>
+          <p>암살, 무법, 잠행, Devourer를 같은 구조로 정리했습니다. Wowhead 가이드는 기준 출처로 쓰고, 앱에서는 장비 점검에 필요한 핵심만 한국어 실전 요약으로 보여줍니다.</p>
         </div>
-        <StatusPill tone="ok">잠행 공개</StatusPill>
+        <StatusPill tone="ok">4전문화 지원</StatusPill>
       </section>
 
       <section className="panel guide-tabs-panel">
-        <div className="spec-switcher" aria-label="도적 전문화">
-          <button type="button" className="spec-pill locked">
-            암살
-            <span>준비 중</span>
-          </button>
-          <button type="button" className="spec-pill locked">
-            무법
-            <span>준비 중</span>
-          </button>
-          <button type="button" className="spec-pill active">
-            잠행
-            <span>미드나이트 요약</span>
-          </button>
+        <div className="spec-switcher" aria-label="전문화 선택">
+          {guideSpecOrder.map((specKey) => {
+            const row = specProfiles[specKey];
+            return (
+              <button key={specKey} type="button" className={activeSpec === specKey ? "spec-pill active" : "spec-pill"} onClick={() => setActiveSpec(specKey)}>
+                {row.specNameKo}
+                <span>{row.classNameKo} · 한밤 시즌1</span>
+              </button>
+            );
+          })}
         </div>
       </section>
 
       <section className="guide-grid">
         <article className="panel guide-card lead">
-          <p className="eyebrow">잠행</p>
-          <h2>잠행 도적 핵심 결론</h2>
-          <p>기본 추천은 기만자입니다. 죽음추적자는 순수 단일에서만 앞서지만, 추가 대상이 생기는 순간 가치가 빠르게 내려가므로 레이드 실전과 쐐기에서는 기만자를 우선으로 둡니다.</p>
+          <p className="eyebrow">{specLabel(profile)}</p>
+          <h2>{guide.heroTitleKo}</h2>
+          <p>{guide.heroSummaryKo}</p>
           <div className="guide-metrics">
-            <MetricCard title="권장 영웅 특성" value="기만자" detail="쐐기/대부분 실전" />
-            <MetricCard title="가속 목표" value="650-700" detail="기만자 기준" />
-            <MetricCard title="죽음추적자" value="~1100" detail="가속 기준점" />
+            {guide.metrics.map((metric) => <MetricCard key={metric.title} title={metric.title} value={metric.value} detail={metric.detail} />)}
           </div>
         </article>
 
         <article className="panel guide-card">
           <p className="eyebrow">스탯</p>
           <h2>스탯 우선순위</h2>
-          <div className="stat-priority">민첩/아이템 레벨 &gt; 가속 기준점 &gt; 특화 = 치명 &gt; 유연</div>
+          <div className="stat-priority">{profile.statPriorityTextKo}</div>
           <ul className="guide-list">
-            <li>기만자는 보통 가속 650-700 근처를 먼저 맞춥니다.</li>
-            <li>빛의 부대기가 없다면 기만자도 약 800 가속을 목표로 잡을 수 있습니다.</li>
-            <li>광역에서는 특화 가치가 크게 올라가지만, 가속 기준점을 먼저 확보하는 쪽이 안정적입니다.</li>
-            <li>최종 판단은 레이드봇 Top Gear로 자기 캐릭터 기준 심크를 확인하는 것이 가장 정확합니다.</li>
+            {profile.statNotes.map((item) => <li key={item}>{item}</li>)}
+            {profile.specialRules.hasteBreakpointNote ? <li>{profile.specialRules.hasteBreakpointNote}</li> : null}
+            <li>최종 판단은 Raidbots Top Gear로 자기 캐릭터 기준 시뮬레이션을 확인하는 것이 가장 정확합니다.</li>
           </ul>
-        </article>
-
-        <article className="panel guide-card talent-card">
-          <p className="eyebrow">특성</p>
-          <h2>특성 문자열</h2>
-          <div className="talent-list">
-            {subtletyTalentBuilds.map((build) => (
-              <section key={build.label} className="talent-code">
-                <b>{build.label}</b>
-                <span>{build.note}</span>
-                <code>{build.import}</code>
-              </section>
-            ))}
-          </div>
         </article>
 
         <article className="panel guide-card">
           <p className="eyebrow">로테이션</p>
           <h2>기본 로테이션</h2>
           <ol className="guide-steps">
-            {subtletyRotation.map((item) => <li key={item}>{item}</li>)}
+            {guide.rotation.map((item) => <li key={item}>{item}</li>)}
           </ol>
         </article>
 
         <article className="panel guide-card">
-          <p className="eyebrow">숙련 팁</p>
-          <h2>숙련 팁</h2>
+          <p className="eyebrow">장비</p>
+          <h2>장비 점검 포인트</h2>
           <ul className="guide-list">
-            {subtletyOptimizations.map((item) => <li key={item}>{item}</li>)}
+            {guide.gearChecks.map((item) => <li key={item}>{item}</li>)}
           </ul>
-        </article>
-
-        <article className="panel guide-card macro-card">
-          <p className="eyebrow">매크로</p>
-          <h2>지연 줄이기용 매크로</h2>
-          <div className="macro-grid">
-            <section>
-              <b>기만자</b>
-              <pre>{`#showtooltip
-/시전 어둠의 춤
-/시전 은밀한 기술`}</pre>
-            </section>
-            <section>
-              <b>죽음추적자</b>
-              <pre>{`#showtooltip
-/시전 어둠의 춤
-/시전 표창 폭풍`}</pre>
-            </section>
-          </div>
         </article>
 
         <article className="panel guide-card">
-          <p className="eyebrow">자주 묻는 질문</p>
-          <h2>자주 헷갈리는 부분</h2>
+          <p className="eyebrow">주의</p>
+          <h2>주의사항</h2>
           <ul className="guide-list">
-            <li>가속 장신구와 어둠의 춤을 한 매크로에 묶는 것은 권장하지 않습니다. 깊어지는 어둠 반영 지연으로 손해가 날 수 있습니다.</li>
-            <li>죽음의 무도를 더 자주 발동하려고 약한 스킬을 억지로 섞을 필요는 없습니다.</li>
-            <li>쿨기 밖에서 템포가 느린 것은 정상적인 설계입니다. 무조건 더 많은 가속이 답은 아닙니다.</li>
-            <li>정점 특성 조건은 복잡해 보여도 대부분 자연스럽게 맞습니다. 기본 로테이션을 먼저 안정화하는 것이 우선입니다.</li>
+            {guide.cautions.map((item) => <li key={item}>{item}</li>)}
+            <li>이 가이드는 장비 점검용 요약이며 Wowhead 원문을 대량 복제하지 않습니다.</li>
           </ul>
         </article>
-      </section>
 
-      <section className="locked-guide-grid">
-        <article className="panel locked-guide-card">
+        <article className="panel guide-card source-guide-card">
           <ShieldCheck size={18} />
-          <div><b>암살 도적</b><span>항목 생성 완료 · 세부 가이드 잠금</span></div>
-        </article>
-        <article className="panel locked-guide-card">
-          <ShieldCheck size={18} />
-          <div><b>무법 도적</b><span>항목 생성 완료 · 세부 가이드 잠금</span></div>
+          <div>
+            <p className="eyebrow">출처</p>
+            <h2>{profile.source.name} 기준</h2>
+            <p>{profile.disclaimer} 실제 DPS 최종 비교는 SimulationCraft 또는 Raidbots 확인이 필요합니다.</p>
+            <a className="link-btn" href={profile.source.url} target="_blank" rel="noreferrer">Wowhead 가이드 보기</a>
+          </div>
         </article>
       </section>
     </div>
@@ -2378,7 +2305,7 @@ export default function App() {
       <header className="topbar">
         <button type="button" className="brand" onClick={() => jump("today")}>
           <span className="brand-mark">WJ+</span>
-          <span><strong>WJ+ Command</strong><small>오늘 판단 · AI 작전실 · 장비 · 던전 · 가이드</small></span>
+          <span><strong>WJ+ Command</strong><small>오늘 판단 · AI 작전실 · 장비 점검 · 던전 · 가이드</small></span>
         </button>
         <nav aria-label="주요 화면">
           {views.map((item) => (

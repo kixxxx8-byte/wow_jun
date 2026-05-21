@@ -7,6 +7,7 @@ const files = {
   dungeonLoot: join(root, "app/src/features/gear/data/seasons/currentDungeonLoot.ts"),
   craftedGear: join(root, "app/src/features/gear/data/seasons/craftedGear.ts"),
   raidLoot: join(root, "app/src/features/gear/data/seasons/raidLoot.ts"),
+  midnightItems: join(root, "app/src/features/gear/data/midnightS1Items.ts"),
   localization: join(root, "app/src/features/gear/domain/localization.ts"),
 };
 
@@ -15,6 +16,7 @@ const season = read(files.currentSeason);
 const dungeonLoot = read(files.dungeonLoot);
 const craftedGear = read(files.craftedGear);
 const raidLoot = read(files.raidLoot);
+const midnightItems = read(files.midnightItems);
 const localization = read(files.localization);
 const failures = [];
 const warnings = [];
@@ -48,6 +50,22 @@ if (/sourceType:\s*"raid"/.test(craftedGear) || /sourceType:\s*"raid"/.test(dung
 if (/"Wowhead BIS"|Upgrade Candidate|Best in Slot|DPS 수치/.test(`${dungeonLoot}\n${craftedGear}\n${raidLoot}`)) {
   failures.push("User-facing gear data contains banned wording.");
 }
+
+const midnightData = midnightItems.split("export const midnightS1Items")[1] || "";
+const midnightBlocks = midnightData.split(/itemId:/).slice(1);
+midnightBlocks.forEach((block, index) => {
+  const label = `midnight S1 item #${index + 1}`;
+  const idMatch = block.match(/^\s*(\d+)/);
+  if (!idMatch || idMatch[1] === "0") failures.push(`${label} must not use placeholder itemId 0.`);
+  if (!/nameKo:\s*"[^"]+"/.test(block)) failures.push(`${label} must include nameKo.`);
+  if (!/slot:\s*"[A-Z0-9_]+"/.test(block)) failures.push(`${label} must include a slot.`);
+  if (!/sourceType:\s*"(dungeon|raid|craft|delve|catalyst|vendor|unknown)"/.test(block)) failures.push(`${label} must include a valid sourceType.`);
+  if (!/sourceNameKo:\s*"[^"]+"/.test(block)) failures.push(`${label} must include sourceNameKo.`);
+  if (!/season:\s*"midnight-s1"/.test(block)) failures.push(`${label} must be tagged as midnight-s1.`);
+  if (!/confidence:\s*"(high|medium|low)"/.test(block)) failures.push(`${label} must include confidence.`);
+});
+
+if (/"예시|Example/.test(midnightItems)) failures.push("Midnight S1 item DB must not expose example placeholder data.");
 
 warnings.forEach((warning) => console.warn(`Warning: ${warning}`));
 if (failures.length) {

@@ -1,9 +1,12 @@
 import { AlertTriangle, Ban, Check, ChevronDown, EyeOff, Hammer, Map, PackageCheck, Route, ShieldCheck, Sparkles } from "lucide-react";
 import { useState } from "react";
 import type { Character, WowheadBisReport } from "../../types";
+import { midnightS1Items } from "./data/midnightS1Items";
+import { evaluateCharacterGear, gearStatusLabels, type GearSlotStatus } from "./domain/gearInspection";
 import { gearRecommendationProfiles } from "./domain/profiles";
 import type { GearCoachPreferences, GearRecommendationMode, GearRecommendationResult, GearSourceType, PriorityUpgrade } from "./domain/gearTypes";
 import { confidenceLabelKo, getDisplayItemName, getDisplaySourceName, sourceTypeLabelKo } from "./domain/localization";
+import { specProfiles, statLabelKo, type SpecKey } from "./domain/specGuides";
 
 const modeOrder: GearRecommendationMode[] = ["dungeon_craft_only", "dungeon_craft_raid", "no_raid", "all_sources", "craft_priority", "trinket_priority"];
 
@@ -23,6 +26,14 @@ function sourceTone(source: GearSourceType) {
   if (source === "raid") return "raid";
   if (source === "unknown") return "unknown";
   return "dungeon";
+}
+
+function characterSpecKey(character: Character): SpecKey {
+  const classText = `${character.className || ""} ${character.spec || ""} ${character.specName || ""}`.toLowerCase();
+  if (/devourer|악마사냥꾼|demon/.test(classText)) return "demon-hunter-devourer";
+  if (/무법|outlaw/.test(classText)) return "rogue-outlaw";
+  if (/잠행|subtlety/.test(classText)) return "rogue-subtlety";
+  return "rogue-assassination";
 }
 
 type Props = {
@@ -54,8 +65,10 @@ export function GearRecommendationPage({
   onRefreshBis,
   onJumpDungeons,
 }: Props) {
-  const [detailsFilter, setDetailsFilter] = useState<"all" | "replace" | "keep" | "no_verified_candidate" | "insufficient_data">("all");
-  const visibleSlotDetails = result.slotDetails.filter((row) => detailsFilter === "all" || row.status === detailsFilter);
+  const [detailsFilter, setDetailsFilter] = useState<"all" | GearSlotStatus>("all");
+  const activeSpec = specProfiles[characterSpecKey(character)];
+  const inspection = evaluateCharacterGear({ character, specProfile: activeSpec, seasonItems: midnightS1Items });
+  const visibleSlotDetails = inspection.evaluations.filter((row) => detailsFilter === "all" || row.status === detailsFilter);
 
   const updatePreferences = (patch: Partial<GearCoachPreferences>) => onPreferencesChange({ ...preferences, ...patch });
   const hideRecommendation = (id: string) => updatePreferences({ hiddenRecommendationIds: Array.from(new Set([...preferences.hiddenRecommendationIds, id])) });
@@ -70,12 +83,12 @@ export function GearRecommendationPage({
       <section className="gear-coach-hero panel">
         <div>
           <p className="eyebrow">장비 코치 v9</p>
-          <h1>장비 추천</h1>
-          <p>현재 기준: {result.modeLabelKo} · 레이드 아이템 제외 모드에서는 레이드 후보를 숨기고, 현재 시즌 검증 후보와 한국어 이름을 우선합니다.</p>
+          <h1>장비 점검</h1>
+          <p>한밤 시즌1 후보 DB와 {activeSpec.classNameKo} {activeSpec.specNameKo} 기준으로 현재 장비를 점검합니다. 이 화면은 정밀 DPS 시뮬레이션이 아니라 교체 우선순위 내비게이션입니다.</p>
         </div>
         <div className="gear-coach-character">
           <PackageCheck size={20} />
-          <span>{character.name} · {character.realm || character.realmSlug || "서버 확인 중"}</span>
+          <span>{character.name} · {character.realm || character.realmSlug || "서버 확인 중"} · {activeSpec.specNameKo}</span>
         </div>
       </section>
 
@@ -88,24 +101,30 @@ export function GearRecommendationPage({
       </section>
 
       <section className="gear-summary-grid">
-        <article className="panel gear-summary-card"><small>장비 점수</small><b>{result.currentScore} → {result.targetScore}</b><span>{result.modeLabelKo} 기준</span></article>
-        <article className="panel gear-summary-card"><small>교체 목표</small><b>{result.priorityUpgrades.length}부위</b><span>{result.priorityUpgrades[0]?.slotLabelKo || "검증 후보 부족"}</span></article>
-        <article className="panel gear-summary-card"><small>추천 파밍</small><b>{result.farmingRoutes.length}개</b><span>제작 {result.guaranteedUpgrades.length} · 파밍 {result.rngFarmingTargets.length}</span></article>
+        <article className="panel gear-summary-card"><small>교체 확인</small><b>{inspection.summary.upgradeCandidates}부위</b><span>무기/교체 후보 포함</span></article>
+        <article className="panel gear-summary-card"><small>특수 점검</small><b>{inspection.summary.trinketChecks + inspection.summary.tierChecks}부위</b><span>장신구 {inspection.summary.trinketChecks} · 티어 {inspection.summary.tierChecks}</span></article>
+        <article className="panel gear-summary-card"><small>DB 미등록</small><b>{inspection.summary.dbMissing}부위</b><span>BIS 완료 의미 아님</span></article>
       </section>
 
       <section className="panel gear-score-note">
         <ShieldCheck size={18} />
-        <p>추천 점수는 실제 심크 DPS가 아니라 현재 장비, 시즌 보상, 획득 경로, 획득 난이도, 사용자 선호를 반영한 추천 우선도입니다.</p>
+        <p>{activeSpec.disclaimer} 실제 DPS 최종 비교는 SimulationCraft 또는 Raidbots 확인이 필요합니다. 추천 점수는 DPS가 아니라 현재 장비와 후보 DB를 비교한 점검 우선도입니다.</p>
+      </section>
+
+      <section className="panel gear-score-note">
+        <ShieldCheck size={18} />
+        <p>스탯 기준: {activeSpec.statPriorityTextKo} · {activeSpec.statNotes[0]}</p>
+        <a className="link-btn" href={activeSpec.source.url} target="_blank" rel="noreferrer">Wowhead 가이드 보기</a>
       </section>
 
       <section className="panel gear-plan-panel">
-        <div className="section-head compact"><div><p className="eyebrow">이번 주</p><h2>이번 주 추천 행동</h2></div><Sparkles size={18} /></div>
-        <p className="gear-section-copy">{result.weeklyActionPlan.summaryKo}</p>
+        <div className="section-head compact"><div><p className="eyebrow">오늘 할 일</p><h2>장비 점검 우선순위</h2></div><Sparkles size={18} /></div>
+        <p className="gear-section-copy">무기, 장신구, 제작, 티어, DB 미등록 부위를 우선순위로 정리했습니다.</p>
         <div className="gear-action-list">
-          {result.weeklyActionPlan.actions.length ? result.weeklyActionPlan.actions.map((action, index) => (
-            <article key={action.id}>
+          {inspection.todo.length ? inspection.todo.map((action, index) => (
+            <article key={`${action.slot}-${action.label}`}>
               <span className="rank">{index + 1}</span>
-              <div><b>{action.titleKo}</b><p>{action.descriptionKo}</p></div>
+              <div><b>{action.label}</b><p>{action.action}</p></div>
             </article>
           )) : <article><span className="rank">!</span><div><b>검증 후보 부족</b><p>확실하지 않은 아이템은 추천하지 않고 제외 후보에서만 보여줍니다.</p></div></article>}
         </div>
@@ -183,9 +202,9 @@ export function GearRecommendationPage({
       <section className="panel">
         <div className="section-head compact"><div><p className="eyebrow">부위</p><h2>부위별 상세</h2></div></div>
         <div className="slot-filter-row">
-          {(["all", "replace", "keep", "no_verified_candidate", "insufficient_data"] as const).map((item) => (
+          {(["all", "upgrade-candidate", "weapon-priority", "crafted-recommended", "trinket-check", "tier-check", "keep", "db-missing", "unsupported"] as const).map((item) => (
             <button key={item} type="button" className={detailsFilter === item ? "active" : ""} onClick={() => setDetailsFilter(item)}>
-              {item === "all" ? "전체" : item === "replace" ? "교체 필요" : item === "keep" ? "유지" : item === "no_verified_candidate" ? "후보 없음" : "정보 부족"}
+              {item === "all" ? "전체" : gearStatusLabels[item]}
             </button>
           ))}
         </div>
@@ -193,10 +212,23 @@ export function GearRecommendationPage({
           {visibleSlotDetails.map((slot) => (
             <article key={slot.slot} className={`slot-detail-card ${slot.status}`}>
               <small>{slot.slotLabelKo}</small>
-              <b>{slot.status === "replace" ? "교체 필요" : slot.status === "keep" ? "유지" : slot.status === "no_verified_candidate" ? "후보 없음" : "정보 부족"}</b>
+              <b>{slot.statusLabelKo}</b>
               <span>현재: {slot.currentItem?.name || "장비 정보 없음"}</span>
-              <span>추천: {slot.recommendedItem ? getDisplayItemName(slot.recommendedItem) : "등록된 추천 없음"}</span>
-              <p>{slot.reasonKo}</p>
+              <span>스탯: {slot.currentItem?.secondaryStats.length ? slot.currentItem.secondaryStats.map((stat) => statLabelKo[stat]).join(" · ") : "확인 필요"}</span>
+              <span>후보: {slot.topCandidate ? slot.topCandidate.item.nameKo : "DB 미등록"}</span>
+              <p>{slot.summary}</p>
+              {slot.topCandidate ? (
+                <div className="slot-candidate-list">
+                  {slot.candidates.slice(0, 3).map((candidate) => (
+                    <section key={candidate.item.itemId}>
+                      <b>{candidate.item.nameKo}</b>
+                      <span>{candidate.item.sourceNameKo} · 점검 점수 {candidate.score}</span>
+                      <small>{candidate.reasons[0] || candidate.item.note || "전문화 기준 후보입니다."}</small>
+                    </section>
+                  ))}
+                </div>
+              ) : null}
+              {slot.warnings.length ? <small className="trinket-warning">{slot.warnings.join(" ")}</small> : null}
             </article>
           ))}
         </div>
