@@ -51,20 +51,40 @@ if (/"Wowhead BIS"|Upgrade Candidate|Best in Slot|DPS 수치/.test(`${dungeonLoo
   failures.push("User-facing gear data contains banned wording.");
 }
 
-const midnightData = midnightItems.split("export const midnightS1Items")[1] || "";
-const midnightBlocks = midnightData.split(/itemId:/).slice(1);
+const midnightData = (midnightItems.split("export const midnightS1ItemRecords")[1] || "").split("export const midnightS1Items")[0] || "";
+const midnightBlocks = midnightData.split(/\n\s*\{\n\s*itemId:/).slice(1);
+const midnightRecordIds = [];
 midnightBlocks.forEach((block, index) => {
   const label = `midnight S1 item #${index + 1}`;
   const idMatch = block.match(/^\s*(\d+)/);
   if (!idMatch || idMatch[1] === "0") failures.push(`${label} must not use placeholder itemId 0.`);
+  if (idMatch) midnightRecordIds.push(idMatch[1]);
   if (!/nameKo:\s*"[^"]+"/.test(block)) failures.push(`${label} must include nameKo.`);
   if (!/slot:\s*"[A-Z0-9_]+"/.test(block)) failures.push(`${label} must include a slot.`);
   if (!/sourceType:\s*"(dungeon|raid|craft|delve|catalyst|vendor|unknown)"/.test(block)) failures.push(`${label} must include a valid sourceType.`);
   if (!/sourceNameKo:\s*"[^"]+"/.test(block)) failures.push(`${label} must include sourceNameKo.`);
   if (!/season:\s*"midnight-s1"/.test(block)) failures.push(`${label} must be tagged as midnight-s1.`);
   if (!/confidence:\s*"(high|medium|low)"/.test(block)) failures.push(`${label} must include confidence.`);
+  if (!/allowedClasses:\s*\[[^\]]+\]/.test(block)) failures.push(`${label} must include allowedClasses for shared/equippable rules.`);
+  if (!/shareScope:\s*"[^"]+"/.test(block)) failures.push(`${label} must include shareScope.`);
+  if (!/variants:\s*variants\(\d+,\s*"(dungeon|raid|craft|delve|catalyst|vendor|unknown)",\s*\[[^\]]+\]/.test(block)) {
+    failures.push(`${label} must include generated upgrade variants.`);
+  }
+  if (/slot:\s*"TRINKET_[12]"/.test(block)) {
+    if (!/trinketTiers:\s*\[/.test(block)) failures.push(`${label} trinket must include trinketTiers.`);
+    if (!/tier\(\d+,\s*"[^"]+",\s*"(S|A|B|C|주의)"/.test(block)) failures.push(`${label} trinket must include a tier record.`);
+    if (!/sources/.test(block) && !/\{ name:\s*"(Wowhead|Method|MythicSim|SeasonLoot|Mythicstats|SimulationCraft)"/.test(block)) {
+      failures.push(`${label} trinket tier must include sources.`);
+    }
+  }
 });
 
+const midnightDuplicates = midnightRecordIds.filter((id, index) => midnightRecordIds.indexOf(id) !== index);
+if (midnightDuplicates.length) failures.push(`Duplicate midnight item records found: ${Array.from(new Set(midnightDuplicates)).join(", ")}`);
+if (!midnightBlocks.length) failures.push("Midnight S1 Item DB must include item records.");
+if (!/upgradeTrackItemLevels/.test(midnightItems) || !/champion/.test(midnightItems) || !/hero/.test(midnightItems) || !/myth/.test(midnightItems)) {
+  failures.push("Midnight S1 Item DB must define champion/hero/myth upgrade track levels.");
+}
 if (/"예시|Example/.test(midnightItems)) failures.push("Midnight S1 item DB must not expose example placeholder data.");
 
 warnings.forEach((warning) => console.warn(`Warning: ${warning}`));
@@ -73,4 +93,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`Gear season validation passed (${itemIds.length} candidates checked).`);
+console.log(`Gear season validation passed (${itemIds.length} legacy candidates, ${midnightRecordIds.length} v2 records checked).`);
