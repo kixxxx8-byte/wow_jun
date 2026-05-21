@@ -2,7 +2,7 @@ import { AlertTriangle, Ban, Check, ChevronDown, EyeOff, Hammer, Map, PackageChe
 import { useState } from "react";
 import type { Character, WowheadBisReport } from "../../types";
 import { midnightS1Items } from "./data/midnightS1Items";
-import { evaluateCharacterGear, gearStatusLabels, itemAudienceLabel, variantLabel, type GearSlotStatus } from "./domain/gearInspection";
+import { evaluateCharacterGear, gearStatusLabels, type GearSlotStatus } from "./domain/gearInspection";
 import { gearRecommendationProfiles } from "./domain/profiles";
 import type { GearCoachPreferences, GearRecommendationMode, GearRecommendationResult, GearSourceType, PriorityUpgrade } from "./domain/gearTypes";
 import { confidenceLabelKo, getDisplayItemName, getDisplaySourceName, sourceTypeLabelKo } from "./domain/localization";
@@ -215,21 +215,14 @@ export function GearRecommendationPage({
               <b>{slot.statusLabelKo}</b>
               <span>현재: {slot.currentItem?.name || "장비 정보 없음"}</span>
               <span>스탯: {slot.currentItem?.secondaryStats.length ? slot.currentItem.secondaryStats.map((stat) => statLabelKo[stat]).join(" · ") : "확인 필요"}</span>
-              <span>후보: {slot.topCandidate ? `${slot.topCandidate.item.nameKo} · ${variantLabel(slot.topCandidate.variant)}` : "DB 미등록"}</span>
+              <span>후보: {slot.topCandidate ? slot.topCandidate.item.nameKo : "DB 미등록"}</span>
               <p>{slot.summary}</p>
               {slot.topCandidate ? (
                 <div className="slot-candidate-list">
                   {slot.candidates.slice(0, 3).map((candidate) => (
                     <section key={candidate.item.itemId}>
                       <b>{candidate.item.nameKo}</b>
-                      <span>{itemAudienceLabel(candidate.item)} · {candidate.item.sourceNameKo} · {variantLabel(candidate.variant)}</span>
-                      {candidate.trinketTier ? <span>티어 {candidate.trinketTier.tier} · {candidate.trinketTier.contentFocus} · 출처 {candidate.trinketTier.sources.map((source) => source.name).join("/")}</span> : null}
-                      <details>
-                        <summary>변형 상세</summary>
-                        <div className="variant-chip-row">
-                          {candidate.item.variants.slice(0, 18).map((variant) => <span key={variant.variantId}>{variantLabel(variant)}</span>)}
-                        </div>
-                      </details>
+                      <span>{candidate.item.sourceNameKo} · 점검 점수 {candidate.score}</span>
                       <small>{candidate.reasons[0] || candidate.item.note || "전문화 기준 후보입니다."}</small>
                     </section>
                   ))}

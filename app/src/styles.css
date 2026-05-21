@@ -2657,34 +2657,6 @@ a {
   line-height: 1.35;
 }
 
-.slot-candidate-list details {
-  margin-top: 4px;
-}
-
-.slot-candidate-list summary {
-  cursor: pointer;
-  color: var(--teal);
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.variant-chip-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 6px;
-}
-
-.variant-chip-row span {
-  padding: 3px 7px;
-  border: 1px solid rgba(15, 118, 110, 0.22);
-  border-radius: 999px;
-  color: #0f766e;
-  background: rgba(204, 251, 241, 0.55);
-  font-size: 11px;
-  font-weight: 850;
-}
-
 .locked-guide-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
