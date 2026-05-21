@@ -96,6 +96,8 @@ export const targets: Target[] = [
   { id: "feet-cosmos", slot: "feet", slotLabel: "발", priority: 64, type: "dungeon", target: "나무 지붕 방랑자의 발등싸개", itemId: 249382, icon: icon("inv_boots_leather_raidrogue_s_01"), source: "공결탑 제나스", boss: "Crown of the Cosmos", reason: "현재 시즌 BIS 표에 있는 발 후보입니다.", check: "신발 마부와 현재 템렙을 같이 확인" },
 ];
 
+const activeGearTargets: Target[] = [];
+
 export const dungeonGuides: DungeonGuide[] = [
   {
     id: "algethar",
@@ -332,7 +334,7 @@ function buildTargetAssignments(character: Character, done: Record<string, boole
     const equippedIds = new Set(slotKeys.map((key) => slotItemId(character, key)).filter(Boolean));
     const usedIds = new Set(equippedIds);
 
-    const candidates = targets
+    const candidates = activeGearTargets
       .filter((target) => !done[target.id] && !hidden[target.id] && targetGroup(target) === group)
       .filter((target) => {
         const id = targetItemId(target);
@@ -361,7 +363,7 @@ function buildTargetAssignments(character: Character, done: Record<string, boole
 
 function activeTargetList(character: Character, done: Record<string, boolean> = {}, hidden: Record<string, boolean> = {}) {
   const assignedIds = new Set(Array.from(buildTargetAssignments(character, done, hidden).values()).map((target) => target.id));
-  return targets
+  return activeGearTargets
     .filter((target) => assignedIds.has(target.id))
     .map((target) => ({ ...target, score: target.priority }))
     .sort((a, b) => b.score - a.score);

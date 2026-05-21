@@ -119,14 +119,14 @@ export function GearRecommendationPage({
 
       <section className="panel gear-plan-panel">
         <div className="section-head compact"><div><p className="eyebrow">오늘 할 일</p><h2>장비 점검 우선순위</h2></div><Sparkles size={18} /></div>
-        <p className="gear-section-copy">무기, 장신구, 제작, 티어, DB 미등록 부위를 우선순위로 정리했습니다.</p>
+        <p className="gear-section-copy">무기, 장신구, 제작, 티어처럼 실제 확인이 필요한 부위만 우선순위로 정리했습니다.</p>
         <div className="gear-action-list">
           {inspection.todo.length ? inspection.todo.map((action, index) => (
             <article key={`${action.slot}-${action.label}`}>
               <span className="rank">{index + 1}</span>
               <div><b>{action.label}</b><p>{action.action}</p></div>
             </article>
-          )) : <article><span className="rank">!</span><div><b>검증 후보 부족</b><p>확실하지 않은 아이템은 추천하지 않고 제외 후보에서만 보여줍니다.</p></div></article>}
+          )) : <article><span className="rank">!</span><div><b>검증 후보 부족</b><p>현재 등록된 DB만으로는 오늘 할 장비 교체를 확정하지 않습니다. DB 미등록 부위는 아래 상세에서만 확인하세요.</p></div></article>}
         </div>
       </section>
 

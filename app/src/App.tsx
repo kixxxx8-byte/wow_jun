@@ -725,11 +725,14 @@ function BisComparisonPanel({
 }
 
 function targetById(id?: string | null) {
-  return id ? targets.find((target) => target.id === id) || null : null;
+  if (!id) return null;
+  const target = targets.find((row) => row.id === id) || null;
+  return target?.itemId ? null : target;
 }
 
 function targetByTask(task: TodayTask) {
-  return targets.find((target) => target.id === task.id || target.target === task.itemName) || null;
+  const target = targets.find((row) => row.id === task.id || row.target === task.itemName) || null;
+  return target?.itemId ? null : target;
 }
 
 function runName(run: Record<string, unknown>) {
@@ -1927,14 +1930,13 @@ export default function App() {
         rioError,
         lastRioRefreshAt: rioFetchedAt || settings.lastRioRefreshAt,
       });
-      const legacySnapshot = snapshotWithWowheadBis(baseSnapshot, bisReport, settings.done, settings.hidden);
-      return { ...legacySnapshot, gearRecommendation };
+      return { ...baseSnapshot, gearRecommendation };
     },
-    [character, settings.done, settings.hidden, settings.lastRioRefreshAt, recentRuns, cloudReady, rioError, rioFetchedAt, bisReport, gearRecommendation],
+    [character, settings.done, settings.hidden, settings.lastRioRefreshAt, recentRuns, cloudReady, rioError, rioFetchedAt, gearRecommendation],
   );
   const snapshotHash = useMemo(() => buildSnapshotHash(snapshot, preferences), [snapshot, preferences]);
   const fallbackPlan = useMemo(() => buildFallbackPlan(snapshot, preferences), [snapshot, preferences]);
-  const activePlan = plan || fallbackPlan;
+  const activePlan = isPlanStale(plan, snapshotHash) ? fallbackPlan : plan || fallbackPlan;
   const avatar = characterImage(character, rio);
   const commandHeroStyle = hasSelectedCharacter && avatar
     ? ({ "--character-hero": `url(${avatar})` } as CSSProperties)

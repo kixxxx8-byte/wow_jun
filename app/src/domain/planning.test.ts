@@ -50,7 +50,7 @@ describe("today planning domain", () => {
     expect(mainHand?.equippedItem?.name).toBe("main weapon");
     expect(offHand?.equippedItem).toBeNull();
     expect(offHand?.item).toBeNull();
-    expect(offHand?.comparisonItem?.name).toBe("main weapon");
+    expect(offHand?.comparisonItem).toBeNull();
     expect(statTotals(rows).crit).toBe(10);
   });
 
@@ -71,13 +71,14 @@ describe("today planning domain", () => {
     expect(snapshot.todayTasks.some((task) => task.command === "sync")).toBe(true);
   });
 
-  it("calculates local gear readiness from replacement and enhancement work", () => {
+  it("calculates local gear readiness without treating reference BIS as active targets", () => {
     const rows = equipmentRows(defaultCharacter);
     const readiness = gearReadinessScore(rows);
 
     expect(readiness.current).toBeLessThanOrEqual(100);
     expect(readiness.target).toBeGreaterThanOrEqual(readiness.current);
-    expect(readiness.urgent).toBeGreaterThan(0);
+    expect(readiness.urgent).toBe(0);
+    expect(rows.every((row) => row.target === null)).toBe(true);
   });
 
   it("prefers Battle.net item media icon URLs when present", () => {
@@ -109,7 +110,7 @@ describe("today planning domain", () => {
     expect(trinketTargets).not.toContain(249343);
     expect(trinketTargets).not.toContain(193701);
     expect(ringTargets).not.toContain(249919);
-    expect(ringTargets).toContain(249920);
+    expect(ringTargets).toHaveLength(0);
   });
 
   it("assigns different targets to paired equipment slots", () => {

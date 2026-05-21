@@ -367,7 +367,7 @@ export function evaluateCharacterGear(params: {
   };
 
   const todo = evaluations
-    .filter((row) => ["weapon-priority", "trinket-check", "crafted-recommended", "tier-check", "upgrade-candidate", "db-missing"].includes(row.status))
+    .filter((row) => ["weapon-priority", "trinket-check", "crafted-recommended", "tier-check", "upgrade-candidate"].includes(row.status))
     .slice(0, 5)
     .map((row) => ({
       slot: row.slot,
