@@ -488,13 +488,14 @@ function TargetItemIcon({ target, className = "", placeholder = "목표" }: { ta
 function BisItemIcon({ item }: { item?: WowheadBisItem }) {
   if (!item) return <span className="item-icon placeholder">BIS</span>;
   return (
-    <ItemTooltipAnchor
-      target={{ id: `bis-${item.itemId}`, slot: item.slotKey, slotLabel: item.slot, priority: 0, type: "dungeon", target: item.name, icon: item.iconUrl || "", itemId: item.itemId, wowheadUrl: wowheadUrl(item.itemId), source: "참고 BIS", boss: item.source, reason: "참고 BIS 기준", check: "내 장비와 비교" }}
-      label={item.name}
-      iconUrl={item.iconUrl || ""}
+    <span
       className={`item-icon bis-list-icon ${item.iconUrl ? "" : "placeholder"}`}
-      placeholder="BIS"
-    />
+      style={item.iconUrl ? { backgroundImage: `url(${item.iconUrl})` } : undefined}
+      aria-label={`${item.name} 참고 BIS 아이콘`}
+      title="참고 BIS 아이콘입니다. 실제 추천 툴팁으로 사용하지 않습니다."
+    >
+      {item.iconUrl ? null : "BIS"}
+    </span>
   );
 }
 
@@ -733,6 +734,19 @@ function targetById(id?: string | null) {
 function targetByTask(task: TodayTask) {
   const target = targets.find((row) => row.id === task.id || row.target === task.itemName) || null;
   return target?.itemId ? null : target;
+}
+
+function isReferenceBisText(...values: Array<unknown>) {
+  const text = values.filter(Boolean).join(" ");
+  return /BIS 교체 후보|참고 BIS|시즌 BIS|wowhead-bis|Wowhead 암살 도적 BIS/i.test(text);
+}
+
+function isReferenceBisTask(task: TodayTask) {
+  return isReferenceBisText(task.id, task.title, task.itemName, task.body, task.detail);
+}
+
+function isReferenceBisAction(action: AiPlan["actions"][number]) {
+  return isReferenceBisText(action.targetId, action.title, action.reason, ...action.evidence);
 }
 
 function runName(run: Record<string, unknown>) {
@@ -1038,6 +1052,12 @@ function PlanResult({
   disabled: boolean;
   stale?: boolean;
 }) {
+  const visibleActions = plan.actions.filter((action) => !isReferenceBisAction(action));
+  const timePlans = {
+    short: plan.timePlans.short.filter((item) => !isReferenceBisText(item)),
+    normal: plan.timePlans.normal.filter((item) => !isReferenceBisText(item)),
+    long: plan.timePlans.long.filter((item) => !isReferenceBisText(item)),
+  };
   return (
     <section className="panel plan-panel">
       <div className="section-head">
@@ -1051,14 +1071,15 @@ function PlanResult({
       {stale ? <div className="error-box">현재 장비/선호 조건과 다른 snapshot에서 만든 AI 판단입니다. 새 데이터 기준으로 보려면 수동 재생성을 눌러주세요.</div> : null}
       <p className="plan-summary">{plan.summary}</p>
       <div className="action-stack">
-        {plan.actions.map((action) => (
+        {visibleActions.map((action) => (
           <ActionCard key={`${action.rank}-${action.title}`} action={action} onDone={onDone} onJump={onJump} disabled={disabled} />
         ))}
+        {!visibleActions.length ? <EmptyState title="표시할 실행 항목 없음" body="참고 BIS 기반 이전 항목은 숨겼습니다. 장비 동기화 후 다시 판단하세요." /> : null}
       </div>
       <div className="time-plan-grid">
-        <article><Clock3 size={17} /><b>30분</b>{plan.timePlans.short.map((item) => <span key={item}>{item}</span>)}</article>
-        <article><Clock3 size={17} /><b>1시간</b>{plan.timePlans.normal.map((item) => <span key={item}>{item}</span>)}</article>
-        <article><Clock3 size={17} /><b>2시간</b>{plan.timePlans.long.map((item) => <span key={item}>{item}</span>)}</article>
+        <article><Clock3 size={17} /><b>30분</b>{timePlans.short.map((item) => <span key={item}>{item}</span>)}</article>
+        <article><Clock3 size={17} /><b>1시간</b>{timePlans.normal.map((item) => <span key={item}>{item}</span>)}</article>
+        <article><Clock3 size={17} /><b>2시간</b>{timePlans.long.map((item) => <span key={item}>{item}</span>)}</article>
       </div>
       <div className="detail-grid">
         <section>
@@ -1109,6 +1130,8 @@ function TodayView({
 }) {
   const aiStatus = aiStatusCopy(autoState, fallback, plan.generatedAt, rateLimitKind);
   const gearActions = snapshot.gearRecommendation?.weeklyActionPlan.actions || [];
+  const visiblePlanActions = plan.actions.filter((action) => !isReferenceBisAction(action));
+  const visibleTodayTasks = snapshot.todayTasks.filter((task) => !isReferenceBisTask(task));
   const snapshotTargets = useMemo(() => {
     const map = new Map<string, Target>();
     snapshot.equipmentRows.forEach((row) => {
@@ -1155,7 +1178,7 @@ function TodayView({
               <b>{action.titleKo}</b>
               <small>{action.priority} · 장비 코치</small>
             </article>
-          )) : plan.actions.slice(0, 3).map((action) => {
+          )) : visiblePlanActions.slice(0, 3).map((action) => {
             const target = targetFor(action.targetId);
             return (
               <article key={`${action.rank}-${action.title}`}>
@@ -1185,7 +1208,7 @@ function TodayView({
         <DataCard title="Battle.net" value={snapshot.dataFreshness.bnet.label} detail={snapshot.dataFreshness.bnet.detail} tone={snapshot.dataFreshness.bnet.tone} />
         <DataCard title="Raider.IO" value={snapshot.dataFreshness.rio.label} detail={snapshot.dataFreshness.rio.detail} tone={snapshot.dataFreshness.rio.tone} />
         <DataCard title="Cloud" value={snapshot.dataFreshness.cloud.label} detail={snapshot.dataFreshness.cloud.detail} tone={snapshot.dataFreshness.cloud.tone} />
-        <DataCard title="오늘 실행" value={`${snapshot.todayTasks.length}개`} detail={fallback ? "기본 계산 기준" : "AI 판단 반영"} tone={fallback ? "warn" : "ok"} />
+        <DataCard title="오늘 실행" value={`${visibleTodayTasks.length}개`} detail={fallback ? "기본 계산 기준" : "AI 판단 반영"} tone={fallback ? "warn" : "ok"} />
       </div>
       <section className="split-grid">
         <div className="panel">
@@ -1193,7 +1216,7 @@ function TodayView({
             <div><p className="eyebrow">Execute</p><h2>오늘 액션</h2></div>
           </div>
           <div className="task-list">
-            {snapshot.todayTasks.map((task, index) => {
+            {visibleTodayTasks.map((task, index) => {
               const target = targetFor(task.id) || targetByTask(task);
               return (
                 <article key={task.id} className={`task-card ${task.done ? "done" : ""} ${target ? "with-icon" : ""}`}>
@@ -1213,6 +1236,7 @@ function TodayView({
                 </article>
               );
             })}
+            {!visibleTodayTasks.length ? <EmptyState title="오늘 액션 없음" body="참고 BIS 기반 이전 항목은 숨겼습니다. 장비 동기화 후 다시 판단하세요." /> : null}
           </div>
         </div>
         <div className="panel">
