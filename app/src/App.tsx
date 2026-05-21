@@ -38,7 +38,7 @@ import {
 } from "firebase/firestore";
 import { AiRequestError, requestTodayPlan } from "./api/ai";
 import { auth, db } from "./api/firebase";
-import { requestItemTooltip, requestWowheadBis } from "./api/items";
+import { requestWowheadBis } from "./api/items";
 import { ConfirmDialog, DataCard, EmptyState, Field, LockState, MetricCard, Panel, StatusPill, Toast } from "./components/ui";
 import { dungeonGuideCatalog, legacyDiagramInfo, WOW_KR_YOUTUBE } from "./domain/dungeonCatalog";
 import type { RichDungeonGuide } from "./domain/dungeonCatalog";
@@ -69,7 +69,6 @@ import type {
   Character,
   EquipmentItem,
   EquipmentRow,
-  ItemTooltipData,
   Target,
   TodaySnapshot,
   TodayTask,
@@ -92,15 +91,6 @@ type SelectionPhase = "idle" | "db" | "renewing" | "revealed";
 
 type DiagramKey = keyof typeof legacyDiagramInfo;
 const AI_DAILY_LIMIT = 200;
-const itemTooltipCache = new Map<number, ItemTooltipData>();
-let wowheadTooltipsPromise: Promise<boolean> | null = null;
-
-declare global {
-  interface Window {
-    whTooltips?: Record<string, unknown>;
-    $WowheadPower?: { refreshLinks?: () => void };
-  }
-}
 
 const preferenceLabels = {
   timeBudget: { "30m": "30분", "60m": "1시간", "120m": "2시간", custom: "직접 판단" },
@@ -235,98 +225,40 @@ function wythicCharacterUrl(character: Character) {
   return `https://wythic.com/ko/character/${region}/${realm}/${name}`;
 }
 
-function tooltipItemLevelText(data: ItemTooltipData) {
-  if (data.itemLevel && data.itemLevel < 100) return "";
-  return data.itemLevelText || (data.itemLevel ? `아이템 레벨 ${data.itemLevel}` : "");
-}
-
-function loadWowheadTooltips() {
-  if (typeof window === "undefined") return Promise.resolve(false);
-  if (window.$WowheadPower?.refreshLinks) return Promise.resolve(true);
-  if (!wowheadTooltipsPromise) {
-    wowheadTooltipsPromise = new Promise((resolve) => {
-      window.whTooltips = {
-        colorLinks: false,
-        iconizeLinks: false,
-        renameLinks: false,
-      };
-      const existing = document.querySelector<HTMLScriptElement>("script[data-wj-wowhead-tooltips]");
-      const script = existing || document.createElement("script");
-      script.dataset.wjWowheadTooltips = "true";
-      script.src = "https://wow.zamimg.com/js/tooltips.js";
-      script.async = true;
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      if (!existing) document.head.appendChild(script);
-    });
-  }
-  return wowheadTooltipsPromise;
-}
-
-function useWowheadTooltips(refreshKey: string) {
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    let alive = true;
-    loadWowheadTooltips().then((loaded) => {
-      if (!alive) return;
-      setReady(loaded);
-      if (loaded) window.setTimeout(() => window.$WowheadPower?.refreshLinks?.(), 0);
-    });
-    return () => {
-      alive = false;
-    };
-  }, [refreshKey]);
-  return ready;
-}
-
-function useItemTooltip(itemId: number, enabled: boolean) {
-  const [data, setData] = useState<ItemTooltipData | null>(itemTooltipCache.get(itemId) || null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (!enabled || !itemId || data) return;
-    let alive = true;
-    setLoading(true);
-    setError("");
-    requestItemTooltip(itemId)
-      .then((next) => {
-        itemTooltipCache.set(itemId, next);
-        if (alive) setData(next);
-      })
-      .catch((err) => {
-        if (alive) setError(err instanceof Error ? err.message : "아이템 툴팁 조회 실패");
-      })
-      .finally(() => {
-        if (alive) setLoading(false);
-      });
-    return () => {
-      alive = false;
-    };
-  }, [data, enabled, itemId]);
-
-  return { data, loading, error };
+function equipmentTooltipLines(item?: EquipmentItem | null) {
+  const lines: string[] = [];
+  const level = Number(item?.level || item?.itemLevel || 0);
+  if (level) lines.push(`아이템 레벨 ${level}`);
+  (item?.stats || []).forEach((stat) => {
+    const label = stat.display || [stat.name, stat.value ? `+${stat.value}` : ""].filter(Boolean).join(" ");
+    if (label) lines.push(label);
+  });
+  (item?.enchantments || []).forEach((entry) => {
+    const value = typeof entry === "string" ? entry : entry.displayString || entry.display || entry.name || "";
+    if (value) lines.push(`마법부여: ${value}`);
+  });
+  (item?.sockets || []).forEach((entry) => {
+    const value = typeof entry === "string" ? entry : entry.displayString || entry.display || entry.item?.name || "";
+    if (value) lines.push(`보석: ${value}`);
+  });
+  return lines;
 }
 
 function TooltipFallbackCard({
   itemId,
   name,
-  data,
-  loading,
-  error,
+  item,
   style,
   onClose,
 }: {
   itemId: number;
   name: string;
-  data: ItemTooltipData | null;
-  loading: boolean;
-  error: string;
+  item?: EquipmentItem | null;
   style?: CSSProperties;
   onClose: () => void;
 }) {
-  const tooltipName = data?.name || name;
-  const qualityClass = data?.qualityType ? `quality-${data.qualityType}` : "";
+  const equippedLines = equipmentTooltipLines(item);
+  const exactEquippedItem = Boolean(item);
   return (
     <section className="wow-fallback-tooltip" role="tooltip" style={style}>
       <button type="button" className="tooltip-close" onClick={onClose} aria-label="툴팁 닫기"><X size={14} /></button>
@@ -336,33 +268,21 @@ function TooltipFallbackCard({
           <p>{name}</p>
           <small>공식 item ID가 아직 연결되지 않았습니다.</small>
         </>
-      ) : loading ? (
+      ) : exactEquippedItem ? (
         <>
-          <b>{tooltipName}</b>
-          <p>공식 Battle.net 데이터를 불러오는 중입니다.</p>
-        </>
-      ) : error ? (
-        <>
-          <b>{tooltipName}</b>
-          <p>{error}</p>
+          <b>{name}</b>
+          {equippedLines.length ? equippedLines.slice(0, 10).map((line) => <span key={line}>{line}</span>) : <p>현재 동기화된 착용 장비 정보입니다.</p>}
+          <small>보너스 ID/강화 단계가 없는 일반 itemId 조회값은 표시하지 않습니다.</small>
           <a href={wowheadUrl(itemId)} target="_blank" rel="noreferrer">Wowhead에서 보기</a>
         </>
-      ) : data ? (
+      ) : (
         <>
-          <b className={qualityClass}>{tooltipName}</b>
-          {tooltipItemLevelText(data) ? <p>{tooltipItemLevelText(data)}</p> : null}
-          <small>{[data.binding, data.inventoryType, data.itemSubclass || data.itemClass].filter(Boolean).join(" · ")}</small>
-          {data.armor ? <span>{data.armor}</span> : null}
-          {(data.weapon || []).map((line) => <span key={line}>{line}</span>)}
-          {(data.stats || []).slice(0, 8).map((line) => <span key={line}>{line}</span>)}
-          {(data.sockets || []).map((line) => <span key={line}>홈: {line}</span>)}
-          {(data.spells || []).slice(0, 4).map((line) => <em key={line}>{line}</em>)}
-          {data.setName ? <span>{data.setName}</span> : null}
-          {data.description ? <em>{data.description}</em> : null}
-          {(data.requirements || []).map((line) => <small key={line}>{line}</small>)}
+          <b>{name}</b>
+          <p>이 후보는 itemId만으로는 강화 단계, 등급, 보너스 ID를 확정할 수 없어 수치 툴팁을 표시하지 않습니다.</p>
+          <small>정확한 수치는 Wowhead 원문 또는 Battle.net 동기화된 착용 장비 기준으로 확인하세요.</small>
           <a href={wowheadUrl(itemId)} target="_blank" rel="noreferrer">Wowhead에서 보기</a>
         </>
-      ) : null}
+      )}
     </section>
   );
 }
@@ -388,8 +308,6 @@ function ItemTooltipAnchor({
   const [pinned, setPinned] = useState(false);
   const [position, setPosition] = useState<CSSProperties>({});
   const anchorRef = useRef<HTMLAnchorElement | null>(null);
-  const { data, loading, error } = useItemTooltip(itemId, fallbackOpen);
-
   const updatePosition = () => {
     const node = anchorRef.current;
     if (!node || typeof window === "undefined") return;
@@ -439,7 +357,6 @@ function ItemTooltipAnchor({
         ref={anchorRef}
         className={`tooltip-item-anchor ${className}`}
         href={wowheadUrl(itemId, target)}
-        data-wowhead={itemId ? `item=${itemId}` : undefined}
         target="_blank"
         rel="noreferrer"
         aria-label={`${name} 아이템 툴팁`}
@@ -453,7 +370,7 @@ function ItemTooltipAnchor({
       >
         {!iconUrl ? placeholder : null}
       </a>
-      {fallbackOpen ? <TooltipFallbackCard itemId={itemId} name={name} data={data} loading={loading} error={error} style={position} onClose={closeFallback} /> : null}
+      {fallbackOpen ? <TooltipFallbackCard itemId={itemId} name={name} item={item} style={position} onClose={closeFallback} /> : null}
     </span>
   );
 }
