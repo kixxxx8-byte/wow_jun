@@ -25,6 +25,8 @@
   width: 100%;
   display: grid;
   gap: 14px;
+  box-sizing: border-box;
+  padding: 0 12px 14px;
 }
 
 .gear-coach-hero {
@@ -33,7 +35,7 @@
   justify-content: space-between;
   gap: 16px;
   min-height: auto;
-  padding: 16px;
+  padding: 16px 18px;
 }
 
 .gear-coach-hero h1 {
@@ -102,6 +104,10 @@
   overflow-x: auto;
 }
 
+.gear-coach > .mode-chip-row {
+  padding: 0;
+}
+
 .mode-chip-row button,
 .slot-filter-row button {
   flex: 0 0 auto;
@@ -142,7 +148,7 @@
 }
 
 .gear-summary-card {
-  padding: 12px;
+  padding: 12px 14px;
 }
 
 .gear-summary-card small,
@@ -3308,6 +3314,10 @@ a {
 }
 
 @media (max-width: 759px) {
+  .gear-coach {
+    padding: 0 8px 12px;
+  }
+
   .app-shell {
     width: min(100% - 18px, 1480px);
     padding-top: 8px;

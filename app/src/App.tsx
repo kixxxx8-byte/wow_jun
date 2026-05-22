@@ -666,8 +666,27 @@ function isReferenceBisAction(action: AiPlan["actions"][number]) {
   return isReferenceBisText(action.targetId, action.title, action.reason, ...action.evidence);
 }
 
+const dungeonNameKoAliases: Record<string, string> = {
+  "skyreach": "하늘탑",
+  "maisara": "마이사라 동굴",
+  "maisara caverns": "마이사라 동굴",
+  "windrunner": "윈드러너 첨탑",
+  "windrunner spire": "윈드러너 첨탑",
+  "nexus-point xenas": "연결지점 제나스",
+  "nexus point xenas": "연결지점 제나스",
+  "xenas": "연결지점 제나스",
+  "magisters' terrace": "마법학자의 정원",
+  "magisters terrace": "마법학자의 정원",
+  "algethar academy": "알게타르 대학",
+  "algeth'ar academy": "알게타르 대학",
+  "pit of saron": "사론의 구덩이",
+  "seat of the triumvirate": "삼두정의 권좌",
+};
+
 function runName(run: Record<string, unknown>) {
-  return String(run.dungeon || run.short_name || run.name || "던전");
+  const raw = String(run.dungeon || run.short_name || run.name || "던전");
+  const key = raw.trim().toLowerCase();
+  return dungeonNameKoAliases[key] || dungeonNameKoAliases[key.replace(/[-_]/g, " ")] || raw;
 }
 
 function runCompletedAt(run: Record<string, unknown>) {
