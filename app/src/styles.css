@@ -29,10 +29,11 @@
 
 .gear-coach-hero {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
   min-height: auto;
+  padding: 16px;
 }
 
 .gear-coach-hero h1 {
@@ -40,6 +41,7 @@
   font-size: 1.55rem;
   line-height: 1.15;
   letter-spacing: 0;
+  word-break: keep-all;
 }
 
 .gear-coach-hero p,
@@ -60,8 +62,30 @@
 .gear-coach-character,
 .gear-score-note {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
+}
+
+.gear-score-note {
+  padding: 9px 12px;
+}
+
+.gear-score-note svg,
+.section-head > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.gear-score-note p {
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+.gear-score-note .link-btn {
+  flex: 0 0 auto;
+  align-self: center;
 }
 
 .gear-coach-character {
@@ -115,6 +139,21 @@
 .gear-summary-card b {
   font-size: 1.75rem;
   line-height: 1.05;
+}
+
+.gear-summary-card {
+  padding: 12px;
+}
+
+.gear-summary-card small,
+.gear-summary-card span {
+  display: block;
+}
+
+.gear-summary-card span {
+  margin-top: 8px;
+  color: var(--muted);
+  line-height: 1.35;
 }
 
 .gear-action-list article,
@@ -249,6 +288,10 @@
   .gear-score-note {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .gear-score-note .link-btn {
+    align-self: flex-start;
   }
 
   .gear-coach-hero h1 {
@@ -772,6 +815,13 @@ a {
   background: var(--surface-soft);
 }
 
+.run-card {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) auto;
+  align-items: center;
+  gap: 8px 12px;
+}
+
 .quick-metrics article {
   display: grid;
   align-content: center;
@@ -939,8 +989,11 @@ a {
 
 .today-hero h1 {
   margin: 0 0 9px;
-  font-size: clamp(32px, 5vw, 56px);
-  line-height: 1.04;
+  max-width: 980px;
+  font-size: clamp(32px, 4.2vw, 52px);
+  line-height: 1.08;
+  word-break: keep-all;
+  overflow-wrap: normal;
 }
 
 .today-hero p,
@@ -951,6 +1004,7 @@ a {
   margin: 0;
   color: #43515f;
   line-height: 1.58;
+  word-break: keep-all;
 }
 
 .today-hero .hero-actions {
@@ -967,6 +1021,7 @@ a {
 .ai-status-card span {
   color: var(--muted);
   line-height: 1.45;
+  word-break: keep-all;
 }
 
 .data-grid {
@@ -1160,6 +1215,31 @@ a {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.4;
+}
+
+.run-card b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.run-card span {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.run-card em {
+  font-style: normal;
+}
+
+.run-card em + em::before {
+  content: "·";
+  margin-right: 7px;
+  color: #8b98a6;
 }
 
 .task-card strong {
@@ -2195,9 +2275,24 @@ a {
   gap: 10px;
 }
 
+.micro-survival-head > div {
+  min-width: 0;
+}
+
+.micro-survival-head .status-pill {
+  flex: 0 1 auto;
+  max-width: min(100%, 190px);
+  min-height: 0;
+  justify-content: center;
+  text-align: center;
+  white-space: normal;
+  line-height: 1.25;
+}
+
 .micro-survival-head h4 {
   margin: 2px 0 0;
   font-size: 20px;
+  word-break: keep-all;
 }
 
 .micro-focus {
@@ -2205,6 +2300,7 @@ a {
   color: #43515f;
   line-height: 1.5;
   font-weight: 800;
+  word-break: keep-all;
 }
 
 .micro-note-grid {
@@ -2239,6 +2335,7 @@ a {
   color: var(--ink);
   line-height: 1.35;
   font-size: 14px;
+  word-break: keep-all;
 }
 
 .micro-note-grid span,
@@ -2247,6 +2344,7 @@ a {
   color: #43515f;
   line-height: 1.42;
   font-size: 12px;
+  word-break: keep-all;
 }
 
 .dungeon-card,
@@ -3342,7 +3440,7 @@ a {
   }
 
   .today-hero h1 {
-    font-size: 34px;
+    font-size: 32px;
   }
 
   .guide-hero {
@@ -3401,6 +3499,17 @@ a {
     align-items: flex-start;
     flex-direction: column;
     gap: 3px;
+  }
+
+  .run-card {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .run-card span {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    row-gap: 2px;
   }
 
   .line b,

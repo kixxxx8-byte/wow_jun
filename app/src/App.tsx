@@ -670,6 +670,13 @@ function runName(run: Record<string, unknown>) {
   return String(run.dungeon || run.short_name || run.name || "던전");
 }
 
+function runCompletedAt(run: Record<string, unknown>) {
+  const raw = String(run.completed_at || "");
+  const date = raw ? new Date(raw) : null;
+  if (!date || Number.isNaN(date.getTime())) return "최근";
+  return date.toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit" });
+}
+
 function aiStatusCopy(autoState: AutoState, fallback: boolean, generatedAt: string, rateLimitKind: "minute" | "daily" | null) {
   if (rateLimitKind === "daily") return { title: "오늘 한도 도달", detail: "기본 판단은 계속 사용할 수 있고, 내일 다시 AI 생성을 쓸 수 있습니다.", tone: "warn" as const };
   if (rateLimitKind === "minute") return { title: "잠시 후 재시도", detail: "AI는 1분에 한 번 생성됩니다. 현재 화면은 기본 판단으로 유지됩니다.", tone: "warn" as const };
@@ -1164,7 +1171,7 @@ function TodayView({
             {recentRuns.length ? recentRuns.slice(0, 6).map((run, index) => (
               <article key={`${runName(run)}-${index}`} className="run-card">
                 <b>{runName(run)}</b>
-                <span>+{String(run.mythic_level || "?")} · {run.score ? `${Math.round(Number(run.score))}점` : "점수 없음"} · {String(run.completed_at || "최근")}</span>
+                <span><em>+{String(run.mythic_level || "?")}</em><em>{run.score ? `${Math.round(Number(run.score))}점` : "점수 없음"}</em><em>{runCompletedAt(run)}</em></span>
               </article>
             )) : <EmptyState title="최근 기록 없음" body={aiError || "Raider.IO 갱신 후 최근 런을 확인할 수 있습니다."} />}
           </div>
