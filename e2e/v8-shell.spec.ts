@@ -51,3 +51,17 @@ test("dungeon tab shows personal micro survival notes", async ({ page }) => {
   const hasOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
   expect(hasOverflow).toBe(false);
 });
+
+test("top navigation keeps notes settings visible on tablet widths", async ({ page }) => {
+  await page.setViewportSize({ width: 900, height: 720 });
+  await page.goto("./");
+  const notesButton = page.getByRole("navigation", { name: "주요 화면" }).getByRole("button", { name: "메모/설정", exact: true });
+  await expect(notesButton).toBeVisible();
+  const fits = await notesButton.evaluate((button) => {
+    const rect = button.getBoundingClientRect();
+    return rect.left >= 0 && rect.right <= window.innerWidth;
+  });
+  expect(fits).toBe(true);
+  const hasOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
+  expect(hasOverflow).toBe(false);
+});
