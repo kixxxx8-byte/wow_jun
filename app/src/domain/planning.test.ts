@@ -128,4 +128,11 @@ describe("today planning domain", () => {
     expect(dungeonGuideCatalog.every((guide) => guide.bosses.length > 0)).toBe(true);
     expect(dungeonGuideCatalog.some((guide) => guide.videoUrl && guide.meta.href.includes("wythic.com"))).toBe(true);
   });
+
+  it("adds personal survival micro notes without replacing the simple guide", () => {
+    expect(dungeonGuideCatalog.every((guide) => guide.microGuide?.topPriority.length && guide.microGuide.topPriority.length >= 3)).toBe(true);
+    expect(dungeonGuideCatalog.some((guide) => guide.microGuide?.topPriority.some((note) => note.defensiveKo.includes("교란") || note.defensiveKo.includes("그망")))).toBe(true);
+    expect(dungeonGuideCatalog.some((guide) => guide.bosses.some((boss) => boss.microNote?.deathRiskKo))).toBe(true);
+    expect(dungeonGuideCatalog.some((guide) => [guide.route, guide.danger, guide.microGuide?.oneLineKo].join(" ").includes("차단"))).toBe(true);
+  });
 });

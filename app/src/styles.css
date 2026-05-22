@@ -2180,6 +2180,75 @@ a {
   font-size: 12px;
 }
 
+.micro-survival-panel {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(194, 65, 75, 0.22);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(254, 242, 242, 0.82), rgba(255, 255, 255, 0.94));
+}
+
+.micro-survival-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.micro-survival-head h4 {
+  margin: 2px 0 0;
+  font-size: 20px;
+}
+
+.micro-focus {
+  margin: 8px 0 0;
+  color: #43515f;
+  line-height: 1.5;
+  font-weight: 800;
+}
+
+.micro-note-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.micro-note-grid article {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid rgba(194, 65, 75, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.micro-note-grid b,
+.micro-note-grid strong,
+.micro-note-grid span,
+.micro-note-grid small {
+  display: block;
+}
+
+.micro-note-grid b {
+  color: var(--red);
+  font-size: 12px;
+}
+
+.micro-note-grid strong {
+  margin-top: 5px;
+  color: var(--ink);
+  line-height: 1.35;
+  font-size: 14px;
+}
+
+.micro-note-grid span,
+.micro-note-grid small {
+  margin-top: 6px;
+  color: #43515f;
+  line-height: 1.42;
+  font-size: 12px;
+}
+
 .dungeon-card,
 .dungeon-guide-card {
   min-width: 0;
@@ -2333,6 +2402,43 @@ a {
   color: #43515f;
   font-size: 12px;
   line-height: 1.5;
+}
+
+.boss-micro-note {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(194, 65, 75, 0.18);
+}
+
+.boss-micro-note summary {
+  cursor: pointer;
+  color: var(--red);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.boss-micro-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.boss-micro-grid span {
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid rgba(194, 65, 75, 0.13);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.62);
+  color: #43515f;
+  line-height: 1.42;
+}
+
+.boss-micro-grid b {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--red);
+  font-size: 11px;
 }
 
 .boss-card ul {
@@ -3039,7 +3145,8 @@ a {
   .gear-summary,
   .bis-summary,
   .guide-metrics,
-  .dungeon-brief-grid {
+  .dungeon-brief-grid,
+  .micro-note-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -3135,6 +3242,8 @@ a {
   .detail-grid,
   .dungeon-brief-grid,
   .boss-grid,
+  .micro-note-grid,
+  .boss-micro-grid,
   .wythic-metrics {
     grid-template-columns: 1fr;
   }

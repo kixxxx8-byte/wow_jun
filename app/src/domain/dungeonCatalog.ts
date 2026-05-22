@@ -1,5 +1,6 @@
 import type { DungeonBoss, DungeonGuide } from "../types";
 import { legacyDiagramInfo, legacyDungeonData, officialDungeonGuides } from "./dungeonGuideData";
+import { dungeonMicroGuides, type DungeonMicroGuide, type DungeonMicroNote } from "./dungeonMicroGuides";
 
 export const WOW_KR_YOUTUBE = "https://www.youtube.com/@WorldofWarcraftKR";
 
@@ -19,7 +20,11 @@ type DungeonGuidePatch = Partial<Omit<DungeonGuide, "overview" | "bosses">> & {
   bosses?: readonly (Omit<DungeonBoss, "do"> & { do: readonly string[] })[];
 };
 
-export type RichDungeonGuide = DungeonGuide & {
+export type RichDungeonBoss = DungeonBoss & { microNote?: DungeonMicroNote };
+
+export type RichDungeonGuide = Omit<DungeonGuide, "bosses"> & {
+  microGuide?: DungeonMicroGuide;
+  bosses: RichDungeonBoss[];
   meta: {
     href: string;
     loot: string;
@@ -31,17 +36,25 @@ const officialDungeonGuideById = officialDungeonGuides as unknown as Partial<Rec
 
 function mergeDungeonGuide(guide: (typeof legacyDungeonData)[number]): RichDungeonGuide {
   const official = officialDungeonGuideById[guide.id] || {};
+  const microGuide = dungeonMicroGuides[guide.id];
   const overview = [...(official.overview || guide.overview)];
-  const bosses = [...(official.bosses || guide.bosses)].map((boss) => ({ ...boss, do: [...boss.do] }));
+  const bosses = [...(official.bosses || guide.bosses)].map((boss) => ({
+    ...boss,
+    do: [...boss.do],
+    microNote: microGuide?.bossNotes?.[boss.name] || microGuide?.bossNotes?.[boss.ko || ""],
+  }));
   const merged = {
     ...guide,
     ...official,
     href: wythicDungeonLinks[guide.id] || `https://wythic.com/ko/dungeon/${guide.id}`,
     overview,
     bosses,
-  } as DungeonGuide;
+    microGuide,
+  };
   return {
     ...merged,
+    bosses,
+    microGuide,
     meta: {
       href: merged.href,
       loot: "현재 개인 목표 아이템 없음",

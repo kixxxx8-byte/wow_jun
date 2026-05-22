@@ -1452,7 +1452,7 @@ function DungeonsView({ recommendations, gearRecommendation }: { recommendations
     const priority = priorityById.get(guide.id);
     if (onlyTargets && !priority?.count) return false;
     if (!normalizedQuery) return true;
-    return [guide.name, guide.short, guide.en, guide.danger, guide.route].filter(Boolean).some((value) => String(value).toLowerCase().includes(normalizedQuery));
+    return [guide.name, guide.short, guide.en, guide.danger, guide.route, microGuideSearchText(guide)].filter(Boolean).some((value) => String(value).toLowerCase().includes(normalizedQuery));
   });
   const top = sorted[0];
   return (
@@ -1516,9 +1516,18 @@ function DungeonsView({ recommendations, gearRecommendation }: { recommendations
   );
 }
 
+function microGuideSearchText(guide: RichDungeonGuide) {
+  const micro = guide.microGuide;
+  if (!micro) return "";
+  const top = micro.topPriority.flatMap((item) => Object.values(item));
+  const boss = guide.bosses.flatMap((row) => row.microNote ? Object.values(row.microNote) : []);
+  return [micro.focusKo, micro.oneLineKo, ...top, ...boss].join(" ");
+}
+
 function DungeonGuideCard({ guide, priority }: { guide: RichDungeonGuide; priority?: TodaySnapshot["dungeonRecommendations"][number] }) {
   const worstBoss = guide.bosses.find((boss) => boss.risk === "최상" || boss.risk === "치명") || guide.bosses[0];
   const loot = priority?.targets.length ? priority.targets.map((target) => `${target.slotLabel} ${target.target}`).join(", ") : priority?.loot || guide.meta.loot;
+  const microTop = guide.microGuide?.topPriority.slice(0, 3) || [];
   return (
     <article className={`dungeon-guide ${priority?.count ? "priority" : ""}`} id={`dungeon-${guide.id}`}>
       <header className="dungeon-guide-head">
@@ -1554,6 +1563,28 @@ function DungeonGuideCard({ guide, priority }: { guide: RichDungeonGuide; priori
       <div className="overview-pills">
         {guide.overview.map((item) => <span key={item}>{item}</span>)}
       </div>
+      {guide.microGuide ? (
+        <section className="micro-survival-panel" aria-label={`${guide.name} 초정밀 생존 노트`}>
+          <div className="micro-survival-head">
+            <div>
+              <p className="eyebrow">Rogue survival</p>
+              <h4>오늘 죽지 말 것</h4>
+            </div>
+            <StatusPill tone="warn">초정밀 생존 노트</StatusPill>
+          </div>
+          <p className="micro-focus">{guide.microGuide.focusKo}</p>
+          <div className="micro-note-grid">
+            {microTop.map((item) => (
+              <article key={item.labelKo}>
+                <b>{item.labelKo}</b>
+                <strong>{item.oneLineKo}</strong>
+                <span>{item.deathRiskKo}</span>
+                <small>생존기: {item.defensiveKo}</small>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
       <div className="boss-grid">
         {guide.bosses.map((boss) => (
           <section key={boss.name} className={`boss-card risk-${boss.risk}`}>
@@ -1580,6 +1611,19 @@ function DungeonGuideCard({ guide, priority }: { guide: RichDungeonGuide; priori
               </div>
             </div>
             <p className="healer-note"><b>힐러/생존 메모</b>{boss.healer || "큰 피해 전 개인 생존기와 차단을 확인합니다."}</p>
+            {boss.microNote ? (
+              <details className="boss-micro-note">
+                <summary>내 생존 체크</summary>
+                <div className="boss-micro-grid">
+                  <span><b>죽는 이유</b>{boss.microNote.deathRiskKo}</span>
+                  <span><b>볼 것</b>{boss.microNote.watchKo}</span>
+                  <span><b>이동</b>{boss.microNote.moveKo}</span>
+                  <span><b>차단/스턴</b>{boss.microNote.interruptKo}</span>
+                  <span><b>생존기</b>{boss.microNote.defensiveKo}</span>
+                  <span><b>근딜 주의</b>{boss.microNote.meleeWarningKo}</span>
+                </div>
+              </details>
+            ) : null}
           </section>
         ))}
       </div>
@@ -2310,6 +2354,10 @@ export default function App() {
 
         {view === "guides" ? (
           <GuidesView />
+        ) : view === "dungeons" ? (
+          <div className={`workspace-wrap ${selectionPhase === "revealed" ? "revealed" : ""}`}>
+            <DungeonsView recommendations={snapshot.dungeonRecommendations} gearRecommendation={snapshot.gearRecommendation} />
+          </div>
         ) : !hasSelectedCharacter ? (
           <CharacterSelectPanel
             loggedIn={loggedIn}
@@ -2375,7 +2423,6 @@ export default function App() {
           />
         ) : null}
         {view === "wythic" ? <WythicView character={character} score={score} ilvl={ilvl} onJump={jump} /> : null}
-        {view === "dungeons" ? <DungeonsView recommendations={snapshot.dungeonRecommendations} gearRecommendation={snapshot.gearRecommendation} /> : null}
         {view === "notes" ? (
           <SettingsView
             settings={settings}

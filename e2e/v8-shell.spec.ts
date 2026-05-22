@@ -39,3 +39,15 @@ test("guide tab exposes all supported specs with a shared template", async ({ pa
   const hasOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
   expect(hasOverflow).toBe(false);
 });
+
+test("dungeon tab shows personal micro survival notes", async ({ page }) => {
+  await page.goto("./");
+  await page.getByRole("navigation", { name: "주요 화면" }).getByRole("button", { name: "던전", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "던전 컨닝" })).toBeVisible();
+  await expect(page.getByText("초정밀 생존 노트").first()).toBeVisible();
+  await expect(page.getByText("오늘 죽지 말 것").first()).toBeVisible();
+  await page.getByPlaceholder("던전, 보스, 위험 요소 검색").fill("그망");
+  await expect(page.getByText("오늘 죽지 말 것").first()).toBeVisible();
+  const hasOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
+  expect(hasOverflow).toBe(false);
+});
