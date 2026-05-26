@@ -745,6 +745,16 @@ a {
   line-height: 1.45;
 }
 
+.view-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 180px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
 .command-bar {
   overflow: hidden;
   position: relative;

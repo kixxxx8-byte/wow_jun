@@ -1,23 +1,16 @@
 import {
   Brain,
   Check,
-  Clock3,
   Database,
-  History,
   Loader2,
   LogIn,
   LogOut,
-  Map as MapIcon,
   RefreshCw,
-  RotateCcw,
-  Settings,
   ShieldCheck,
   Sparkles,
-  Swords,
-  Wrench,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
   GoogleAuthProvider,
   User,
@@ -39,26 +32,19 @@ import {
 import { AiRequestError, requestTodayPlan } from "./api/ai";
 import { auth, db } from "./api/firebase";
 import { requestWowheadBis } from "./api/items";
-import { ConfirmDialog, DataCard, EmptyState, Field, LockState, MetricCard, Panel, StatusPill, Toast } from "./components/ui";
-import { dungeonGuideCatalog, legacyDiagramInfo, WOW_KR_YOUTUBE } from "./domain/dungeonCatalog";
-import type { RichDungeonGuide } from "./domain/dungeonCatalog";
-import { GearRecommendationPage } from "./features/gear/GearRecommendationPage";
+import { DataCard, EmptyState, LockState, MetricCard, Panel, StatusPill, Toast } from "./components/ui";
+import { dungeonGuideCatalog } from "./domain/dungeonCatalog";
 import { useGearRecommendation } from "./features/gear/hooks/useGearRecommendation";
 import { defaultGearCoachPreferences } from "./features/gear/domain/gearRecommendation";
 import type { GearCoachPreferences, GearRecommendationMode } from "./features/gear/domain/gearTypes";
-import { classGuides, guideSpecOrder, specLabel, specProfiles } from "./features/gear/domain/specGuides";
 import {
-  appliedEnhancementText,
   buildFallbackPlan,
   buildSnapshotHash,
   buildTodaySnapshot,
   defaultCharacter,
   defaultPreferences,
-  gearReadinessScore,
   itemIcon,
-  itemMeta,
   normalizeRealm,
-  statTotals,
   targets,
 } from "./domain/planning";
 import type {
@@ -74,9 +60,15 @@ import type {
   TodayTask,
   V8Settings,
   View,
-  WowheadBisItem,
   WowheadBisReport,
 } from "./types";
+
+const DungeonsView = lazy(() => import("./views/DungeonsView"));
+const AiView = lazy(() => import("./views/AiView"));
+const GuidesView = lazy(() => import("./views/GuidesView"));
+const SettingsView = lazy(() => import("./views/SettingsView"));
+const WythicView = lazy(() => import("./views/WythicView"));
+const GearRecommendationPage = lazy(() => import("./features/gear/GearRecommendationPage").then((mod) => ({ default: mod.GearRecommendationPage })));
 
 type RioProfile = {
   thumbnail_url?: string;
@@ -85,20 +77,10 @@ type RioProfile = {
   gear?: { item_level_equipped?: number };
 };
 
-type ItemFilter = "all" | "urgent" | "dungeon" | "craft";
 type AutoState = "idle" | "blocked" | "cached" | "generating" | "ready" | "error";
 type SelectionPhase = "idle" | "db" | "renewing" | "revealed";
 
-type DiagramKey = keyof typeof legacyDiagramInfo;
 const AI_DAILY_LIMIT = 200;
-
-const preferenceLabels = {
-  timeBudget: { "30m": "30분", "60m": "1시간", "120m": "2시간", custom: "직접 판단" },
-  goal: { gear: "장비 파밍", score: "점수", light: "가볍게", push: "빡세게", maintenance: "정비" },
-  energy: { low: "낮음", normal: "보통", high: "높음" },
-  party: { solo: "솔로", premade: "고정/지인", either: "상관없음" },
-  risk: { safe: "안전", balanced: "균형", aggressive: "공격적" },
-};
 
 const views: Array<{ id: View; label: string }> = [
   { id: "today", label: "오늘" },
@@ -402,246 +384,6 @@ function TargetItemIcon({ target, className = "", placeholder = "목표" }: { ta
   );
 }
 
-function BisItemIcon({ item }: { item?: WowheadBisItem }) {
-  if (!item) return <span className="item-icon placeholder">BIS</span>;
-  return (
-    <span
-      className={`item-icon bis-list-icon ${item.iconUrl ? "" : "placeholder"}`}
-      style={item.iconUrl ? { backgroundImage: `url(${item.iconUrl})` } : undefined}
-      aria-label={`${item.name} 참고 BIS 아이콘`}
-      title="참고 BIS 아이콘입니다. 실제 추천 툴팁으로 사용하지 않습니다."
-    >
-      {item.iconUrl ? null : "BIS"}
-    </span>
-  );
-}
-
-function bisSlotPriority(slotKey: string) {
-  if (slotKey.startsWith("TRINKET")) return 100;
-  if (slotKey.startsWith("FINGER")) return 92;
-  if (slotKey.includes("HAND")) return 88;
-  if (["HEAD", "CHEST", "LEGS", "SHOULDER", "HANDS"].includes(slotKey)) return 76;
-  return 68;
-}
-
-function pairedSlotKeys(slotKey: string) {
-  if (slotKey.startsWith("FINGER")) return ["FINGER_1", "FINGER_2"];
-  if (slotKey.startsWith("TRINKET")) return ["TRINKET_1", "TRINKET_2"];
-  if (slotKey === "MAIN_HAND" || slotKey === "OFF_HAND") return ["MAIN_HAND", "OFF_HAND"];
-  return [slotKey];
-}
-
-function targetFromBis(item: WowheadBisItem): Target {
-  const source = item.source === "Crafting" ? "제작" : item.source;
-  return {
-    id: `wowhead-bis-${item.slotKey}-${item.itemId}`,
-    slot: item.slotKey,
-    slotLabel: item.slot,
-    priority: bisSlotPriority(item.slotKey),
-    type: source.includes("제작") ? "craft" : "dungeon",
-    target: item.name,
-    icon: item.iconUrl || "",
-    itemId: item.itemId,
-    wowheadUrl: wowheadUrl(item.itemId),
-    source: "참고 BIS",
-    boss: source,
-    reason: "Wowhead 암살 도적 BIS 표 기준 목표입니다.",
-    check: "현재 착용 장비와 같은 부위군 전체를 비교합니다.",
-  };
-}
-
-function rowsWithWowheadBisTargets(rows: EquipmentRow[], report: WowheadBisReport | null, done: Record<string, boolean> = {}) {
-  if (!report?.items?.length) return rows;
-  const bisBySlot = new Map(report.items.map((item) => [item.slotKey, item]));
-  const equippedIdsBySlot = new Map(rows.map((row) => [row.slotKey, itemIdValue(row.equippedItem)]));
-  return rows.map((row) => {
-    const bis = bisBySlot.get(row.slotKey);
-    if (!bis) return { ...row, target: null, type: "none" as const, score: row.enhancement.tone === "warn" ? 35 : 10 };
-    const pairedIds = pairedSlotKeys(row.slotKey).map((key) => equippedIdsBySlot.get(key) || 0).filter(Boolean);
-    const alreadyOwnedInGroup = pairedIds.includes(bis.itemId);
-    const nextTarget = targetFromBis(bis);
-    const target = alreadyOwnedInGroup || done[nextTarget.id] ? null : nextTarget;
-    return {
-      ...row,
-      target,
-      type: target?.type || "none" as const,
-      score: target ? target.priority + (row.enhancement.tone === "warn" ? 8 : 0) : row.enhancement.tone === "warn" ? 35 : 10,
-    };
-  });
-}
-
-function itemIdValue(item?: EquipmentItem | null) {
-  const value = Number(item?.id || 0);
-  return Number.isInteger(value) && value > 0 ? value : 0;
-}
-
-function guideForTarget(target: Target) {
-  const haystack = [target.source, target.boss, target.reason, target.check].filter(Boolean).join(" ").toLowerCase();
-  return dungeonGuideCatalog.find((guide) => {
-    const names = [guide.name, guide.short, guide.en, guide.id, guide.href.split("/").pop() || ""]
-      .filter(Boolean)
-      .map((value) => String(value).toLowerCase());
-    return names.some((name) => name && haystack.includes(name));
-  });
-}
-
-function todayTasksFromBisRows(rows: EquipmentRow[], base: TodaySnapshot, hidden: Record<string, boolean> = {}) {
-  const tasks: TodayTask[] = [];
-  if (!Object.keys(base.character.equipment || {}).length && !hidden.sync) {
-    const syncTask = base.todayTasks.find((task) => task.command === "sync");
-    if (syncTask) tasks.push(syncTask);
-  }
-
-  const seen = new Set(tasks.map((task) => task.id));
-  rows
-    .filter((row) => row.target && !hidden[row.target.id])
-    .sort((a, b) => b.score - a.score)
-    .forEach((row) => {
-      const target = row.target!;
-      if (seen.has(target.id)) return;
-      seen.add(target.id);
-      tasks.push({
-        id: target.id,
-        title: `${row.slotLabel} BIS 교체 후보`,
-        itemName: target.target,
-        body: `${target.source}${target.boss ? ` · ${target.boss}` : ""}`,
-        detail: target.check || target.reason,
-        type: target.priority >= 90 ? "urgent" : target.type,
-        action: target.type === "craft" ? "제작/마부" : "파밍",
-        icon: target.icon,
-        score: row.score,
-        view: target.type === "craft" ? "gear" : "dungeons",
-        done: false,
-      });
-    });
-
-  base.maintenanceRows
-    .filter((row) => !seen.has(row.todoId) && !hidden[row.todoId])
-    .slice(0, 3)
-    .forEach((row) => {
-      tasks.push({
-        id: row.todoId,
-        title: `${row.slotLabel} 강화 확인`,
-        itemName: row.item?.name || row.enhancement.label,
-        body: row.enhancement.label,
-        detail: row.enhancement.detail,
-        type: "craft",
-        action: "정비",
-        score: row.priority,
-        view: "gear",
-        done: false,
-      });
-    });
-
-  return tasks.sort((a, b) => Number(b.score || 0) - Number(a.score || 0)).slice(0, 6);
-}
-
-function dungeonRecommendationsFromBisRows(rows: EquipmentRow[], base: TodaySnapshot) {
-  const visibleTargets = rows.map((row) => row.target).filter(Boolean) as Target[];
-  const connected = dungeonGuideCatalog
-    .map((guide) => {
-      const matched = visibleTargets.filter((target) => guideForTarget(target)?.id === guide.id);
-      return {
-        id: guide.id,
-        name: guide.name,
-        short: guide.short,
-        href: guide.href,
-        why: guide.overview[0] || guide.route,
-        loot: matched.length ? matched.map((target) => `${target.slotLabel} ${target.target}`).join(", ") : "직접 연결된 오늘 목표 없음",
-        memo: guide.danger,
-        count: matched.length,
-        targets: matched,
-        score: matched.reduce((sum, target) => sum + target.priority, 0),
-        guide,
-      };
-    })
-    .sort((a, b) => b.score - a.score || b.count - a.count || a.name.localeCompare(b.name, "ko"))
-    .slice(0, 4);
-
-  return connected.some((row) => row.count > 0) ? connected : base.dungeonRecommendations;
-}
-
-function snapshotWithWowheadBis(base: TodaySnapshot, report: WowheadBisReport | null, done: Record<string, boolean> = {}, hidden: Record<string, boolean> = {}) {
-  if (!report?.items?.length) return base;
-  const equipmentRows = rowsWithWowheadBisTargets(base.equipmentRows, report, done);
-  return {
-    ...base,
-    equipmentRows,
-    todayTasks: todayTasksFromBisRows(equipmentRows, base, hidden),
-    dungeonRecommendations: dungeonRecommendationsFromBisRows(equipmentRows, base),
-  };
-}
-
-function BisComparisonPanel({
-  rows,
-  report,
-  loading,
-  error,
-  onRefresh,
-  disabled,
-}: {
-  rows: EquipmentRow[];
-  report: WowheadBisReport | null;
-  loading: boolean;
-  error: string;
-  onRefresh: () => void;
-  disabled: boolean;
-}) {
-  const bisBySlot = new Map((report?.items || []).map((item) => [item.slotKey, item]));
-  const comparable = rows.filter((row) => bisBySlot.has(row.slotKey));
-  const matched = comparable.filter((row) => itemIdValue(row.equippedItem) === bisBySlot.get(row.slotKey)?.itemId).length;
-  const targetMatched = comparable.filter((row) => row.target?.itemId && row.target.itemId === bisBySlot.get(row.slotKey)?.itemId).length;
-  const fetched = report?.fetchedAt ? new Date(report.fetchedAt).toLocaleString("ko-KR") : "아직 없음";
-  const topRows = comparable.slice().sort((a, b) => {
-    const aBis = bisBySlot.get(a.slotKey);
-    const bBis = bisBySlot.get(b.slotKey);
-    const aMatch = itemIdValue(a.equippedItem) === aBis?.itemId ? 1 : 0;
-    const bMatch = itemIdValue(b.equippedItem) === bBis?.itemId ? 1 : 0;
-    return aMatch - bMatch || b.score - a.score;
-  }).slice(0, 8);
-
-  return (
-    <section className="panel bis-panel">
-      <div className="section-head">
-        <div>
-          <p className="eyebrow">참고 BIS</p>
-          <h2>BIS 비교</h2>
-        </div>
-        <div className="command-actions">
-          {report?.sourceUrl ? <a className="link-btn" href={report.sourceUrl} target="_blank" rel="noreferrer">Wowhead 보기</a> : null}
-          <button type="button" onClick={onRefresh} disabled={disabled || loading}>{loading ? <Loader2 className="spin" size={16} /> : <RefreshCw size={16} />} BIS 새로고침</button>
-        </div>
-      </div>
-      <div className="bis-summary">
-        <MetricCard title="현재 BIS 일치" value={report ? `${matched}/${comparable.length}` : "-"} detail="착용 장비" />
-        <MetricCard title="목표와 일치" value={report ? targetMatched : "-"} detail="등록 목표 기준" />
-        <MetricCard title="참고 자료 갱신" value={report ? "불러옴" : "대기"} detail={fetched} />
-      </div>
-      {error ? <div className="error-box">{error}</div> : null}
-      {!report ? (
-        <EmptyState title="참고 BIS 비교 대기" body="버튼을 누르면 참고 BIS 표를 읽어 현재 장비와 비교합니다." />
-      ) : (
-        <div className="bis-list">
-          {topRows.map((row) => {
-            const bis = bisBySlot.get(row.slotKey);
-            const currentMatch = itemIdValue(row.equippedItem) === bis?.itemId;
-            const targetMatch = row.target?.itemId === bis?.itemId;
-            return (
-              <article key={row.slotKey} className={currentMatch ? "match" : targetMatch ? "target-match" : ""}>
-                <div className="slot-cell"><small>{row.slotLabel}</small><b>{currentMatch ? "착용중" : targetMatch ? "목표 있음" : "차이 있음"}</b></div>
-                <div className="item-cell"><GearItemIcon item={row.equippedItem} label={row.slotLabel} /><div><b>{row.equippedItem?.name || "장비 없음"}</b><span>{itemMeta(row.equippedItem)}</span></div></div>
-                <div className="target-cell"><BisItemIcon item={bis} /><div><b>{bis?.name || "BIS 없음"}</b><span>{bis ? `${bis.source} · 시즌 BIS` : "Wowhead 표에서 찾지 못함"}</span></div></div>
-                <StatusPill tone={currentMatch ? "ok" : targetMatch ? "warn" : "err"}>{currentMatch ? "일치" : targetMatch ? "목표" : "확인"}</StatusPill>
-              </article>
-            );
-          })}
-        </div>
-      )}
-      {report?.warnings?.length ? <p className="bis-warning">일부 아이템 세부 정보 조회 실패: {report.warnings.slice(0, 2).join(" / ")}</p> : null}
-    </section>
-  );
-}
-
 function targetById(id?: string | null) {
   if (!id) return null;
   const target = targets.find((row) => row.id === id) || null;
@@ -731,60 +473,11 @@ function ReadOnlyPreviewNotice({ loggedIn, onLogin }: { loggedIn: boolean; onLog
   );
 }
 
-function CharacterSelectPanel({
-  loggedIn,
-  characters,
-  onSelect,
-  onLogin,
-  onConnect,
-  onSync,
-  syncLoading,
-}: {
-  loggedIn: boolean;
-  characters: Character[];
-  onSelect: (id: string) => void;
-  onLogin: () => void;
-  onConnect: () => void;
-  onSync: () => void;
-  syncLoading: boolean;
-}) {
+function ViewLoading() {
   return (
-    <section className="panel character-select-panel">
-      <div className="section-head">
-        <div>
-          <p className="eyebrow">Character Gate</p>
-          <h1>캐릭터를 먼저 선택해주세요</h1>
-          <p>시작 화면에서는 아무 캐릭터도 자동 선택하지 않습니다. 선택하면 저장된 DB 화면을 먼저 보여준 뒤, 짧은 리뉴얼 화면을 거쳐 AI 진단 여부를 묻습니다.</p>
-        </div>
-        <StatusPill tone={loggedIn ? "ok" : "warn"}>{loggedIn ? `${characters.length}개 저장됨` : "로그인 필요"}</StatusPill>
-      </div>
-
-      {!loggedIn ? (
-        <EmptyState title="로그인 후 캐릭터를 불러옵니다" body="Google 로그인과 Battle.net 연결을 마치면 저장된 캐릭터 목록이 여기에 표시됩니다." />
-      ) : characters.length ? (
-        <div className="character-choice-grid">
-          {characters.map((row) => (
-            <button key={row.id} type="button" className="character-choice" onClick={() => onSelect(row.id)}>
-              <span className="choice-avatar">{row.name.slice(0, 2).toUpperCase()}</span>
-              <span>
-                <b>{row.name}</b>
-                <small>{row.realm || row.realmSlug || "서버 미확인"} · {isPartialCharacter(row) ? "부분 동기화" : row.specName || row.spec || "전문화"} · {(row.region || "kr").toUpperCase()}</small>
-              </span>
-              <Sparkles size={18} />
-            </button>
-          ))}
-        </div>
-      ) : (
-        <EmptyState title="저장된 캐릭터가 없습니다" body="Battle.net 연결 후 장비 동기화를 실행하면 계정의 캐릭터를 불러옵니다." />
-      )}
-
-      <div className="selection-actions">
-        {!loggedIn ? <button type="button" className="primary-btn" onClick={onLogin}><LogIn size={16} /> Google 로그인</button> : null}
-        <button type="button" onClick={onConnect} disabled={!loggedIn}><Database size={16} /> Battle.net 연결</button>
-        <button type="button" onClick={onSync} disabled={!loggedIn || syncLoading}>
-          {syncLoading ? <Loader2 className="spin" size={16} /> : <RefreshCw size={16} />} 캐릭터 새로고침
-        </button>
-      </div>
+    <section className="panel view-loading" role="status">
+      <Loader2 className="spin" size={18} />
+      <span>화면을 불러오는 중입니다.</span>
     </section>
   );
 }
@@ -846,213 +539,6 @@ function AiDiagnosisDialog({
         </div>
       </section>
     </div>
-  );
-}
-
-function ActionCard({
-  action,
-  onDone,
-  onJump,
-  disabled,
-}: {
-  action: AiPlan["actions"][number];
-  onDone: (id?: string | null) => void;
-  onJump: (view: View) => void;
-  disabled: boolean;
-}) {
-  const targetView: View = action.type === "item" || action.type === "maintenance" ? "gear" : action.type === "dungeon" ? "dungeons" : "today";
-  const target = targetById(action.targetId);
-  return (
-    <article className={`ai-action ${action.type} ${target ? "with-icon" : ""}`}>
-      <span className="rank">{action.rank}</span>
-      {target ? <TargetItemIcon target={target} className="ai-action-icon" /> : null}
-      <div>
-        <div className="line">
-          <b>{action.title}</b>
-          <small>{action.estimatedTime}</small>
-        </div>
-        <p>{action.reason}</p>
-        <details className="evidence-details">
-          <summary>근거</summary>
-          <div className="chip-row">
-            {action.evidence.slice(0, 6).map((item) => <span key={item}>{item}</span>)}
-          </div>
-        </details>
-      </div>
-      <div className="row-actions">
-        {action.type === "dungeon" || action.type === "item" || action.type === "maintenance" ? (
-          <button type="button" onClick={() => onJump(targetView)}>보기</button>
-        ) : null}
-        <button type="button" disabled={disabled || !action.targetId} onClick={() => onDone(action.targetId)}>
-          <Check size={15} /> 완료
-        </button>
-      </div>
-    </article>
-  );
-}
-
-function PreferencePanel({
-  preferences,
-  snapshot,
-  onChange,
-  onGenerate,
-  loading,
-  disabled,
-}: {
-  preferences: AiPreferences;
-  snapshot: TodaySnapshot;
-  onChange: (preferences: AiPreferences) => void;
-  onGenerate: () => void;
-  loading: boolean;
-  disabled: boolean;
-}) {
-  const setValue = <K extends keyof AiPreferences>(key: K, value: AiPreferences[K]) => {
-    if (disabled) return;
-    onChange({ ...preferences, [key]: value });
-  };
-  const toggleDungeon = (name: string, list: "preferredDungeons" | "avoidedDungeons") => {
-    if (disabled) return;
-    const preferred = list === "preferredDungeons"
-      ? preferences.preferredDungeons.includes(name) ? preferences.preferredDungeons.filter((item) => item !== name) : [...preferences.preferredDungeons, name]
-      : preferences.preferredDungeons.filter((item) => item !== name);
-    const avoided = list === "avoidedDungeons"
-      ? preferences.avoidedDungeons.includes(name) ? preferences.avoidedDungeons.filter((item) => item !== name) : [...preferences.avoidedDungeons, name]
-      : preferences.avoidedDungeons.filter((item) => item !== name);
-    onChange({ ...preferences, preferredDungeons: preferred, avoidedDungeons: avoided });
-  };
-
-  return (
-    <section className="panel input-panel">
-      <div className="section-head">
-        <div>
-          <p className="eyebrow">조건</p>
-          <h2>AI 판단 조건</h2>
-        </div>
-        <StatusPill tone={preferences.useWeb ? "warn" : "ok"}>{preferences.useWeb ? "최신 검색 사용" : "내 데이터 기준"}</StatusPill>
-      </div>
-      <div className="preference-quick">
-        <span>{preferenceLabels.timeBudget[preferences.timeBudget]}</span>
-        <span>{preferenceLabels.goal[preferences.goal]}</span>
-        <span>{preferenceLabels.energy[preferences.energy]}</span>
-        <span>{preferences.useWeb ? "최신 메타 반영" : "저장 데이터 기준"}</span>
-      </div>
-      <details className="advanced-settings">
-        <summary>고급 조건 조정</summary>
-        <div className="field-grid">
-          <Field label="시간">
-            <select value={preferences.timeBudget} onChange={(event) => setValue("timeBudget", event.target.value as AiPreferences["timeBudget"])} disabled={disabled}>
-              {Object.entries(preferenceLabels.timeBudget).map(([value, text]) => <option key={value} value={value}>{text}</option>)}
-            </select>
-          </Field>
-          <Field label="목표">
-            <select value={preferences.goal} onChange={(event) => setValue("goal", event.target.value as AiPreferences["goal"])} disabled={disabled}>
-              {Object.entries(preferenceLabels.goal).map(([value, text]) => <option key={value} value={value}>{text}</option>)}
-            </select>
-          </Field>
-          <Field label="피로도">
-            <select value={preferences.energy} onChange={(event) => setValue("energy", event.target.value as AiPreferences["energy"])} disabled={disabled}>
-              {Object.entries(preferenceLabels.energy).map(([value, text]) => <option key={value} value={value}>{text}</option>)}
-            </select>
-          </Field>
-          <Field label="파티">
-            <select value={preferences.party} onChange={(event) => setValue("party", event.target.value as AiPreferences["party"])} disabled={disabled}>
-              {Object.entries(preferenceLabels.party).map(([value, text]) => <option key={value} value={value}>{text}</option>)}
-            </select>
-          </Field>
-          <Field label="위험 선호">
-            <select value={preferences.risk} onChange={(event) => setValue("risk", event.target.value as AiPreferences["risk"])} disabled={disabled}>
-              {Object.entries(preferenceLabels.risk).map(([value, text]) => <option key={value} value={value}>{text}</option>)}
-            </select>
-          </Field>
-          <label className="toggle-field">
-            <input type="checkbox" checked={preferences.useWeb} onChange={(event) => setValue("useWeb", event.target.checked)} disabled={disabled} />
-            <span>최신 메타 반영</span>
-          </label>
-        </div>
-        <div className="dungeon-choices">
-          <span>던전 선호/제외</span>
-          {snapshot.dungeonRecommendations.map((dungeon) => (
-            <div className="choice-row" key={dungeon.id}>
-              <b>{dungeon.short}</b>
-              <button type="button" className={preferences.preferredDungeons.includes(dungeon.name) ? "active" : ""} onClick={() => toggleDungeon(dungeon.name, "preferredDungeons")} disabled={disabled}>선호</button>
-              <button type="button" className={preferences.avoidedDungeons.includes(dungeon.name) ? "danger active" : "danger"} onClick={() => toggleDungeon(dungeon.name, "avoidedDungeons")} disabled={disabled}>제외</button>
-            </div>
-          ))}
-        </div>
-        <Field label="자유 메모">
-          <textarea
-            value={preferences.freeNote}
-            placeholder="예: 오늘은 1시간만 가능, 점수보다 장신구 우선, 피곤해서 안전하게"
-            onChange={(event) => setValue("freeNote", event.target.value)}
-            disabled={disabled}
-          />
-        </Field>
-      </details>
-      <button className="primary-btn wide" type="button" onClick={onGenerate} disabled={loading || disabled}>
-        {loading ? <Loader2 className="spin" size={18} /> : <Sparkles size={18} />}
-        오늘의 최적 답 받기
-      </button>
-    </section>
-  );
-}
-
-function PlanResult({
-  plan,
-  fallback,
-  error,
-  onDone,
-  onJump,
-  disabled,
-  stale,
-}: {
-  plan: AiPlan;
-  fallback: boolean;
-  error: string;
-  onDone: (id?: string | null) => void;
-  onJump: (view: View) => void;
-  disabled: boolean;
-  stale?: boolean;
-}) {
-  const visibleActions = plan.actions.filter((action) => !isReferenceBisAction(action));
-  const timePlans = {
-    short: plan.timePlans.short.filter((item) => !isReferenceBisText(item)),
-    normal: plan.timePlans.normal.filter((item) => !isReferenceBisText(item)),
-    long: plan.timePlans.long.filter((item) => !isReferenceBisText(item)),
-  };
-  return (
-    <section className="panel plan-panel">
-      <div className="section-head">
-        <div>
-          <p className="eyebrow">{fallback ? "기본 판단" : "AI 판단"}</p>
-          <h2>{plan.title}</h2>
-        </div>
-        <StatusPill tone={stale ? "warn" : plan.confidence === "high" ? "ok" : plan.confidence === "medium" ? "warn" : "err"}>{stale ? "이전 데이터" : `신뢰도 ${plan.confidence}`}</StatusPill>
-      </div>
-      {error ? <div className="error-box">{error}</div> : null}
-      {stale ? <div className="error-box">현재 장비/선호 조건과 다른 snapshot에서 만든 AI 판단입니다. 새 데이터 기준으로 보려면 수동 재생성을 눌러주세요.</div> : null}
-      <p className="plan-summary">{plan.summary}</p>
-      <div className="action-stack">
-        {visibleActions.map((action) => (
-          <ActionCard key={`${action.rank}-${action.title}`} action={action} onDone={onDone} onJump={onJump} disabled={disabled} />
-        ))}
-        {!visibleActions.length ? <EmptyState title="표시할 실행 항목 없음" body="참고 BIS 기반 이전 항목은 숨겼습니다. 장비 동기화 후 다시 판단하세요." /> : null}
-      </div>
-      <div className="time-plan-grid">
-        <article><Clock3 size={17} /><b>30분</b>{timePlans.short.map((item) => <span key={item}>{item}</span>)}</article>
-        <article><Clock3 size={17} /><b>1시간</b>{timePlans.normal.map((item) => <span key={item}>{item}</span>)}</article>
-        <article><Clock3 size={17} /><b>2시간</b>{timePlans.long.map((item) => <span key={item}>{item}</span>)}</article>
-      </div>
-      <div className="detail-grid">
-        <section>
-          <h3>피할 것</h3>
-          {(plan.avoid.length ? plan.avoid : ["오늘 목표와 직접 연결되지 않는 반복 파밍은 뒤로 미룹니다."]).map((item) => <p key={item}>{item}</p>)}
-        </section>
-        <section>
-          <h3>전제/경고</h3>
-          {[...plan.assumptions, ...plan.dataWarnings].slice(0, 6).map((item) => <p key={item}>{item}</p>)}
-        </section>
-      </div>
-    </section>
   );
 }
 
@@ -1218,726 +704,6 @@ function TodayView({
   );
 }
 
-const gearMapSlotGroups = {
-  left: ["HEAD", "NECK", "SHOULDER", "BACK", "CHEST", "WRIST", "HANDS", "WAIST"],
-  right: ["LEGS", "FEET", "FINGER_1", "FINGER_2", "TRINKET_1", "TRINKET_2"],
-  bottom: ["MAIN_HAND", "OFF_HAND"],
-};
-
-function GearSlotNode({
-  row,
-  disabled,
-  expanded,
-  onDone,
-  onJump,
-}: {
-  row: EquipmentRow;
-  disabled: boolean;
-  expanded?: boolean;
-  onDone: (id?: string | null) => void;
-  onJump: (view: View) => void;
-}) {
-  const hasTarget = Boolean(row.target);
-  return (
-    <article className={`gear-map-slot ${row.enhancement.tone} ${hasTarget ? "has-target" : ""}`}>
-      <div className="gear-map-slot-head">
-        <b>{row.slotLabel}</b>
-        <span>{hasTarget ? "교체 후보" : row.enhancement.label}</span>
-      </div>
-      <div className="gear-map-current">
-        <GearItemIcon item={row.equippedItem} label={row.slotLabel} className="map-icon" />
-        <div>
-          <small>현재</small>
-          <b>{row.equippedItem?.name || "장비 없음"}</b>
-          <span>{row.equippedItem ? itemMeta(row.equippedItem) : row.enhancement.detail}</span>
-        </div>
-      </div>
-      <div className="gear-map-target">
-        <span className="gear-map-arrow">→</span>
-        {row.target ? <TargetItemIcon target={row.target} className="map-icon target-icon" /> : <span className="item-icon map-icon target-icon placeholder">목표</span>}
-        <div>
-          <small>{row.target?.source || row.enhancement.label}</small>
-          <b>{row.target?.target || "등록된 목표 없음"}</b>
-          <span>{row.target ? row.target.boss || row.target.check : row.enhancement.detail}</span>
-        </div>
-      </div>
-      {expanded ? (
-        <div className="gear-map-actions">
-          {row.target ? <button type="button" onClick={() => onJump(row.target?.type === "craft" ? "gear" : "dungeons")}>보기</button> : null}
-          <button type="button" disabled={disabled || !row.target} onClick={() => onDone(row.target?.id)}><Check size={14} /> 완료</button>
-        </div>
-      ) : null}
-    </article>
-  );
-}
-
-function GearMapLayout({
-  rows,
-  heroImage,
-  readiness,
-  disabled,
-  expanded,
-  onDone,
-  onJump,
-}: {
-  rows: EquipmentRow[];
-  heroImage: string;
-  readiness: ReturnType<typeof gearReadinessScore>;
-  disabled: boolean;
-  expanded?: boolean;
-  onDone: (id?: string | null) => void;
-  onJump: (view: View) => void;
-}) {
-  const rowsBySlot = new Map(rows.map((row) => [row.slotKey, row]));
-  const renderSlots = (slots: string[]) => slots.map((slot) => {
-    const row = rowsBySlot.get(slot);
-    return row ? <GearSlotNode key={slot} row={row} disabled={disabled} expanded={expanded} onDone={onDone} onJump={onJump} /> : null;
-  });
-
-  return (
-    <div className={`gear-map-layout ${expanded ? "expanded" : ""}`}>
-      <div className="gear-map-score">
-        <span>장비 준비도</span>
-        <b>{readiness.current}점 → {readiness.target}점</b>
-        <small>우선 교체 {readiness.urgent} · 강화 확인 {readiness.missingEnhance}</small>
-      </div>
-      <div className="gear-map-column left">{renderSlots(gearMapSlotGroups.left)}</div>
-      <div className="gear-map-hero">
-        {heroImage ? <img src={heroImage} alt="" /> : <div className="gear-map-hero-fallback">WJ+</div>}
-      </div>
-      <div className="gear-map-column right">{renderSlots(gearMapSlotGroups.right)}</div>
-      <div className="gear-map-bottom">{renderSlots(gearMapSlotGroups.bottom)}</div>
-    </div>
-  );
-}
-
-function GearMapModal({
-  rows,
-  heroImage,
-  readiness,
-  disabled,
-  onDone,
-  onJump,
-  onClose,
-}: {
-  rows: EquipmentRow[];
-  heroImage: string;
-  readiness: ReturnType<typeof gearReadinessScore>;
-  disabled: boolean;
-  onDone: (id?: string | null) => void;
-  onJump: (view: View) => void;
-  onClose: () => void;
-}) {
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
-
-  return (
-    <div className="dialog-backdrop gear-map-backdrop" role="presentation" onMouseDown={onClose}>
-      <section className="gear-map-dialog" role="dialog" aria-modal="true" aria-label="장비 조감도 크게 보기" onMouseDown={(event) => event.stopPropagation()}>
-        <button className="icon-close" type="button" onClick={onClose} aria-label="닫기"><X size={18} /></button>
-        <div className="gear-map-dialog-head">
-          <div><p className="eyebrow">Gear Overview</p><h2>장비 조감도</h2></div>
-          <button type="button" onClick={() => { onClose(); onJump("gear"); }}>장비 리스트로 이동</button>
-        </div>
-        <GearMapLayout rows={rows} heroImage={heroImage} readiness={readiness} disabled={disabled} expanded onDone={onDone} onJump={onJump} />
-      </section>
-    </div>
-  );
-}
-
-function GearMapPreview({
-  rows,
-  heroImage,
-  readiness,
-  disabled,
-  onDone,
-  onJump,
-}: {
-  rows: EquipmentRow[];
-  heroImage: string;
-  readiness: ReturnType<typeof gearReadinessScore>;
-  disabled: boolean;
-  onDone: (id?: string | null) => void;
-  onJump: (view: View) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <section className="gear-map-panel panel">
-      <div className="section-head">
-        <div><p className="eyebrow">Overview</p><h2>장비 조감도</h2></div>
-        <button type="button" onClick={() => setOpen(true)}>크게 보기</button>
-      </div>
-      <GearMapLayout rows={rows} heroImage={heroImage} readiness={readiness} disabled={disabled} onDone={onDone} onJump={onJump} />
-      {open ? <GearMapModal rows={rows} heroImage={heroImage} readiness={readiness} disabled={disabled} onDone={onDone} onJump={onJump} onClose={() => setOpen(false)} /> : null}
-    </section>
-  );
-}
-
-function GearView({
-  character,
-  rows,
-  heroImage,
-  filter,
-  setFilter,
-  bisReport,
-  bisLoading,
-  bisError,
-  onRefreshBis,
-  onDone,
-  onJump,
-  disabled,
-}: {
-  character: Character;
-  rows: EquipmentRow[];
-  heroImage: string;
-  filter: ItemFilter;
-  setFilter: (filter: ItemFilter) => void;
-  bisReport: WowheadBisReport | null;
-  bisLoading: boolean;
-  bisError: string;
-  onRefreshBis: () => void;
-  onDone: (id?: string | null) => void;
-  onJump: (view: View) => void;
-  disabled: boolean;
-}) {
-  const displayRows = rows;
-  const stats = statTotals(rows);
-  const readiness = gearReadinessScore(displayRows);
-  const { urgent, missingEnhance } = readiness;
-  const filtered = displayRows.filter((row) => {
-    if (filter === "all") return true;
-    if (filter === "urgent") return row.score >= 75 || row.enhancement.tone === "warn";
-    if (filter === "craft") return row.type === "craft" || row.enhancement.tone === "warn";
-    return row.type === filter;
-  }).sort((a, b) => b.score - a.score);
-  const hasEquipment = rows.some((row) => Boolean(row.equippedItem?.name));
-  const gearStatus = gearStatusCopy(character);
-  const showDataWarning = gearStatus.tone !== "ok" || isPartialCharacter(character) || isStaleCharacter(character);
-
-  return (
-    <div className="view-stack">
-      <GearMapPreview rows={displayRows} heroImage={heroImage} readiness={readiness} disabled={disabled} onDone={onDone} onJump={onJump} />
-      <section className="panel">
-        <div className="section-head">
-          <div><p className="eyebrow">Gear</p><h2>장비 최적화</h2></div>
-          <div className="filter-row">
-            {(["all", "urgent", "dungeon", "craft"] as ItemFilter[]).map((item) => <button key={item} type="button" className={filter === item ? "active" : ""} onClick={() => setFilter(item)}>{item === "all" ? "전체" : item === "urgent" ? "우선" : item === "dungeon" ? "던전" : "제작/마부"}</button>)}
-          </div>
-        </div>
-        <div className="gear-summary">
-          <MetricCard title="최적화" value={readiness.current} detail={`/100 → ${readiness.target}`} />
-          <MetricCard title="우선 교체" value={urgent} detail="개" />
-          <MetricCard title="강화 확인" value={missingEnhance} detail="개" />
-          <MetricCard title="장비 상태" value={gearStatus.label} detail={gearStatus.detail} />
-          <MetricCard title="치/가/특/유" value={`${fmt(stats.crit)} · ${fmt(stats.haste)}`} detail={`${fmt(stats.mastery)} · ${fmt(stats.vers)}`} />
-        </div>
-      </section>
-      <BisComparisonPanel rows={displayRows} report={bisReport} loading={bisLoading} error={bisError} onRefresh={onRefreshBis} disabled={disabled} />
-      {showDataWarning ? (
-        <section className="sync-empty panel">
-          <div>
-            <p className="eyebrow">Data needed</p>
-            <h2>{gearStatus.label}</h2>
-            <p>{gearStatus.detail}{hasEquipment ? " · 이전 데이터가 섞이지 않도록 현재 장비 상태를 함께 표시합니다." : " · 실제 착용 장비를 불러오면 슬롯별 우선순위와 강화 누락이 더 정확해집니다."}</p>
-          </div>
-        </section>
-      ) : null}
-      <section className="gear-board panel">
-        {filtered.map((row) => {
-          const targetDone = row.target ? disabled : true;
-          return (
-            <article key={row.slotKey} className={`gear-row ${row.enhancement.tone === "warn" ? "warn" : ""}`}>
-              <div className="slot-cell">
-                <small>{row.slotLabel}</small>
-                <b>{row.slot.group}</b>
-              </div>
-              <div className="item-cell">
-                <GearItemIcon item={row.equippedItem} label={row.slotLabel} />
-                <div><b>{row.equippedItem?.name || "장비 없음"}</b><span>{itemMeta(row.equippedItem)}</span></div>
-              </div>
-              <div className="target-cell">
-                {row.target ? <TargetItemIcon target={row.target} className="target-list-icon" /> : null}
-                <div>
-                  <b>{row.target?.target || "등록된 목표 없음"}</b>
-                  <span>{row.target ? `${row.target.source} · ${row.target.boss}` : row.enhancement.detail}</span>
-                </div>
-              </div>
-              <div className={`enhance-cell ${row.enhancement.tone}`}>
-                <b>{row.enhancement.label}</b>
-                <span>{appliedEnhancementText(row.equippedItem).join(" · ") || row.enhancement.detail}</span>
-              </div>
-              <button type="button" disabled={targetDone || !row.target} onClick={() => onDone(row.target?.id)}>
-                <Check size={15} /> 완료
-              </button>
-            </article>
-          );
-        })}
-      </section>
-    </div>
-  );
-}
-
-function DungeonsView({ recommendations, gearRecommendation }: { recommendations: TodaySnapshot["dungeonRecommendations"]; gearRecommendation?: TodaySnapshot["gearRecommendation"] }) {
-  const [query, setQuery] = useState("");
-  const [onlyTargets, setOnlyTargets] = useState(false);
-  const priorityById = new Map(recommendations.map((row) => [row.id, row]));
-  const sorted = [...dungeonGuideCatalog].sort((a, b) => {
-    const priorityA = priorityById.get(a.id);
-    const priorityB = priorityById.get(b.id);
-    return (priorityB?.score || 0) - (priorityA?.score || 0) || (priorityB?.count || 0) - (priorityA?.count || 0) || a.name.localeCompare(b.name, "ko");
-  });
-  const normalizedQuery = query.trim().toLowerCase();
-  const visible = sorted.filter((guide) => {
-    const priority = priorityById.get(guide.id);
-    if (onlyTargets && !priority?.count) return false;
-    if (!normalizedQuery) return true;
-    return [guide.name, guide.short, guide.en, guide.danger, guide.route, microGuideSearchText(guide)].filter(Boolean).some((value) => String(value).toLowerCase().includes(normalizedQuery));
-  });
-  const top = sorted[0];
-  return (
-    <div className="view-stack">
-      {gearRecommendation?.farmingRoutes.length ? (
-        <section className="panel today-gear-coach">
-          <div className="section-head compact"><div><p className="eyebrow">장비 루트</p><h2>장비 추천 파밍 루트</h2></div><MapIcon size={18} /></div>
-          <div className="today-gear-actions">
-            {gearRecommendation.farmingRoutes.slice(0, 3).map((route) => (
-              <article key={`${route.routeType}-${route.sourceKey || route.sourceNameKo}`}>
-                <b>{route.sourceNameKo}</b>
-                <span>{route.reasonKo}</span>
-              </article>
-            ))}
-          </div>
-        </section>
-      ) : null}
-      <section className="panel">
-        <div className="section-head">
-          <div><p className="eyebrow">Dungeon</p><h2>던전 컨닝</h2></div>
-          <a className="link-btn" href="https://wythic.com/ko/dungeon" target="_blank" rel="noreferrer">Wythic 전체</a>
-        </div>
-        <div className="dungeon-tools">
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="던전, 보스, 위험 요소 검색" />
-          <button type="button" className={onlyTargets ? "active" : ""} onClick={() => setOnlyTargets((value) => !value)}>오늘 목표만</button>
-        </div>
-        {top ? (
-          <section className="dungeon-command">
-            <div>
-              <p className="eyebrow">Dungeon briefing</p>
-              <h3>{top.name}</h3>
-              <p>{top.route} · {top.danger}</p>
-            </div>
-            <div className="command-actions">
-              {top.videoUrl ? <a className="link-btn primary-link" href={top.videoUrl} target="_blank" rel="noreferrer">공식 영상</a> : null}
-              <a className="link-btn" href={top.meta.href} target="_blank" rel="noreferrer">Wythic</a>
-              <a className="link-btn" href={WOW_KR_YOUTUBE} target="_blank" rel="noreferrer">WoW 한국 유튜브</a>
-            </div>
-          </section>
-        ) : null}
-        <div className="dungeon-tabs">
-          {visible.map((guide, index) => {
-            const priority = priorityById.get(guide.id);
-            return (
-              <a key={guide.id} className={index === 0 ? "active" : ""} href={`#dungeon-${guide.id}`}>
-                {guide.short || guide.name}
-                <span>{priority?.count ? `목표 ${priority.count}` : guide.timer}</span>
-              </a>
-            );
-          })}
-        </div>
-        <div className="dungeon-guide-list">
-          {visible.map((guide) => {
-            const priority = priorityById.get(guide.id);
-            return <DungeonGuideCard key={guide.id} guide={guide} priority={priority} />;
-          })}
-          {!visible.length ? <EmptyState title="검색 결과 없음" body="검색어를 줄이거나 오늘 목표만 필터를 꺼보세요." /> : null}
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function microGuideSearchText(guide: RichDungeonGuide) {
-  const micro = guide.microGuide;
-  if (!micro) return "";
-  const top = micro.topPriority.flatMap((item) => Object.values(item));
-  const boss = guide.bosses.flatMap((row) => row.microNote ? Object.values(row.microNote) : []);
-  return [micro.focusKo, micro.oneLineKo, ...top, ...boss].join(" ");
-}
-
-function DungeonGuideCard({ guide, priority }: { guide: RichDungeonGuide; priority?: TodaySnapshot["dungeonRecommendations"][number] }) {
-  const worstBoss = guide.bosses.find((boss) => boss.risk === "최상" || boss.risk === "치명") || guide.bosses[0];
-  const loot = priority?.targets.length ? priority.targets.map((target) => `${target.slotLabel} ${target.target}`).join(", ") : priority?.loot || guide.meta.loot;
-  const microTop = guide.microGuide?.topPriority.slice(0, 3) || [];
-  return (
-    <article className={`dungeon-guide ${priority?.count ? "priority" : ""}`} id={`dungeon-${guide.id}`}>
-      <header className="dungeon-guide-head">
-        <div>
-          <p className="eyebrow">{guide.short} · {guide.timer}</p>
-          <h3>{guide.name}</h3>
-          <p>{guide.meta.why}</p>
-        </div>
-        <div className="dungeon-score-box">
-          <StatusPill tone={priority?.count ? "warn" : "ok"}>{priority?.count ? `오늘 목표 ${priority.count}` : guide.danger}</StatusPill>
-          <strong>{worstBoss?.ko || worstBoss?.name || "핵심 보스"}</strong>
-          <small>{worstBoss?.one || guide.route}</small>
-        </div>
-      </header>
-      <div className="dungeon-brief-grid">
-        <section><b>루트</b><p>{guide.route}</p></section>
-        <section>
-          <b>먹을 것</b>
-          {priority?.targets.length ? (
-            <div className="loot-icon-row">
-              {priority.targets.slice(0, 5).map((target) => <TargetItemIcon key={target.id} target={target} className="loot-item-icon" />)}
-              <p>{loot}</p>
-            </div>
-          ) : <p>{loot}</p>}
-        </section>
-        <section><b>주의</b><p>{guide.danger}</p></section>
-        <section>
-          <b>공식 영상</b>
-          <p>{guide.videoUrl ? <a href={guide.videoUrl} target="_blank" rel="noreferrer">{guide.videoTitle || guide.sourceLabel || "공식 가이드"}</a> : <a href={WOW_KR_YOUTUBE} target="_blank" rel="noreferrer">공식 유튜브</a>}</p>
-        </section>
-        <section><b>외부 분석</b><p><a href={guide.meta.href} target="_blank" rel="noreferrer">Wythic 보기</a></p></section>
-      </div>
-      <div className="overview-pills">
-        {guide.overview.map((item) => <span key={item}>{item}</span>)}
-      </div>
-      {guide.microGuide ? (
-        <section className="micro-survival-panel" aria-label={`${guide.name} 초정밀 생존 노트`}>
-          <div className="micro-survival-head">
-            <div>
-              <p className="eyebrow">Rogue survival</p>
-              <h4>오늘 죽지 말 것</h4>
-            </div>
-            <StatusPill tone="warn">초정밀 생존 노트</StatusPill>
-          </div>
-          <p className="micro-focus">{guide.microGuide.focusKo}</p>
-          <div className="micro-note-grid">
-            {microTop.map((item) => (
-              <article key={item.labelKo}>
-                <b>{item.labelKo}</b>
-                <strong>{item.oneLineKo}</strong>
-                <span>{item.deathRiskKo}</span>
-                <small>생존기: {item.defensiveKo}</small>
-              </article>
-            ))}
-          </div>
-        </section>
-      ) : null}
-      <div className="boss-grid">
-        {guide.bosses.map((boss) => (
-          <section key={boss.name} className={`boss-card risk-${boss.risk}`}>
-            <div className="boss-topline">
-              <span className="risk-pill">{boss.risk}</span>
-              <h4>{boss.ko || boss.name}</h4>
-            </div>
-            <p className="boss-one">{boss.one}</p>
-            <div className="boss-body">
-              <div>
-                <b>해야 할 것</b>
-                <ul>{boss.do.map((item) => <li key={item}>{item}</li>)}</ul>
-              </div>
-              <div className="diagram-box">
-                {(() => {
-                  const diagram = boss.diagram ? legacyDiagramInfo[boss.diagram as DiagramKey] : null;
-                  return (
-                    <>
-                      <b>{diagram?.name || "패턴"}</b>
-                      <ol>{(diagram?.steps || ["위치 확인", "위험 시전 차단", "큰 피해 전 생존기"]).map((step) => <li key={step}>{step}</li>)}</ol>
-                    </>
-                  );
-                })()}
-              </div>
-            </div>
-            <p className="healer-note"><b>힐러/생존 메모</b>{boss.healer || "큰 피해 전 개인 생존기와 차단을 확인합니다."}</p>
-            {boss.microNote ? (
-              <details className="boss-micro-note">
-                <summary>내 생존 체크</summary>
-                <div className="boss-micro-grid">
-                  <span><b>죽는 이유</b>{boss.microNote.deathRiskKo}</span>
-                  <span><b>볼 것</b>{boss.microNote.watchKo}</span>
-                  <span><b>이동</b>{boss.microNote.moveKo}</span>
-                  <span><b>차단/스턴</b>{boss.microNote.interruptKo}</span>
-                  <span><b>생존기</b>{boss.microNote.defensiveKo}</span>
-                  <span><b>근딜 주의</b>{boss.microNote.meleeWarningKo}</span>
-                </div>
-              </details>
-            ) : null}
-          </section>
-        ))}
-      </div>
-      <div className="route-actions">
-        {guide.videoUrl ? <a className="link-btn" href={guide.videoUrl} target="_blank" rel="noreferrer">공식 영상</a> : null}
-        <a className="link-btn" href={guide.meta.href} target="_blank" rel="noreferrer">Wythic</a>
-      </div>
-    </article>
-  );
-}
-
-function WythicView({
-  character,
-  score,
-  ilvl,
-  onJump,
-  readOnlyPreview,
-}: {
-  character: Character;
-  score: number;
-  ilvl: ReturnType<typeof itemLevelInfo>;
-  onJump: (view: View) => void;
-  readOnlyPreview: boolean;
-}) {
-  const [frameKey, setFrameKey] = useState(0);
-  const url = useMemo(() => wythicCharacterUrl(character), [character.id, character.name, character.realm, character.realmSlug, character.region]);
-  if (readOnlyPreview) {
-    return (
-      <div className="view-stack wythic-shell">
-        <section className="panel wythic-command">
-          <div>
-            <p className="eyebrow">Wythic Hybrid</p>
-            <h1>Wythic 참고 보기</h1>
-            <p>캐릭터 선택 전에는 개인 캐릭터 분석 대신 Wythic과 던전 공략으로 이어지는 읽기용 링크를 제공합니다.</p>
-          </div>
-          <div className="wythic-metrics">
-            <MetricCard title="개인 분석" value="잠금" detail="로그인 후 캐릭터 선택" />
-            <MetricCard title="던전 공략" value="열림" detail="읽기 전용 가능" />
-          </div>
-          <div className="command-actions">
-            <a className="link-btn primary-link" href="https://wythic.com/ko/dungeon" target="_blank" rel="noreferrer">Wythic 던전 보기</a>
-            <button type="button" onClick={() => onJump("dungeons")}>던전 공략</button>
-            <button type="button" onClick={() => onJump("gear")}>장비 점검</button>
-          </div>
-        </section>
-        <section className="panel wythic-fallback">
-          <b>개인 Wythic 분석은 로그인 후 사용</b>
-          <span>Battle.net 동기화와 캐릭터 선택이 끝나면 이 화면에서 캐릭터 전용 Wythic 분석을 바로 열 수 있습니다.</span>
-          <a className="link-btn" href="https://wythic.com/ko/dungeon" target="_blank" rel="noreferrer">Wythic 원본 열기</a>
-        </section>
-      </div>
-    );
-  }
-  return (
-    <div className="view-stack wythic-shell">
-      <section className="panel wythic-command">
-        <div>
-          <p className="eyebrow">Wythic Hybrid</p>
-          <h1>{character.name}</h1>
-          <p>{character.realm || character.realmSlug || "아즈샤라"} · {character.specName || character.spec || "전문화"} · {(character.region || "kr").toUpperCase()}</p>
-        </div>
-        <div className="wythic-metrics">
-          <MetricCard title="RIO" value={score ? fmt(Math.round(score)) : "-"} detail="Raider.IO" />
-          <MetricCard title="ILVL" value={ilvl.value ? fmt(Math.round(ilvl.value)) : "-"} detail={ilvl.source || "Battle.net"} />
-        </div>
-        <div className="command-actions">
-          <button type="button" onClick={() => setFrameKey((value) => value + 1)}><RefreshCw size={16} /> Wythic 새로고침</button>
-          <a className="link-btn primary-link" href={url} target="_blank" rel="noreferrer">원본 새 창</a>
-          <button type="button" onClick={() => onJump("gear")}>장비 화면</button>
-          <button type="button" onClick={() => onJump("today")}>오늘 판단</button>
-        </div>
-      </section>
-
-      <section className="panel wythic-frame-panel">
-        <iframe
-          key={`${url}-${frameKey}`}
-          title={`${character.name} Wythic 분석`}
-          src={url}
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-        />
-      </section>
-
-      <section className="panel wythic-fallback">
-        <b>iframe이 비어 보이면</b>
-        <span>Wythic 쪽 정책이나 브라우저 보안 설정 때문에 내장 화면이 막힌 것입니다. 이 경우 원본 새 창으로 열어 확인하면 됩니다.</span>
-        <a className="link-btn" href={url} target="_blank" rel="noreferrer">Wythic 원본 열기</a>
-      </section>
-    </div>
-  );
-}
-
-function GuidesView() {
-  const [activeSpec, setActiveSpec] = useState(guideSpecOrder[0]);
-  const profile = specProfiles[activeSpec];
-  const guide = classGuides[activeSpec];
-
-  return (
-    <div className="view-stack guide-shell">
-      <section className="panel guide-hero">
-        <div>
-          <p className="eyebrow">직업 가이드</p>
-          <h1>한밤 시즌1 전문화 가이드</h1>
-          <p>암살, 무법, 잠행, Devourer를 같은 구조로 정리했습니다. Wowhead 가이드는 기준 출처로 쓰고, 앱에서는 장비 점검에 필요한 핵심만 한국어 실전 요약으로 보여줍니다.</p>
-        </div>
-        <StatusPill tone="ok">4전문화 지원</StatusPill>
-      </section>
-
-      <section className="panel guide-tabs-panel">
-        <div className="spec-switcher" aria-label="전문화 선택">
-          {guideSpecOrder.map((specKey) => {
-            const row = specProfiles[specKey];
-            return (
-              <button key={specKey} type="button" className={activeSpec === specKey ? "spec-pill active" : "spec-pill"} onClick={() => setActiveSpec(specKey)}>
-                {row.specNameKo}
-                <span>{row.classNameKo} · 한밤 시즌1</span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="guide-grid">
-        <article className="panel guide-card lead">
-          <p className="eyebrow">{specLabel(profile)}</p>
-          <h2>{guide.heroTitleKo}</h2>
-          <p>{guide.heroSummaryKo}</p>
-          <div className="guide-metrics">
-            {guide.metrics.map((metric) => <MetricCard key={metric.title} title={metric.title} value={metric.value} detail={metric.detail} />)}
-          </div>
-        </article>
-
-        <article className="panel guide-card">
-          <p className="eyebrow">스탯</p>
-          <h2>스탯 우선순위</h2>
-          <div className="stat-priority">{profile.statPriorityTextKo}</div>
-          <ul className="guide-list">
-            {profile.statNotes.map((item) => <li key={item}>{item}</li>)}
-            {profile.specialRules.hasteBreakpointNote ? <li>{profile.specialRules.hasteBreakpointNote}</li> : null}
-            <li>최종 판단은 Raidbots Top Gear로 자기 캐릭터 기준 시뮬레이션을 확인하는 것이 가장 정확합니다.</li>
-          </ul>
-        </article>
-
-        <article className="panel guide-card">
-          <p className="eyebrow">로테이션</p>
-          <h2>기본 로테이션</h2>
-          <ol className="guide-steps">
-            {guide.rotation.map((item) => <li key={item}>{item}</li>)}
-          </ol>
-        </article>
-
-        <article className="panel guide-card">
-          <p className="eyebrow">장비</p>
-          <h2>장비 점검 포인트</h2>
-          <ul className="guide-list">
-            {guide.gearChecks.map((item) => <li key={item}>{item}</li>)}
-          </ul>
-        </article>
-
-        <article className="panel guide-card">
-          <p className="eyebrow">주의</p>
-          <h2>주의사항</h2>
-          <ul className="guide-list">
-            {guide.cautions.map((item) => <li key={item}>{item}</li>)}
-            <li>이 가이드는 장비 점검용 요약이며 Wowhead 원문을 대량 복제하지 않습니다.</li>
-          </ul>
-        </article>
-
-        <article className="panel guide-card source-guide-card">
-          <ShieldCheck size={18} />
-          <div>
-            <p className="eyebrow">출처</p>
-            <h2>{profile.source.name} 기준</h2>
-            <p>{profile.disclaimer} 실제 DPS 최종 비교는 SimulationCraft 또는 Raidbots 확인이 필요합니다.</p>
-            <a className="link-btn" href={profile.source.url} target="_blank" rel="noreferrer">Wowhead 가이드 보기</a>
-          </div>
-        </article>
-      </section>
-    </div>
-  );
-}
-
-function SettingsView({
-  settings,
-  loggedIn,
-  userId,
-  character,
-  autoState,
-  snapshotHash,
-  aiError,
-  aiLoading,
-  onNoteChange,
-  onClear,
-  onGenerate,
-  onConnect,
-}: {
-  settings: V8Settings;
-  loggedIn: boolean;
-  userId: string;
-  character: Character;
-  autoState: AutoState;
-  snapshotHash: string;
-  aiError: string;
-  aiLoading: boolean;
-  onNoteChange: (note: string) => void;
-  onClear: () => void;
-  onGenerate: () => void;
-  onConnect: () => void;
-}) {
-  const [confirmClear, setConfirmClear] = useState(false);
-  const bnetSummary = settings.lastBnetSyncSummary;
-  const bnetSummaryText = bnetSummary
-    ? `${bnetSummary.found}개 발견 · ${bnetSummary.synced}개 장비 · ${bnetSummary.partial || 0}개 부분 · ${bnetSummary.stale || 0}개 보관 · ${bnetSummary.staleCleaned || 0}개 정리 · 아이콘 ${bnetSummary.iconRequested || 0}개`
-    : "기록 없음";
-  const bnetWarnings = settings.lastBnetSyncWarnings || [];
-  const selectedGearStatus = gearStatusCopy(character);
-  return (
-    <div className="settings-grid">
-      <Panel className="notes-panel">
-        <div className="section-head"><div><p className="eyebrow">Notes</p><h2>개인 메모</h2></div></div>
-        {!loggedIn ? <EmptyState title="로그인 후 메모 저장 가능" body="메모와 완료/숨김 상태는 계정에 저장되는 개인 데이터라 로그인 후 편집할 수 있습니다." /> : null}
-        <textarea value={settings.note || ""} onChange={(event) => onNoteChange(event.target.value)} placeholder="예: 오늘은 사론 8단 이상 2회, 장신구 우선, 피곤하면 안전 루트" disabled={!loggedIn} />
-      </Panel>
-      <Panel>
-        <div className="section-head"><div><p className="eyebrow">Settings</p><h2>상태와 초기화</h2></div><Settings size={18} /></div>
-        <div className="settings-list">
-          <DataCard title="AI 수동 진단" value={autoState} detail={`snapshot ${snapshotHash}`} tone={autoState === "error" ? "err" : autoState === "ready" || autoState === "cached" ? "ok" : "warn"} />
-          <DataCard title="Battle.net" value={settings.lastBnetSyncAt ? "동기화 기록 있음" : "기록 없음"} detail={settings.lastBnetSyncAt ? bnetSummaryText : "연결 후 장비 동기화"} tone={settings.lastBnetSyncAt ? "ok" : "warn"} />
-          <DataCard title="Raider.IO" value={settings.lastRioRefreshAt ? "갱신 기록 있음" : "기록 없음"} detail={settings.lastRioRefreshAt ? new Date(settings.lastRioRefreshAt).toLocaleString("ko-KR") : "로그인 후 자동 갱신"} tone={settings.lastRioRefreshAt ? "ok" : "warn"} />
-        </div>
-        <div className="settings-actions">
-          <button type="button" onClick={() => setConfirmClear(true)} disabled={!loggedIn}><RotateCcw size={16} /> 완료/숨김 초기화</button>
-          <button type="button" onClick={onGenerate} disabled={!loggedIn || aiLoading}><Brain size={16} /> AI 재생성</button>
-          <button type="button" onClick={onConnect} disabled={!loggedIn}><Wrench size={16} /> Battle.net 연결</button>
-        </div>
-        <details className="diagnostics-box">
-          <summary>진단 정보</summary>
-          <dl>
-            <div><dt>UID</dt><dd>{userId || "로그인 전"}</dd></div>
-            <div><dt>선택 캐릭터</dt><dd>{character.id || "없음"}</dd></div>
-            <div><dt>Snapshot</dt><dd>{snapshotHash}</dd></div>
-            <div><dt>Sync run</dt><dd>{bnetSummary?.syncRunId || character.lastSyncRunId || "기록 없음"}</dd></div>
-            <div><dt>마지막 Battle.net</dt><dd>{settings.lastBnetSyncAt || "기록 없음"}</dd></div>
-            <div><dt>Battle.net 요약</dt><dd>{bnetSummaryText}</dd></div>
-            <div><dt>Gear status</dt><dd>{selectedGearStatus.label} · {selectedGearStatus.detail}</dd></div>
-            <div><dt>장비 슬롯</dt><dd>{equipmentSlotCount(character)}</dd></div>
-            <div><dt>장비 에러</dt><dd>{character.gearError || character.syncError || "없음"}</dd></div>
-            <div><dt>부분 동기화</dt><dd>{bnetWarnings.length ? bnetWarnings.slice(0, 6).map((item) => `${item.name} · ${item.realmSlug}${item.stage ? ` · ${item.stage}` : ""}: ${item.error}`).join(" / ") : "없음"}</dd></div>
-            <div><dt>마지막 Raider.IO</dt><dd>{settings.lastRioRefreshAt || "기록 없음"}</dd></div>
-            <div><dt>최근 AI 에러</dt><dd>{aiError || "없음"}</dd></div>
-            <div><dt>배포 경로</dt><dd>/v8/</dd></div>
-          </dl>
-        </details>
-      </Panel>
-      {confirmClear ? (
-        <ConfirmDialog
-          title="완료/숨김을 초기화할까요?"
-          body="오늘 완료 처리와 숨김 처리만 비웁니다. 캐릭터, 메모, AI 히스토리는 유지됩니다."
-          confirmLabel="초기화"
-          onCancel={() => setConfirmClear(false)}
-          onConfirm={() => {
-            setConfirmClear(false);
-            onClear();
-          }}
-        />
-      ) : null}
-    </div>
-  );
-}
-
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [characters, setCharacters] = useState<Character[]>([]);
@@ -1960,7 +726,6 @@ export default function App() {
   const [autoState, setAutoState] = useState<AutoState>("idle");
   const [aiUsageCount, setAiUsageCount] = useState(0);
   const [syncLoading, setSyncLoading] = useState(false);
-  const [itemFilter, setItemFilter] = useState<ItemFilter>("all");
   const [toast, setToast] = useState("");
   const [selectionPhase, setSelectionPhase] = useState<SelectionPhase>("idle");
   const [showAiDiagnosis, setShowAiDiagnosis] = useState(false);
@@ -2428,14 +1193,15 @@ export default function App() {
         <SelectionStageBanner phase={selectionPhase} />
         {isReadOnlyPreview ? <ReadOnlyPreviewNotice loggedIn={loggedIn} onLogin={googleLogin} /> : null}
 
-        {view === "guides" ? (
-          <GuidesView />
-        ) : view === "dungeons" ? (
-          <div className={`workspace-wrap ${selectionPhase === "revealed" ? "revealed" : ""}`}>
-            <DungeonsView recommendations={snapshot.dungeonRecommendations} gearRecommendation={snapshot.gearRecommendation} />
-          </div>
-        ) : (
-          <div className={`workspace-wrap ${selectionPhase === "revealed" ? "revealed" : ""}`}>
+        <Suspense fallback={<ViewLoading />}>
+          {view === "guides" ? (
+            <GuidesView />
+          ) : view === "dungeons" ? (
+            <div className={`workspace-wrap ${selectionPhase === "revealed" ? "revealed" : ""}`}>
+              <DungeonsView recommendations={snapshot.dungeonRecommendations} gearRecommendation={snapshot.gearRecommendation} />
+            </div>
+          ) : (
+            <div className={`workspace-wrap ${selectionPhase === "revealed" ? "revealed" : ""}`}>
         {view === "today" ? (
           <TodayView
             loggedIn={!isReadOnlyPreview}
@@ -2457,19 +1223,23 @@ export default function App() {
         ) : null}
 
         {view === "ai" ? (
-          <div className="ai-grid">
-            <PreferencePanel preferences={preferences} snapshot={snapshot} onChange={setPreferences} onGenerate={() => generatePlan()} loading={aiLoading} disabled={isReadOnlyPreview} />
-            <PlanResult plan={activePlan} fallback={!plan || activePlan.model === "local-fallback"} stale={activePlanStale} error={aiError} onDone={toggleDone} onJump={jump} disabled={isReadOnlyPreview} />
-            <aside className="panel history-panel">
-              <div className="section-head compact"><div><p className="eyebrow">History</p><h2>판단 기록</h2></div><History size={18} /></div>
-              {historyPlans.length ? historyPlans.map((item) => (
-                <button key={item.id} type="button" className={plan?.id === item.id ? "history-item active" : "history-item"} onClick={() => setPlan(item)}>
-                  <b>{item.title}</b>
-                  <span>{new Date(item.generatedAt).toLocaleString("ko-KR")} · {item.trigger || "manual"}</span>
-                </button>
-              )) : <EmptyState title="저장된 AI 판단 없음" body="캐릭터 선택 후 AI 진단을 실행하면 판단 기록이 쌓입니다." />}
-            </aside>
-          </div>
+          <AiView
+            preferences={preferences}
+            snapshot={snapshot}
+            activePlan={activePlan}
+            currentPlan={plan}
+            fallback={!plan || activePlan.model === "local-fallback"}
+            activePlanStale={activePlanStale}
+            aiError={aiError}
+            aiLoading={aiLoading}
+            disabled={isReadOnlyPreview}
+            historyPlans={historyPlans}
+            onPreferencesChange={setPreferences}
+            onGenerate={() => generatePlan()}
+            onDone={toggleDone}
+            onJump={jump}
+            onSelectPlan={setPlan}
+          />
         ) : null}
 
         {view === "gear" ? (
@@ -2495,6 +1265,8 @@ export default function App() {
             loggedIn={!isReadOnlyPreview}
             userId={user?.uid || ""}
             character={character}
+            selectedGearStatus={selectedGearStatus}
+            equipmentSlotCount={equipmentSlotCount(character)}
             autoState={autoState}
             snapshotHash={snapshotHash}
             aiError={aiError}
@@ -2507,6 +1279,7 @@ export default function App() {
         ) : null}
           </div>
         )}
+        </Suspense>
       </main>
 
       {selectionPhase === "renewing" ? <RenewalOverlay /> : null}

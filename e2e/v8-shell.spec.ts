@@ -26,6 +26,25 @@ test("no character is auto-selected on first load", async ({ page }) => {
   expect(hasOverflow).toBe(false);
 });
 
+test("logged-out preview keeps mutating controls locked", async ({ page }) => {
+  await page.goto("./");
+  const nav = page.getByRole("navigation", { name: "주요 화면" });
+
+  await nav.getByRole("button", { name: "장비 점검", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "장비 점검", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "던전 + 제작만" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "참고 자료 새로고침" })).toBeDisabled();
+
+  await nav.getByRole("button", { name: "Wythic", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Wythic 참고 보기" })).toBeVisible();
+  await expect(page.getByText("개인 Wythic 분석은 로그인 후 사용")).toBeVisible();
+
+  await nav.getByRole("button", { name: "메모/설정", exact: true }).click();
+  await expect(page.getByText("로그인 후 메모 저장 가능")).toBeVisible();
+  await expect(page.locator("textarea").first()).toBeDisabled();
+  await expect(page.getByRole("button", { name: /AI 재생성/ })).toBeDisabled();
+});
+
 test("guide tab exposes all supported specs with a shared template", async ({ page }) => {
   await page.goto("./");
   await page.getByRole("navigation", { name: "주요 화면" }).getByRole("button", { name: "가이드", exact: true }).click();
