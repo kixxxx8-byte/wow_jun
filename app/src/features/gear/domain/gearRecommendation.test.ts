@@ -64,7 +64,13 @@ describe("v9 gear recommendation domain", () => {
 
   it("keeps target best set and weekly action plan separated", () => {
     const result = recommendGear({
-      character: defaultCharacter,
+      character: {
+        ...defaultCharacter,
+        equipment: {
+          OFF_HAND: { id: 1002, name: "현재 보조무기", level: 260 },
+          WRIST: { id: 1003, name: "현재 손목", level: 260 },
+        },
+      },
       mode: "craft_priority",
       season: currentSeason,
       candidates: craftedGearCandidates,
@@ -97,6 +103,57 @@ describe("v9 gear recommendation domain", () => {
       reason: "duplicate_unique_equip",
       reasonKo: "이미 장착 중인 아이템입니다.",
     }));
+  });
+
+  it("rejects candidates that are not a higher verified variant than current gear", () => {
+    const result = recommendGear({
+      character: {
+        ...defaultCharacter,
+        equipment: {
+          TRINKET_1: { id: 111, name: "현재 높은 장신구", level: 285 },
+        },
+      },
+      mode: "trinket_priority",
+      season: currentSeason,
+      candidates: [{ ...baseDungeonCandidate, itemLevelMax: 280 }],
+    });
+
+    expect(result.priorityUpgrades).toHaveLength(0);
+    expect(result.weeklyActionPlan.actions).toHaveLength(0);
+    expect(result.rejectedCandidates).toContainEqual(expect.objectContaining({
+      itemId: baseDungeonCandidate.itemId,
+      reason: "invalid_item_level_range",
+    }));
+  });
+
+  it("marks trinket recommendations as check-only with SimC warning metadata", () => {
+    const result = recommendGear({
+      character: {
+        ...defaultCharacter,
+        equipment: {
+          TRINKET_1: { id: 111, name: "현재 장신구", level: 260 },
+        },
+      },
+      mode: "trinket_priority",
+      season: currentSeason,
+      candidates: [baseDungeonCandidate],
+    });
+
+    expect(result.priorityUpgrades[0]?.visibilityStatus).toBe("needs_check");
+    expect(result.warnings.some((warning) => warning.id === "trinket-sim")).toBe(true);
+  });
+
+  it("does not create upgrade actions when current gear for that slot is missing", () => {
+    const result = recommendGear({
+      character: defaultCharacter,
+      mode: "craft_priority",
+      season: currentSeason,
+      candidates: craftedGearCandidates,
+    });
+
+    expect(result.priorityUpgrades).toHaveLength(0);
+    expect(result.weeklyActionPlan.actions).toHaveLength(0);
+    expect(result.summaryKo).toContain("검증 후보가 아직 부족합니다");
   });
 
   it("does not label slots without verified candidates as keep", () => {

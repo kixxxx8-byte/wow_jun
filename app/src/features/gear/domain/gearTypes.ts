@@ -48,6 +48,10 @@ export type GearAcquisition = {
 export type TrinketMeta = {
   role: "burst" | "sustained" | "aoe" | "single_target" | "stat_stick" | "defensive";
   usage: "on_use" | "passive" | "proc";
+  tier?: "S" | "A" | "B" | "C" | "주의";
+  contentFocus?: "mythic_plus" | "raid" | "balanced";
+  needsSim?: boolean;
+  sources?: string[];
   synergyTags?: string[];
   confidence: "high" | "medium" | "low";
   notesKo?: string;
@@ -166,6 +170,7 @@ export type PriorityUpgrade = {
   slotLabelKo: string;
   currentItem?: EquippedItem;
   recommendedItem: GearCandidate;
+  visibilityStatus: "recommended" | "needs_check" | "hidden" | "rejected" | "db_missing";
   priority: "very_high" | "high" | "medium" | "low";
   recommendationScore: number;
   reasonKo: string;

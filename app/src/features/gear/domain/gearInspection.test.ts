@@ -46,6 +46,17 @@ describe("gear inspection", () => {
     })).toHaveLength(0);
   });
 
+  it("keeps shared leather candidates visible for Devourer while separating equipped items", () => {
+    const candidates = getGearCandidatesForSlot({
+      slot: "WRIST",
+      specProfile: specProfiles["demon-hunter-devourer"],
+      currentItem: { id: 777, name: "악사 손목", slot: "WRIST", slotLabelKo: "손목", armorType: "leather", secondaryStats: [] },
+      seasonItems: midnightS1Items,
+    });
+
+    expect(candidates.some((item) => item.itemId === 244576)).toBe(true);
+  });
+
   it("uses special statuses for craft, trinket, weapon, and missing DB", () => {
     const profile = specProfiles["rogue-assassination"];
     expect(evaluateGearSlot({
@@ -61,6 +72,12 @@ describe("gear inspection", () => {
       specProfile: profile,
       seasonItems: midnightS1Items,
     }).status).toBe("trinket-check");
+    expect(evaluateGearSlot({
+      slot: "TRINKET_1",
+      currentItem: { ...character.equipment!.TRINKET_1!, slot: "TRINKET_1", slotLabelKo: "장신구 1", secondaryStats: [] },
+      specProfile: profile,
+      seasonItems: midnightS1Items,
+    }).topCandidate?.item.trinketTier?.tier).toBe("주의");
 
     expect(evaluateGearSlot({
       slot: "OFF_HAND",

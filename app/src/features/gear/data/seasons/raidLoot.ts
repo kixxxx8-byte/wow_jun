@@ -20,6 +20,10 @@ export const raidLootCandidates: GearCandidate[] = [
     trinketMeta: {
       role: "single_target",
       usage: "proc",
+      tier: "주의",
+      contentFocus: "raid",
+      needsSim: true,
+      sources: ["Manual", "Wowhead"],
       confidence: "medium",
       notesKo: "레이드 장신구는 모드에 따라 비교용으로만 표시됩니다.",
     },

@@ -28,6 +28,14 @@ function sourceTone(source: GearSourceType) {
   return "dungeon";
 }
 
+function visibilityLabel(value: PriorityUpgrade["visibilityStatus"]) {
+  if (value === "recommended") return "확정 추천";
+  if (value === "needs_check") return "확인 필요";
+  if (value === "hidden") return "숨김";
+  if (value === "rejected") return "제외";
+  return "DB 미등록";
+}
+
 function characterSpecKey(character: Character): SpecKey {
   const classText = `${character.className || ""} ${character.spec || ""} ${character.specName || ""}`.toLowerCase();
   if (/devourer|악마사냥꾼|demon/.test(classText)) return "demon-hunter-devourer";
@@ -137,7 +145,7 @@ export function GearRecommendationPage({
             <article key={`${upgrade.slot}-${upgrade.recommendedItem.itemId}`} className="upgrade-card">
               <div className="upgrade-card-head">
                 <span className="rank">{index + 1}</span>
-                <div><b>{upgrade.slotLabelKo}</b><span>{priorityLabel(upgrade.priority)} · {upgrade.confidenceLabelKo}</span></div>
+                <div><b>{upgrade.slotLabelKo}</b><span>{visibilityLabel(upgrade.visibilityStatus)} · {priorityLabel(upgrade.priority)} · {upgrade.confidenceLabelKo}</span></div>
                 <span className={`source-badge ${sourceTone(upgrade.sourceType)}`}>{sourceTypeLabelKo[upgrade.sourceType]}</span>
               </div>
               <dl>
@@ -146,7 +154,12 @@ export function GearRecommendationPage({
                 <div><dt>획득처</dt><dd>{getDisplaySourceName(upgrade.recommendedItem)}</dd></div>
               </dl>
               <p>{upgrade.reasonKo}</p>
-              {upgrade.recommendedItem.trinketMeta ? <small className="trinket-warning">장신구 추천은 실제 DPS와 차이가 있을 수 있습니다. SimC/Raidbots 확인 권장.</small> : null}
+              {upgrade.recommendedItem.trinketMeta ? (
+                <small className="trinket-warning">
+                  {upgrade.recommendedItem.trinketMeta.tier ? `티어 ${upgrade.recommendedItem.trinketMeta.tier} · ` : ""}
+                  장신구는 실제 DPS와 차이가 있을 수 있습니다. SimC/Raidbots 확인 권장.
+                </small>
+              ) : null}
               <div className="feedback-actions">
                 <button type="button" onClick={() => hideRecommendation(String(upgrade.recommendedItem.itemId))} disabled={disabled}><EyeOff size={14} /> 숨기기</button>
                 <button type="button" onClick={() => avoidDungeon(upgrade.recommendedItem.sourceDungeonKey)} disabled={disabled || !upgrade.recommendedItem.sourceDungeonKey}><Ban size={14} /> 던전 제외</button>
@@ -193,7 +206,7 @@ export function GearRecommendationPage({
             <article key={`trinket-${upgrade.recommendedItem.itemId}`} className="compact-recommendation">
               <b>{getDisplayItemName(upgrade.recommendedItem)}</b>
               <p>{upgrade.recommendedItem.trinketMeta?.notesKo || "장신구는 실제 심크 확인을 권장합니다."}</p>
-              <small>{confidenceLabelKo(upgrade.recommendedItem.confidence)}</small>
+              <small>{upgrade.recommendedItem.trinketMeta?.tier ? `티어 ${upgrade.recommendedItem.trinketMeta.tier} · ` : ""}{confidenceLabelKo(upgrade.recommendedItem.confidence)}</small>
             </article>
           )) : <div className="empty-inline">기본 추천에 노출할 장신구 후보가 없습니다.</div>}
         </section>
@@ -222,7 +235,10 @@ export function GearRecommendationPage({
                   {slot.candidates.slice(0, 3).map((candidate) => (
                     <section key={candidate.item.itemId}>
                       <b>{candidate.item.nameKo}</b>
-                      <span>{candidate.item.sourceNameKo} · 점검 점수 {candidate.score}</span>
+                      <span>
+                        {candidate.item.sourceNameKo} · 점검 점수 {candidate.score}
+                        {candidate.item.trinketTier ? ` · 티어 ${candidate.item.trinketTier.tier} · ${candidate.item.trinketTier.needsSim ? "SimC 필요" : "검증"}` : ""}
+                      </span>
                       <small>{candidate.reasons[0] || candidate.item.note || "전문화 기준 후보입니다."}</small>
                     </section>
                   ))}

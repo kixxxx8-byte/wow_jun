@@ -140,13 +140,14 @@ export function getGearCandidatesForSlot(params: {
 }) {
   const { slot, specProfile, currentItem, seasonItems } = params;
   const equippedId = numericItemId(currentItem?.id);
+  const classKey = specProfile.classNameKo === "도적" ? "rogue" : specProfile.classNameKo === "악마사냥꾼" ? "demon-hunter" : "";
   return seasonItems.filter((item) => {
     if (item.confidence === "low") return false;
+    if (item.recommendationState === "hidden" || item.recommendationState === "rejected") return false;
     if (equippedId && item.itemId === equippedId) return false;
     if (!sameSlot(item.slot, slot)) return false;
     if (item.allowedSpecs && !item.allowedSpecs.includes(specProfile.specKey)) return false;
-    if (item.allowedClasses?.includes("rogue") && specProfile.classNameKo !== "도적") return false;
-    if (item.allowedClasses?.includes("demon-hunter") && specProfile.classNameKo !== "악마사냥꾼" && item.allowedClasses.length === 1) return false;
+    if (item.allowedClasses?.length && !item.allowedClasses.includes(classKey as "rogue" | "demon-hunter")) return false;
     if (currentItem?.armorType && item.armorType && currentItem.armorType !== item.armorType) return false;
     return true;
   });
@@ -166,6 +167,11 @@ export function scoreGearItemForSpec(item: SeasonItem, specProfile: SpecProfile)
 
   if (item.slot === "TRINKET_1" || item.slot === "TRINKET_2") {
     warnings.push("장신구는 특수효과 영향이 커서 단순 스탯 점수만으로 판단하지 않습니다.");
+    if (item.trinketTier) {
+      score += item.trinketTier.tier === "S" ? 80 : item.trinketTier.tier === "A" ? 60 : item.trinketTier.tier === "B" ? 35 : item.trinketTier.tier === "C" ? 15 : 0;
+      reasons.push(`장신구 티어 ${item.trinketTier.tier}로 큐레이션된 후보입니다.`);
+      if (item.trinketTier.needsSim) warnings.push("장신구 티어는 참고 등급이며 최종 비교는 SimC 확인이 필요합니다.");
+    }
     if (item.hasSpecialEffect) {
       score += 40;
       reasons.push("특수효과 장신구입니다.");

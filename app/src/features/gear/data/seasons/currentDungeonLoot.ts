@@ -23,6 +23,10 @@ export const currentDungeonLootCandidates: GearCandidate[] = [
     trinketMeta: {
       role: "burst",
       usage: "on_use",
+      tier: "주의",
+      contentFocus: "mythic_plus",
+      needsSim: true,
+      sources: ["Manual"],
       confidence: "low",
       notesKo: "장신구는 실제 성능 차이가 클 수 있어 SimC/Raidbots 확인이 필요합니다.",
     },

@@ -43,6 +43,19 @@ function equipmentItemForSlot(character: Character, slot: EquipmentSlotKey): Equ
   return item ? { ...item, slot } : undefined;
 }
 
+function slotMatches(candidateSlot: EquipmentSlotKey, equippedSlot: string) {
+  if (candidateSlot === equippedSlot) return true;
+  if ((candidateSlot === "TRINKET_1" || candidateSlot === "TRINKET_2") && (equippedSlot === "TRINKET_1" || equippedSlot === "TRINKET_2")) return true;
+  if ((candidateSlot === "FINGER_1" || candidateSlot === "FINGER_2") && (equippedSlot === "FINGER_1" || equippedSlot === "FINGER_2")) return true;
+  return false;
+}
+
+function currentItemsForCandidate(character: Character, candidate: GearCandidate) {
+  return Object.entries(character.equipment || {})
+    .filter(([slot]) => slotMatches(candidate.slot, slot))
+    .flatMap(([, item]) => item ? [{ ...item, slot: candidate.slot } as EquippedItem] : []);
+}
+
 function itemLevel(item?: EquippedItem) {
   return Number(item?.level || item?.itemLevel || 0);
 }
@@ -64,6 +77,13 @@ function rejectCandidate(item: GearCandidate, input: RecommendGearInput): Reject
   const profile = gearProfile(input.mode);
   const preferences = input.preferences;
   if (equippedItemIds(input.character).has(item.itemId)) return baseReject(item, "duplicate_unique_equip", "이미 장착 중인 아이템입니다.");
+  const targetLevel = Number(item.itemLevelMax || item.itemLevelMin || 0);
+  if (targetLevel > 0) {
+    const currentItems = currentItemsForCandidate(input.character, item);
+    if (currentItems.some((current) => itemLevel(current) >= targetLevel)) {
+      return baseReject(item, "invalid_item_level_range", "현재 장착 장비보다 높은 변형이 아니라 기본 추천에서 제외합니다.");
+    }
+  }
   if (preferences?.alreadyOwnedItemIds.includes(item.itemId)) return baseReject(item, "duplicate_unique_equip", "이미 획득한 아이템으로 표시되어 기본 추천에서 숨깁니다.");
   if (preferences?.hiddenRecommendationIds.includes(String(item.itemId))) return baseReject(item, "source_not_allowed", "사용자가 숨긴 추천입니다.");
   if (preferences?.excludedSources.includes(item.sourceType)) return baseReject(item, "source_not_allowed", "사용자가 제외한 출처입니다.");
@@ -107,9 +127,17 @@ function buildReason(candidate: GearCandidate, currentItem: EquippedItem | undef
   return "현재 장비와 획득 경로를 기준으로 교체 후보입니다.";
 }
 
+function visibilityStatusForCandidate(candidate: GearCandidate): PriorityUpgrade["visibilityStatus"] {
+  if (!candidate.nameKo?.trim()) return "hidden";
+  if (candidate.confidence === "low" || candidate.sourceType === "unknown") return "hidden";
+  if (candidate.trinketMeta || candidate.slot.includes("TRINKET")) return "needs_check";
+  return "recommended";
+}
+
 function buildPriorityUpgrades(input: RecommendGearInput, candidates: GearCandidate[]) {
   const selected = bestBySlot(input, candidates);
   return Array.from(selected.entries())
+    .filter(([slot]) => Boolean(equipmentItemForSlot(input.character, slot)))
     .map(([slot, row]): PriorityUpgrade => {
       const currentItem = equipmentItemForSlot(input.character, slot);
       return {
@@ -117,6 +145,7 @@ function buildPriorityUpgrades(input: RecommendGearInput, candidates: GearCandid
         slotLabelKo: slotLabelKo[slot],
         currentItem,
         recommendedItem: row.candidate,
+        visibilityStatus: visibilityStatusForCandidate(row.candidate),
         priority: scoreToPriority(row.score),
         recommendationScore: row.score,
         reasonKo: buildReason(row.candidate, currentItem),
@@ -182,10 +211,13 @@ function buildSlotDetails(character: Character, upgrades: PriorityUpgrade[]): Ge
 }
 
 function buildWeeklyActionPlan(upgrades: PriorityUpgrade[], routes: FarmingRoute[], modeLabelKo: string) {
+  const actionableUpgrades = upgrades.filter((upgrade) => upgrade.visibilityStatus === "recommended" || upgrade.visibilityStatus === "needs_check");
   const actions = [
-    ...upgrades.slice(0, 3).map((upgrade) => ({
+    ...actionableUpgrades.slice(0, 3).map((upgrade) => ({
       id: `upgrade-${upgrade.slot}-${upgrade.recommendedItem.itemId}`,
-      titleKo: `${upgrade.slotLabelKo} ${upgrade.sourceType === "craft" ? "제작 검토" : "교체 후보 확인"}`,
+      titleKo: upgrade.visibilityStatus === "needs_check"
+        ? `${upgrade.slotLabelKo} 후보 확인`
+        : `${upgrade.slotLabelKo} ${upgrade.sourceType === "craft" ? "제작 검토" : "교체 후보 확인"}`,
       descriptionKo: `${getDisplayItemName(upgrade.recommendedItem)} · ${upgrade.reasonKo}`,
       actionType: upgrade.sourceType === "craft" ? "craft" as const : "upgrade" as const,
       priority: upgrade.priority,

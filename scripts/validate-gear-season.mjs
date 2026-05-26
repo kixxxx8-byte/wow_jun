@@ -63,6 +63,14 @@ midnightBlocks.forEach((block, index) => {
   if (!/sourceNameKo:\s*"[^"]+"/.test(block)) failures.push(`${label} must include sourceNameKo.`);
   if (!/season:\s*"midnight-s1"/.test(block)) failures.push(`${label} must be tagged as midnight-s1.`);
   if (!/confidence:\s*"(high|medium|low)"/.test(block)) failures.push(`${label} must include confidence.`);
+  if (!/recommendationState:\s*"(recommended|needs_check|hidden|rejected|db_missing)"/.test(block)) failures.push(`${label} must include recommendationState.`);
+  if (/slot:\s*"TRINKET_[12]"/.test(block)) {
+    if (!/trinketTier:\s*[^,\n]+/.test(block)) failures.push(`${label} trinket must include trinketTier.`);
+    if (!/tier:\s*"(S|A|B|C|주의)"/.test(block)) failures.push(`${label} trinket tier must include tier.`);
+    if (!/contentFocus:\s*"(mythic_plus|raid|balanced)"/.test(block)) failures.push(`${label} trinket tier must include contentFocus.`);
+    if (!/needsSim:\s*(true|false)/.test(block)) failures.push(`${label} trinket tier must include needsSim.`);
+    if (!/sources:\s*\[/.test(block)) failures.push(`${label} trinket tier must include sources.`);
+  }
 });
 
 if (/"예시|Example/.test(midnightItems)) failures.push("Midnight S1 item DB must not expose example placeholder data.");
