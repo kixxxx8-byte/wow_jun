@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { dungeonGuideCatalog } from "./dungeonCatalog";
-import { buildFallbackPlan, buildSnapshotHash, buildTodaySnapshot, defaultCharacter, defaultPreferences, equipmentRows, gearReadinessScore, itemIcon, statTotals, targets } from "./planning";
+import { buildFallbackPlan, buildSnapshotHash, buildTodaySnapshot, defaultCharacter, defaultPreferences, equipmentRows, gearReadinessScore, itemIcon, maintenanceRows, statTotals, targets, todayTasks } from "./planning";
 
 describe("today planning domain", () => {
   it("builds a complete AI snapshot", () => {
@@ -79,6 +79,35 @@ describe("today planning domain", () => {
     expect(readiness.target).toBeGreaterThanOrEqual(readiness.current);
     expect(readiness.urgent).toBe(0);
     expect(rows.every((row) => row.target === null)).toBe(true);
+  });
+
+  it("does not create enhancement chores when equipment or conditional sockets are not verified", () => {
+    expect(maintenanceRows(defaultCharacter)).toHaveLength(0);
+    expect(todayTasks(defaultCharacter).map((task) => task.id)).not.toContain("maintenance-WAIST");
+
+    const character = {
+      ...defaultCharacter,
+      equipment: {
+        WAIST: { name: "허리 장비", level: 300 },
+        BACK: { name: "망토 장비", level: 300 },
+      },
+    };
+
+    const maintenance = maintenanceRows(character);
+    expect(maintenance.map((row) => row.slotKey)).toContain("BACK");
+    expect(maintenance.map((row) => row.slotKey)).not.toContain("WAIST");
+  });
+
+  it("only asks for gems when an empty socket is explicitly known", () => {
+    const character = {
+      ...defaultCharacter,
+      equipment: {
+        WAIST: { name: "빈 홈 허리", level: 300, sockets: [{}] },
+      },
+    };
+
+    const waist = maintenanceRows(character).find((row) => row.slotKey === "WAIST");
+    expect(waist?.enhancement.label).toBe("보석 확인");
   });
 
   it("prefers Battle.net item media icon URLs when present", () => {

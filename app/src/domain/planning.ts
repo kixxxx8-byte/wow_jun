@@ -236,6 +236,7 @@ function itemLevel(item?: EquipmentItem | null) {
 }
 
 type EnhancementValue = NonNullable<EquipmentItem["enchantments"]>[number];
+type SocketValue = NonNullable<EquipmentItem["sockets"]>[number];
 
 function textFromEnhancement(value: EnhancementValue) {
   if (typeof value === "string") return value;
@@ -249,6 +250,27 @@ export function appliedEnhancementText(item?: EquipmentItem | null) {
     .map((socket) => typeof socket === "string" ? socket : socket.item?.name || socket.displayString || socket.display || "")
     .filter(Boolean);
   return [...enchants, ...sockets];
+}
+
+function hasEnchant(item?: EquipmentItem | null) {
+  return Boolean(item && (item.enchantments || []).map(textFromEnhancement).some(Boolean));
+}
+
+function socketText(socket: SocketValue) {
+  if (typeof socket === "string") return socket;
+  return socket.item?.name || socket.displayString || socket.display || "";
+}
+
+function hasFilledSocket(item?: EquipmentItem | null) {
+  return Boolean(item && (item.sockets || []).map(socketText).some(Boolean));
+}
+
+function hasExplicitEmptySocket(item?: EquipmentItem | null) {
+  if (!item?.sockets?.length) return false;
+  return item.sockets.some((socket) => {
+    if (typeof socket === "string") return /빈|empty|socket/i.test(socket) && !/보석|gem/i.test(socket);
+    return !socket.item?.name && !socket.itemId && !socket.displayString && !socket.display;
+  });
 }
 
 export function itemMeta(item?: EquipmentItem | null) {
@@ -370,9 +392,19 @@ function activeTargetList(character: Character, done: Record<string, boolean> = 
 }
 
 function enhancementStatus(slot: EquipmentSlot, item: EquipmentItem | null) {
+  if (!item) return { label: "장비 없음", detail: "착용 장비 확인 후 강화 여부를 판단합니다.", tone: "ok" as const };
   if (!slot.enchant && !slot.gem) return { label: "확인 불필요", detail: "기본 강화 대상이 아닙니다.", tone: "ok" as const };
+  if (slot.enchant) {
+    if (hasEnchant(item)) return { label: "마부 확인됨", detail: "마법부여 흔적이 있습니다.", tone: "ok" as const };
+    return { label: "마부 확인", detail: enhancementDetails[slot.key] || slot.note || "마법부여 상태 확인", tone: "warn" as const };
+  }
+  if (slot.gem) {
+    if (hasFilledSocket(item)) return { label: "보석 확인됨", detail: "보석 장착 흔적이 있습니다.", tone: "ok" as const };
+    if (hasExplicitEmptySocket(item)) return { label: "보석 확인", detail: enhancementDetails[slot.key] || slot.note || "빈 보석 홈을 확인하세요.", tone: "warn" as const };
+    return { label: "조건부 확인", detail: "보석 홈이 확인될 때만 정비 대상으로 표시합니다.", tone: "ok" as const };
+  }
   if (hasEnhancement(item)) return { label: "강화 확인됨", detail: "마부/보석 흔적이 있습니다.", tone: "ok" as const };
-  return { label: slot.enchant ? "마부 확인" : "보석 확인", detail: enhancementDetails[slot.key] || slot.note || "강화 상태 확인", tone: "warn" as const };
+  return { label: "확인 불필요", detail: "기본 강화 대상이 아닙니다.", tone: "ok" as const };
 }
 
 export function equipmentRows(character: Character, done: Record<string, boolean> = {}): EquipmentRow[] {
@@ -382,7 +414,8 @@ export function equipmentRows(character: Character, done: Record<string, boolean
     const target = targetAssignments.get(slot.key) || null;
     const comparisonItem = target ? itemForTarget(character, target) : null;
     const lowLevelPenalty = equippedItem && itemLevel(equippedItem) > 0 && itemLevel(equippedItem) < 255 ? 16 : 0;
-    const score = target && !done[target.id] ? target.priority + lowLevelPenalty : slot.enchant || slot.gem ? 35 : 10;
+    const enhancement = enhancementStatus(slot, equippedItem);
+    const score = target && !done[target.id] ? target.priority + lowLevelPenalty : enhancement.tone === "warn" ? 35 : 10;
     return {
       slot,
       slotKey: slot.key,
@@ -394,7 +427,7 @@ export function equipmentRows(character: Character, done: Record<string, boolean
       target,
       score,
       type: target?.type || "none",
-      enhancement: enhancementStatus(slot, equippedItem),
+      enhancement,
     };
   });
 }
