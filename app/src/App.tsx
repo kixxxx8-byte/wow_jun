@@ -711,10 +711,23 @@ function LockNotice({ onLogin }: { onLogin: () => void }) {
   return (
     <LockState
       title="읽기용 미리보기"
-      body="저장, Battle.net 동기화, AI 생성은 Google 로그인 후 사용할 수 있습니다."
+      body="로그인 없이 주요 화면을 둘러볼 수 있습니다. 내 캐릭터 동기화, 저장, AI 생성은 Google 로그인 후 사용할 수 있습니다."
       action="Google 로그인"
       onAction={onLogin}
     />
+  );
+}
+
+function ReadOnlyPreviewNotice({ loggedIn, onLogin }: { loggedIn: boolean; onLogin: () => void }) {
+  return (
+    <section className="preview-strip panel">
+      <div>
+        <p className="eyebrow">읽기 전용</p>
+        <b>{loggedIn ? "캐릭터 선택 전 기본 데이터 기준입니다." : "로그인 전 기본 데이터 기준입니다."}</b>
+        <span>오늘 판단, 장비 점검, 던전 공략은 미리 볼 수 있고 저장/동기화/AI 생성은 잠겨 있습니다.</span>
+      </div>
+      {!loggedIn ? <button className="primary-btn" type="button" onClick={onLogin}><LogIn size={16} /> 로그인하고 내 캐릭터 보기</button> : null}
+    </section>
   );
 }
 
@@ -893,8 +906,12 @@ function PreferencePanel({
   loading: boolean;
   disabled: boolean;
 }) {
-  const setValue = <K extends keyof AiPreferences>(key: K, value: AiPreferences[K]) => onChange({ ...preferences, [key]: value });
+  const setValue = <K extends keyof AiPreferences>(key: K, value: AiPreferences[K]) => {
+    if (disabled) return;
+    onChange({ ...preferences, [key]: value });
+  };
   const toggleDungeon = (name: string, list: "preferredDungeons" | "avoidedDungeons") => {
+    if (disabled) return;
     const preferred = list === "preferredDungeons"
       ? preferences.preferredDungeons.includes(name) ? preferences.preferredDungeons.filter((item) => item !== name) : [...preferences.preferredDungeons, name]
       : preferences.preferredDungeons.filter((item) => item !== name);
@@ -923,32 +940,32 @@ function PreferencePanel({
         <summary>고급 조건 조정</summary>
         <div className="field-grid">
           <Field label="시간">
-            <select value={preferences.timeBudget} onChange={(event) => setValue("timeBudget", event.target.value as AiPreferences["timeBudget"])}>
+            <select value={preferences.timeBudget} onChange={(event) => setValue("timeBudget", event.target.value as AiPreferences["timeBudget"])} disabled={disabled}>
               {Object.entries(preferenceLabels.timeBudget).map(([value, text]) => <option key={value} value={value}>{text}</option>)}
             </select>
           </Field>
           <Field label="목표">
-            <select value={preferences.goal} onChange={(event) => setValue("goal", event.target.value as AiPreferences["goal"])}>
+            <select value={preferences.goal} onChange={(event) => setValue("goal", event.target.value as AiPreferences["goal"])} disabled={disabled}>
               {Object.entries(preferenceLabels.goal).map(([value, text]) => <option key={value} value={value}>{text}</option>)}
             </select>
           </Field>
           <Field label="피로도">
-            <select value={preferences.energy} onChange={(event) => setValue("energy", event.target.value as AiPreferences["energy"])}>
+            <select value={preferences.energy} onChange={(event) => setValue("energy", event.target.value as AiPreferences["energy"])} disabled={disabled}>
               {Object.entries(preferenceLabels.energy).map(([value, text]) => <option key={value} value={value}>{text}</option>)}
             </select>
           </Field>
           <Field label="파티">
-            <select value={preferences.party} onChange={(event) => setValue("party", event.target.value as AiPreferences["party"])}>
+            <select value={preferences.party} onChange={(event) => setValue("party", event.target.value as AiPreferences["party"])} disabled={disabled}>
               {Object.entries(preferenceLabels.party).map(([value, text]) => <option key={value} value={value}>{text}</option>)}
             </select>
           </Field>
           <Field label="위험 선호">
-            <select value={preferences.risk} onChange={(event) => setValue("risk", event.target.value as AiPreferences["risk"])}>
+            <select value={preferences.risk} onChange={(event) => setValue("risk", event.target.value as AiPreferences["risk"])} disabled={disabled}>
               {Object.entries(preferenceLabels.risk).map(([value, text]) => <option key={value} value={value}>{text}</option>)}
             </select>
           </Field>
           <label className="toggle-field">
-            <input type="checkbox" checked={preferences.useWeb} onChange={(event) => setValue("useWeb", event.target.checked)} />
+            <input type="checkbox" checked={preferences.useWeb} onChange={(event) => setValue("useWeb", event.target.checked)} disabled={disabled} />
             <span>최신 메타 반영</span>
           </label>
         </div>
@@ -957,8 +974,8 @@ function PreferencePanel({
           {snapshot.dungeonRecommendations.map((dungeon) => (
             <div className="choice-row" key={dungeon.id}>
               <b>{dungeon.short}</b>
-              <button type="button" className={preferences.preferredDungeons.includes(dungeon.name) ? "active" : ""} onClick={() => toggleDungeon(dungeon.name, "preferredDungeons")}>선호</button>
-              <button type="button" className={preferences.avoidedDungeons.includes(dungeon.name) ? "danger active" : "danger"} onClick={() => toggleDungeon(dungeon.name, "avoidedDungeons")}>제외</button>
+              <button type="button" className={preferences.preferredDungeons.includes(dungeon.name) ? "active" : ""} onClick={() => toggleDungeon(dungeon.name, "preferredDungeons")} disabled={disabled}>선호</button>
+              <button type="button" className={preferences.avoidedDungeons.includes(dungeon.name) ? "danger active" : "danger"} onClick={() => toggleDungeon(dungeon.name, "avoidedDungeons")} disabled={disabled}>제외</button>
             </div>
           ))}
         </div>
@@ -967,6 +984,7 @@ function PreferencePanel({
             value={preferences.freeNote}
             placeholder="예: 오늘은 1시간만 가능, 점수보다 장신구 우선, 피곤해서 안전하게"
             onChange={(event) => setValue("freeNote", event.target.value)}
+            disabled={disabled}
           />
         </Field>
       </details>
@@ -1666,14 +1684,43 @@ function WythicView({
   score,
   ilvl,
   onJump,
+  readOnlyPreview,
 }: {
   character: Character;
   score: number;
   ilvl: ReturnType<typeof itemLevelInfo>;
   onJump: (view: View) => void;
+  readOnlyPreview: boolean;
 }) {
   const [frameKey, setFrameKey] = useState(0);
   const url = useMemo(() => wythicCharacterUrl(character), [character.id, character.name, character.realm, character.realmSlug, character.region]);
+  if (readOnlyPreview) {
+    return (
+      <div className="view-stack wythic-shell">
+        <section className="panel wythic-command">
+          <div>
+            <p className="eyebrow">Wythic Hybrid</p>
+            <h1>Wythic 참고 보기</h1>
+            <p>캐릭터 선택 전에는 개인 캐릭터 분석 대신 Wythic과 던전 공략으로 이어지는 읽기용 링크를 제공합니다.</p>
+          </div>
+          <div className="wythic-metrics">
+            <MetricCard title="개인 분석" value="잠금" detail="로그인 후 캐릭터 선택" />
+            <MetricCard title="던전 공략" value="열림" detail="읽기 전용 가능" />
+          </div>
+          <div className="command-actions">
+            <a className="link-btn primary-link" href="https://wythic.com/ko/dungeon" target="_blank" rel="noreferrer">Wythic 던전 보기</a>
+            <button type="button" onClick={() => onJump("dungeons")}>던전 공략</button>
+            <button type="button" onClick={() => onJump("gear")}>장비 점검</button>
+          </div>
+        </section>
+        <section className="panel wythic-fallback">
+          <b>개인 Wythic 분석은 로그인 후 사용</b>
+          <span>Battle.net 동기화와 캐릭터 선택이 끝나면 이 화면에서 캐릭터 전용 Wythic 분석을 바로 열 수 있습니다.</span>
+          <a className="link-btn" href="https://wythic.com/ko/dungeon" target="_blank" rel="noreferrer">Wythic 원본 열기</a>
+        </section>
+      </div>
+    );
+  }
   return (
     <div className="view-stack wythic-shell">
       <section className="panel wythic-command">
@@ -1841,6 +1888,7 @@ function SettingsView({
     <div className="settings-grid">
       <Panel className="notes-panel">
         <div className="section-head"><div><p className="eyebrow">Notes</p><h2>개인 메모</h2></div></div>
+        {!loggedIn ? <EmptyState title="로그인 후 메모 저장 가능" body="메모와 완료/숨김 상태는 계정에 저장되는 개인 데이터라 로그인 후 편집할 수 있습니다." /> : null}
         <textarea value={settings.note || ""} onChange={(event) => onNoteChange(event.target.value)} placeholder="예: 오늘은 사론 8단 이상 2회, 장신구 우선, 피곤하면 안전 루트" disabled={!loggedIn} />
       </Panel>
       <Panel>
@@ -1924,6 +1972,7 @@ export default function App() {
   const selectedCharacter = useMemo(() => currentCharacter(characters, activeCharacterId), [characters, activeCharacterId]);
   const character = selectedCharacter || defaultCharacter;
   const hasSelectedCharacter = Boolean(selectedCharacter);
+  const isReadOnlyPreview = !loggedIn || !hasSelectedCharacter;
   const recentRuns = rio?.mythic_plus_recent_runs || [];
   const gearCoachPreferences = useMemo(
     () => ({ ...defaultGearCoachPreferences(), ...(settings.gearCoachPreferences || {}) }),
@@ -2377,6 +2426,7 @@ export default function App() {
         </section>
 
         <SelectionStageBanner phase={selectionPhase} />
+        {isReadOnlyPreview ? <ReadOnlyPreviewNotice loggedIn={loggedIn} onLogin={googleLogin} /> : null}
 
         {view === "guides" ? (
           <GuidesView />
@@ -2384,21 +2434,11 @@ export default function App() {
           <div className={`workspace-wrap ${selectionPhase === "revealed" ? "revealed" : ""}`}>
             <DungeonsView recommendations={snapshot.dungeonRecommendations} gearRecommendation={snapshot.gearRecommendation} />
           </div>
-        ) : !hasSelectedCharacter ? (
-          <CharacterSelectPanel
-            loggedIn={loggedIn}
-            characters={pickerCharacters}
-            onSelect={changeCharacter}
-            onLogin={googleLogin}
-            onConnect={connectBattleNet}
-            onSync={() => syncBattleNet(false)}
-            syncLoading={syncLoading}
-          />
         ) : (
           <div className={`workspace-wrap ${selectionPhase === "revealed" ? "revealed" : ""}`}>
         {view === "today" ? (
           <TodayView
-            loggedIn={loggedIn}
+            loggedIn={!isReadOnlyPreview}
             snapshot={snapshot}
             plan={activePlan}
             fallback={!plan || activePlan.model === "local-fallback"}
@@ -2418,8 +2458,8 @@ export default function App() {
 
         {view === "ai" ? (
           <div className="ai-grid">
-            <PreferencePanel preferences={preferences} snapshot={snapshot} onChange={setPreferences} onGenerate={() => generatePlan()} loading={aiLoading} disabled={!loggedIn} />
-            <PlanResult plan={activePlan} fallback={!plan || activePlan.model === "local-fallback"} stale={activePlanStale} error={aiError} onDone={toggleDone} onJump={jump} disabled={!loggedIn} />
+            <PreferencePanel preferences={preferences} snapshot={snapshot} onChange={setPreferences} onGenerate={() => generatePlan()} loading={aiLoading} disabled={isReadOnlyPreview} />
+            <PlanResult plan={activePlan} fallback={!plan || activePlan.model === "local-fallback"} stale={activePlanStale} error={aiError} onDone={toggleDone} onJump={jump} disabled={isReadOnlyPreview} />
             <aside className="panel history-panel">
               <div className="section-head compact"><div><p className="eyebrow">History</p><h2>판단 기록</h2></div><History size={18} /></div>
               {historyPlans.length ? historyPlans.map((item) => (
@@ -2441,18 +2481,18 @@ export default function App() {
             bisReport={bisReport}
             bisLoading={bisLoading}
             bisError={bisError}
-            disabled={!loggedIn}
+            disabled={isReadOnlyPreview}
             onModeChange={(mode: GearRecommendationMode) => saveSettings({ gearCoachPreferences: { ...gearCoachPreferences, defaultMode: mode } })}
             onPreferencesChange={(next: GearCoachPreferences) => saveSettings({ gearCoachPreferences: next })}
             onRefreshBis={() => refreshWowheadBis(true, false)}
             onJumpDungeons={() => jump("dungeons")}
           />
         ) : null}
-        {view === "wythic" ? <WythicView character={character} score={score} ilvl={ilvl} onJump={jump} /> : null}
+        {view === "wythic" ? <WythicView character={character} score={score} ilvl={ilvl} onJump={jump} readOnlyPreview={isReadOnlyPreview} /> : null}
         {view === "notes" ? (
           <SettingsView
             settings={settings}
-            loggedIn={loggedIn}
+            loggedIn={!isReadOnlyPreview}
             userId={user?.uid || ""}
             character={character}
             autoState={autoState}

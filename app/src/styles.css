@@ -726,6 +726,25 @@ a {
   line-height: 1.45;
 }
 
+.preview-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  background: linear-gradient(135deg, rgba(236, 253, 245, 0.84), rgba(255, 255, 255, 0.94));
+}
+
+.preview-strip b,
+.preview-strip span {
+  display: block;
+}
+
+.preview-strip span {
+  margin-top: 4px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
 .command-bar {
   overflow: hidden;
   position: relative;
@@ -3347,6 +3366,10 @@ a {
   }
 
   .lock-strip {
+    display: grid;
+  }
+
+  .preview-strip {
     display: grid;
   }
 
