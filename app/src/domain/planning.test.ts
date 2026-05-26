@@ -96,6 +96,7 @@ describe("today planning domain", () => {
     const maintenance = maintenanceRows(character);
     expect(maintenance.map((row) => row.slotKey)).toContain("BACK");
     expect(maintenance.map((row) => row.slotKey)).not.toContain("WAIST");
+    expect(todayTasks(character).map((task) => task.id)).not.toContain("maintenance-BACK");
   });
 
   it("only asks for gems when an empty socket is explicitly known", () => {
@@ -108,6 +109,7 @@ describe("today planning domain", () => {
 
     const waist = maintenanceRows(character).find((row) => row.slotKey === "WAIST");
     expect(waist?.enhancement.label).toBe("보석 확인");
+    expect(todayTasks(character).map((task) => task.id)).not.toContain("maintenance-WAIST");
   });
 
   it("prefers Battle.net item media icon URLs when present", () => {

@@ -512,22 +512,6 @@ export function todayTasks(character: Character, done: Record<string, boolean> =
     });
   });
 
-  const existing = new Set(rows.map((row) => row.id));
-  maintenanceRows(character, done).filter((row) => !existing.has(row.todoId)).slice(0, 3).forEach((row) => {
-    rows.push({
-      id: row.todoId,
-      title: `${row.slotLabel} 강화 확인`,
-      itemName: row.item?.name || row.enhancement.label,
-      body: row.enhancement.label,
-      detail: row.enhancement.detail,
-      type: "craft",
-      action: "정비",
-      score: row.priority,
-      view: "gear",
-      done: Boolean(done[row.todoId]),
-    });
-  });
-
   return rows
     .filter((row) => !hidden[row.id])
     .sort((a, b) => Number(b.score || 0) - Number(a.score || 0))
