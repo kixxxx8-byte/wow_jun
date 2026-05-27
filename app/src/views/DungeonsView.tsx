@@ -59,10 +59,12 @@ function CinematicMotion({ type }: { type: NonNullable<RichDungeonGuide["cinemat
       {type === "hook_interrupt" ? (
         <>
           <circle className="enemy-dot secondary" cx="78" cy="92" r="15" />
-          <text className="motion-label" x="78" y="98">걸쇠</text>
-          <path className="hook-line" d="M78 92 C112 58 130 58 160 92" />
-          <circle className="safe-zone" cx="122" cy="92" r="22" />
-          <path className="safe-path" d="M160 142 C146 122 134 105 122 92" />
+          <text className="motion-label" x="78" y="98">어보미</text>
+          <text className="motion-label" x="160" y="70">벤시</text>
+          <path className="hook-line" d="M78 92 C110 74 133 88 160 92 S202 110 236 92" />
+          <circle className="safe-zone" cx="236" cy="92" r="22" />
+          <text className="motion-label" x="236" y="98">대상자</text>
+          <path className="safe-path" d="M160 142 C184 124 208 106 236 92" />
         </>
       ) : null}
       {type === "add_interrupt" ? (
