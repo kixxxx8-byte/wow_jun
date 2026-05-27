@@ -171,9 +171,11 @@ describe("today planning domain", () => {
     const windrunner = dungeonGuideCatalog.find((guide) => guide.id === "windrunner");
     expect(dungeonGuideCatalog).toHaveLength(8);
     expect(windrunner?.cinematicGuide?.titleKo).toContain("윈드러너");
+    expect(windrunner?.cinematicGuide?.sources).toHaveLength(3);
     expect(windrunner?.cinematicGuide?.phases).toHaveLength(4);
     expect(windrunner?.cinematicGuide?.oneLineKo).toContain("어보미-벤시-대상자");
     expect(windrunner?.cinematicGuide?.phases.find((phase) => phase.id === "windrunner-hook-interrupt")?.moveKo).toContain("내장 걸쇠 - 칼리스 - 대상자");
+    expect(windrunner?.cinematicGuide?.phases.find((phase) => phase.id === "windrunner-arrow-hide")?.oneLineKo).toContain("바람 고리");
     windrunner?.cinematicGuide?.phases.forEach((phase) => {
       expect(phase.oneLineKo).toBeTruthy();
       expect(phase.watchKo).toBeTruthy();

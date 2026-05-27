@@ -106,6 +106,12 @@ function WindrunnerCinematicGuide({ guide, priority }: { guide: RichDungeonGuide
           {priority?.count ? <span>오늘 목표 아이템 {priority.count}개와 연결됨</span> : <span>장비 목표가 없어도 생존 루틴으로 사용</span>}
         </div>
       </div>
+      <div className="cinematic-sources" aria-label="공략 검수 출처">
+        <span>검수 기준</span>
+        {cinematic.sources.map((source) => (
+          <a key={source.href} href={source.href} target="_blank" rel="noreferrer">{source.labelKo}</a>
+        ))}
+      </div>
       <div className="cinematic-survival">
         <div><ShieldAlert size={18} /><b>오늘 죽지 말 것 3개</b></div>
         {cinematic.survivalFocusKo.map((item) => <article key={item}>{item}</article>)}
