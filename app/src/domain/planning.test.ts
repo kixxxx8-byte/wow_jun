@@ -166,4 +166,18 @@ describe("today planning domain", () => {
     expect(dungeonGuideCatalog.some((guide) => guide.bosses.some((boss) => boss.microNote?.deathRiskKo))).toBe(true);
     expect(dungeonGuideCatalog.some((guide) => [guide.route, guide.danger, guide.microGuide?.oneLineKo].join(" ").includes("차단"))).toBe(true);
   });
+
+  it("adds a cinematic Windrunner field guide without changing the rest of the dungeon catalog", () => {
+    const windrunner = dungeonGuideCatalog.find((guide) => guide.id === "windrunner");
+    expect(dungeonGuideCatalog).toHaveLength(8);
+    expect(windrunner?.cinematicGuide?.titleKo).toContain("윈드러너");
+    expect(windrunner?.cinematicGuide?.phases).toHaveLength(4);
+    windrunner?.cinematicGuide?.phases.forEach((phase) => {
+      expect(phase.oneLineKo).toBeTruthy();
+      expect(phase.watchKo).toBeTruthy();
+      expect(phase.moveKo).toBeTruthy();
+      expect(phase.defensiveKo).toBeTruthy();
+      expect(phase.animationType).toBeTruthy();
+    });
+  });
 });

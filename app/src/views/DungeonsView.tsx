@@ -1,4 +1,4 @@
-import { Map as MapIcon } from "lucide-react";
+import { Activity, Crosshair, Map as MapIcon, ShieldAlert, Zap } from "lucide-react";
 import { useMemo, useState } from "react";
 import { EmptyState, StatusPill } from "../components/ui";
 import { dungeonGuideCatalog, legacyDiagramInfo, WOW_KR_YOUTUBE, type RichDungeonGuide } from "../domain/dungeonCatalog";
@@ -18,13 +18,144 @@ function TargetItemIcon({ target, className = "", placeholder = "목표" }: { ta
 
 function microGuideSearchText(guide: RichDungeonGuide) {
   const micro = guide.microGuide;
-  if (!micro) return "";
-  const top = micro.topPriority.flatMap((item) => Object.values(item));
+  const cinematic = guide.cinematicGuide;
+  const top = micro?.topPriority.flatMap((item) => Object.values(item)) || [];
   const boss = guide.bosses.flatMap((row) => row.microNote ? Object.values(row.microNote) : []);
-  return [micro.focusKo, micro.oneLineKo, ...top, ...boss].join(" ");
+  const cinematicText = cinematic ? [
+    cinematic.titleKo,
+    cinematic.subtitleKo,
+    cinematic.oneLineKo,
+    ...cinematic.survivalFocusKo,
+    ...cinematic.phases.flatMap((phase) => Object.values(phase)),
+    ...cinematic.trashAlerts.flatMap((alert) => Object.values(alert)),
+    ...cinematic.defensivePlan.flatMap((plan) => Object.values(plan)),
+    ...cinematic.failRecovery.flatMap((row) => Object.values(row)),
+  ] : [];
+  return [micro?.focusKo, micro?.oneLineKo, ...top, ...boss, ...cinematicText].filter(Boolean).join(" ");
 }
 
-function DungeonGuideCard({ guide, priority }: { guide: RichDungeonGuide; priority?: TodaySnapshot["dungeonRecommendations"][number] }) {
+function CinematicMotion({ type }: { type: NonNullable<RichDungeonGuide["cinematicGuide"]>["phases"][number]["animationType"] }) {
+  return (
+    <svg className={`cinematic-motion cinematic-${type}`} viewBox="0 0 320 190" role="img" aria-label="패턴 이동 모션 다이어그램">
+      <defs>
+        <radialGradient id={`safe-${type}`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#d9fff6" />
+          <stop offset="100%" stopColor="#7ed7cb" />
+        </radialGradient>
+      </defs>
+      <rect className="arena" x="12" y="12" width="296" height="166" rx="18" />
+      <circle className="boss-dot" cx="160" cy="92" r="18" />
+      <text className="motion-label boss-label" x="160" y="98">BOSS</text>
+      <circle className="player-dot" cx="160" cy="142" r="8" />
+      <text className="motion-label player-label" x="178" y="147">나</text>
+      {type === "twister_breath" ? (
+        <>
+          <path className="danger-cone" d="M160 92 L95 34 L225 34 Z" />
+          <path className="twister twister-one" d="M44 156 C88 118 82 70 132 38" />
+          <path className="twister twister-two" d="M270 152 C218 120 236 70 190 38" />
+          <path className="safe-path" d="M160 142 C185 132 205 116 220 96" />
+        </>
+      ) : null}
+      {type === "hook_interrupt" ? (
+        <>
+          <circle className="enemy-dot secondary" cx="78" cy="92" r="15" />
+          <text className="motion-label" x="78" y="98">걸쇠</text>
+          <path className="hook-line" d="M78 92 C112 58 130 58 160 92" />
+          <circle className="safe-zone" cx="122" cy="92" r="22" />
+          <path className="safe-path" d="M160 142 C146 122 134 105 122 92" />
+        </>
+      ) : null}
+      {type === "add_interrupt" ? (
+        <>
+          <rect className="cast-bar-bg" x="72" y="34" width="176" height="16" rx="8" />
+          <rect className="cast-bar-fill" x="72" y="34" width="176" height="16" rx="8" />
+          <circle className="enemy-dot add-one" cx="95" cy="118" r="13" />
+          <circle className="enemy-dot add-two" cx="225" cy="118" r="13" />
+          <path className="interrupt-pulse" d="M160 142 L95 118 M160 142 L225 118" />
+        </>
+      ) : null}
+      {type === "arrow_hide" ? (
+        <>
+          <path className="arrow-pad" d="M90 145 L118 112 L146 145 Z" />
+          <path className="jump-arc" d="M160 142 C148 92 124 85 118 112" />
+          <circle className="safe-zone" cx="236" cy="68" r="28" />
+          <rect className="pillar" x="224" y="52" width="24" height="46" rx="8" />
+          <path className="danger-ring" d="M55 95 C98 35 222 35 265 95" />
+        </>
+      ) : null}
+    </svg>
+  );
+}
+
+function WindrunnerCinematicGuide({ guide, priority }: { guide: RichDungeonGuide; priority?: TodaySnapshot["dungeonRecommendations"][number] }) {
+  const cinematic = guide.cinematicGuide;
+  if (!cinematic) return null;
+  return (
+    <section className="panel windrunner-cinematic" aria-label="윈드러너 첨탑 상세 작전">
+      <div className="cinematic-hero">
+        <div>
+          <p className="eyebrow">완성형 실전 공략</p>
+          <h2>{cinematic.titleKo}</h2>
+          <p>{cinematic.subtitleKo}</p>
+        </div>
+        <div className="cinematic-callout">
+          <Zap size={18} />
+          <b>{cinematic.oneLineKo}</b>
+          {priority?.count ? <span>오늘 목표 아이템 {priority.count}개와 연결됨</span> : <span>장비 목표가 없어도 생존 루틴으로 사용</span>}
+        </div>
+      </div>
+      <div className="cinematic-survival">
+        <div><ShieldAlert size={18} /><b>오늘 죽지 말 것 3개</b></div>
+        {cinematic.survivalFocusKo.map((item) => <article key={item}>{item}</article>)}
+      </div>
+      <div className="cinematic-phase-grid">
+        {cinematic.phases.map((phase, index) => (
+          <article key={phase.id} className={`cinematic-phase severity-${phase.severity}`}>
+            <div className="cinematic-phase-copy">
+              <small>{index + 1} · {phase.bossKo}</small>
+              <h3>{phase.phaseKo}</h3>
+              <strong>{phase.oneLineKo}</strong>
+              <dl>
+                <div><dt>볼 것</dt><dd>{phase.watchKo}</dd></div>
+                <div><dt>움직임</dt><dd>{phase.moveKo}</dd></div>
+                <div><dt>차단/스턴</dt><dd>{phase.interruptKo}</dd></div>
+                <div><dt>생존기</dt><dd>{phase.defensiveKo}</dd></div>
+                <div><dt>실패 시 복구</dt><dd>{phase.failRecoveryKo}</dd></div>
+              </dl>
+            </div>
+            <CinematicMotion type={phase.animationType} />
+          </article>
+        ))}
+      </div>
+      <div className="cinematic-bottom-grid">
+        <section>
+          <div><Crosshair size={17} /><h3>쫄 구간 위험 시전</h3></div>
+          {cinematic.trashAlerts.map((alert) => (
+            <article key={alert.titleKo}>
+              <b>{alert.titleKo}</b>
+              <span>{alert.watchKo}</span>
+              <small>{alert.interruptKo} · {alert.defensiveKo}</small>
+            </article>
+          ))}
+        </section>
+        <section>
+          <div><ShieldAlert size={17} /><h3>내 생존기 콜</h3></div>
+          {cinematic.defensivePlan.map((plan) => (
+            <article key={plan.triggerKo}><b>{plan.triggerKo}</b><span>{plan.actionKo}</span></article>
+          ))}
+        </section>
+        <section>
+          <div><Activity size={17} /><h3>실수 복구법</h3></div>
+          {cinematic.failRecovery.map((row) => (
+            <article key={row.mistakeKo}><b>{row.mistakeKo}</b><span>{row.recoveryKo}</span></article>
+          ))}
+        </section>
+      </div>
+    </section>
+  );
+}
+
+function DungeonGuideCard({ guide, priority, onOpenCinematic }: { guide: RichDungeonGuide; priority?: TodaySnapshot["dungeonRecommendations"][number]; onOpenCinematic: (id: string) => void }) {
   const worstBoss = guide.bosses.find((boss) => boss.risk === "최상" || boss.risk === "치명") || guide.bosses[0];
   const loot = priority?.targets.length ? priority.targets.map((target) => `${target.slotLabel} ${target.target}`).join(", ") : priority?.loot || guide.meta.loot;
   const microTop = guide.microGuide?.topPriority.slice(0, 3) || [];
@@ -40,6 +171,7 @@ function DungeonGuideCard({ guide, priority }: { guide: RichDungeonGuide; priori
           <StatusPill tone={priority?.count ? "warn" : "ok"}>{priority?.count ? `오늘 목표 ${priority.count}` : guide.danger}</StatusPill>
           <strong>{worstBoss?.ko || worstBoss?.name || "핵심 보스"}</strong>
           <small>{worstBoss?.one || guide.route}</small>
+          {guide.cinematicGuide ? <button type="button" onClick={() => onOpenCinematic(guide.id)} aria-label={`${guide.name} 상세 작전 보기`}>상세 작전 보기</button> : null}
         </div>
       </header>
       <div className="dungeon-brief-grid">
@@ -138,6 +270,7 @@ function DungeonGuideCard({ guide, priority }: { guide: RichDungeonGuide; priori
 export default function DungeonsView({ recommendations, gearRecommendation }: { recommendations: TodaySnapshot["dungeonRecommendations"]; gearRecommendation?: TodaySnapshot["gearRecommendation"] }) {
   const [query, setQuery] = useState("");
   const [onlyTargets, setOnlyTargets] = useState(false);
+  const [activeCinematicId, setActiveCinematicId] = useState("windrunner");
   const priorityById = useMemo(() => new Map(recommendations.map((row) => [row.id, row])), [recommendations]);
   const sorted = useMemo(() => [...dungeonGuideCatalog].sort((a, b) => {
     const priorityA = priorityById.get(a.id);
@@ -152,6 +285,7 @@ export default function DungeonsView({ recommendations, gearRecommendation }: { 
     return [guide.name, guide.short, guide.en, guide.danger, guide.route, microGuideSearchText(guide)].filter(Boolean).some((value) => String(value).toLowerCase().includes(normalizedQuery));
   });
   const top = sorted[0];
+  const activeCinematicGuide = visible.find((guide) => guide.id === activeCinematicId && guide.cinematicGuide);
   return (
     <div className="view-stack">
       {gearRecommendation?.farmingRoutes.length ? (
@@ -201,10 +335,13 @@ export default function DungeonsView({ recommendations, gearRecommendation }: { 
             );
           })}
         </div>
+        {activeCinematicGuide ? (
+          <WindrunnerCinematicGuide guide={activeCinematicGuide} priority={priorityById.get(activeCinematicGuide.id)} />
+        ) : null}
         <div className="dungeon-guide-list">
           {visible.map((guide) => {
             const priority = priorityById.get(guide.id);
-            return <DungeonGuideCard key={guide.id} guide={guide} priority={priority} />;
+            return <DungeonGuideCard key={guide.id} guide={guide} priority={priority} onOpenCinematic={setActiveCinematicId} />;
           })}
           {!visible.length ? <EmptyState title="검색 결과 없음" body="검색어를 줄이거나 오늘 목표만 필터를 꺼보세요." /> : null}
         </div>

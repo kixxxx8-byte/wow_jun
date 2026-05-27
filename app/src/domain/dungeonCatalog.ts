@@ -1,4 +1,5 @@
 import type { DungeonBoss, DungeonGuide } from "../types";
+import { dungeonCinematicGuides, type DungeonCinematicGuide } from "./dungeonCinematicGuides";
 import { legacyDiagramInfo, legacyDungeonData, officialDungeonGuides } from "./dungeonGuideData";
 import { dungeonMicroGuides, type DungeonMicroGuide, type DungeonMicroNote } from "./dungeonMicroGuides";
 
@@ -24,6 +25,7 @@ export type RichDungeonBoss = DungeonBoss & { microNote?: DungeonMicroNote };
 
 export type RichDungeonGuide = Omit<DungeonGuide, "bosses"> & {
   microGuide?: DungeonMicroGuide;
+  cinematicGuide?: DungeonCinematicGuide;
   bosses: RichDungeonBoss[];
   meta: {
     href: string;
@@ -37,6 +39,7 @@ const officialDungeonGuideById = officialDungeonGuides as unknown as Partial<Rec
 function mergeDungeonGuide(guide: (typeof legacyDungeonData)[number]): RichDungeonGuide {
   const official = officialDungeonGuideById[guide.id] || {};
   const microGuide = dungeonMicroGuides[guide.id];
+  const cinematicGuide = dungeonCinematicGuides[guide.id];
   const overview = [...(official.overview || guide.overview)];
   const bosses = [...(official.bosses || guide.bosses)].map((boss) => ({
     ...boss,
@@ -50,11 +53,13 @@ function mergeDungeonGuide(guide: (typeof legacyDungeonData)[number]): RichDunge
     overview,
     bosses,
     microGuide,
+    cinematicGuide,
   };
   return {
     ...merged,
     bosses,
     microGuide,
+    cinematicGuide,
     meta: {
       href: merged.href,
       loot: "현재 개인 목표 아이템 없음",

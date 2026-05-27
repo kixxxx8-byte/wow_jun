@@ -2244,6 +2244,14 @@ a {
   line-height: 1.4;
 }
 
+.dungeon-score-box button {
+  width: 100%;
+  margin-top: 10px;
+  border-color: rgba(15, 118, 110, 0.32);
+  color: var(--teal);
+  background: var(--teal-soft);
+}
+
 .dungeon-brief-grid {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
@@ -2380,6 +2388,404 @@ a {
   line-height: 1.42;
   font-size: 12px;
   word-break: keep-all;
+}
+
+.windrunner-cinematic {
+  margin: 14px 16px 0;
+  overflow: hidden;
+  border-color: rgba(15, 118, 110, 0.26);
+  background:
+    linear-gradient(135deg, rgba(236, 253, 245, 0.86), rgba(255, 255, 255, 0.96) 42%, rgba(239, 246, 255, 0.92)),
+    var(--surface);
+}
+
+.cinematic-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 14px;
+  align-items: stretch;
+}
+
+.cinematic-hero h2 {
+  margin: 2px 0 8px;
+  font-size: 30px;
+}
+
+.cinematic-hero p {
+  margin: 0;
+  color: #43515f;
+  line-height: 1.55;
+}
+
+.cinematic-callout {
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid rgba(15, 118, 110, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.cinematic-callout svg,
+.cinematic-callout b,
+.cinematic-callout span {
+  display: block;
+}
+
+.cinematic-callout svg {
+  color: var(--teal);
+}
+
+.cinematic-callout b {
+  margin-top: 8px;
+  color: var(--ink);
+  line-height: 1.42;
+}
+
+.cinematic-callout span {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.cinematic-survival {
+  display: grid;
+  grid-template-columns: 220px repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.cinematic-survival > div,
+.cinematic-survival article {
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid rgba(194, 65, 75, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.cinematic-survival > div {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--red);
+}
+
+.cinematic-survival article {
+  color: #43313a;
+  font-weight: 850;
+}
+
+.cinematic-phase-grid {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.cinematic-phase {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 12px;
+  align-items: stretch;
+  padding: 12px;
+  border: 1px solid rgba(43, 101, 177, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.cinematic-phase.severity-lethal {
+  border-color: rgba(194, 65, 75, 0.26);
+  background: linear-gradient(180deg, rgba(254, 242, 242, 0.78), rgba(255, 255, 255, 0.82));
+}
+
+.cinematic-phase.severity-control {
+  border-color: rgba(183, 121, 31, 0.25);
+  background: linear-gradient(180deg, rgba(255, 251, 235, 0.78), rgba(255, 255, 255, 0.82));
+}
+
+.cinematic-phase-copy {
+  min-width: 0;
+}
+
+.cinematic-phase-copy small,
+.cinematic-phase-copy strong,
+.cinematic-phase-copy dt,
+.cinematic-phase-copy dd {
+  word-break: keep-all;
+}
+
+.cinematic-phase-copy small {
+  color: var(--teal);
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.cinematic-phase-copy h3 {
+  margin: 5px 0 8px;
+  font-size: 22px;
+}
+
+.cinematic-phase-copy strong {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--ink);
+  line-height: 1.42;
+}
+
+.cinematic-phase-copy dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin: 0;
+}
+
+.cinematic-phase-copy div {
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.cinematic-phase-copy dt {
+  color: var(--teal);
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.cinematic-phase-copy dd {
+  margin: 4px 0 0;
+  color: #43515f;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.cinematic-motion {
+  width: 100%;
+  min-height: 220px;
+  border: 1px solid rgba(15, 118, 110, 0.16);
+  border-radius: 8px;
+  background: radial-gradient(circle at center, #f9fffd 0, #edf7ff 70%);
+}
+
+.cinematic-motion .arena {
+  fill: rgba(255, 255, 255, 0.72);
+  stroke: rgba(15, 118, 110, 0.26);
+  stroke-width: 2;
+}
+
+.motion-label {
+  fill: #334155;
+  font-size: 10px;
+  font-weight: 900;
+  text-anchor: middle;
+}
+
+.boss-dot {
+  fill: #0f766e;
+  stroke: #0b4f4a;
+  stroke-width: 3;
+}
+
+.player-dot {
+  fill: #2563eb;
+  stroke: #dbeafe;
+  stroke-width: 4;
+  animation: player-breathe 1.6s ease-in-out infinite;
+}
+
+.enemy-dot {
+  fill: #b7791f;
+  stroke: #fff7ed;
+  stroke-width: 4;
+}
+
+.enemy-dot.secondary {
+  fill: #c2414b;
+}
+
+.danger-cone {
+  fill: rgba(194, 65, 75, 0.24);
+  stroke: rgba(194, 65, 75, 0.62);
+  stroke-width: 2;
+  animation: danger-pulse 1.2s ease-in-out infinite;
+}
+
+.twister {
+  fill: none;
+  stroke: #60a5fa;
+  stroke-width: 9;
+  stroke-linecap: round;
+  stroke-dasharray: 18 18;
+  animation: twister-run 1.05s linear infinite;
+}
+
+.twister-two {
+  animation-direction: reverse;
+}
+
+.safe-path,
+.jump-arc {
+  fill: none;
+  stroke: #059669;
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 12 10;
+  animation: safe-run 1.15s linear infinite;
+}
+
+.safe-zone {
+  fill: #d9fff6;
+  stroke: #0f766e;
+  stroke-width: 3;
+  opacity: 0.78;
+  animation: safe-glow 1.35s ease-in-out infinite;
+}
+
+.hook-line,
+.interrupt-pulse {
+  fill: none;
+  stroke: #c2414b;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 10 8;
+  animation: hook-pull 0.9s linear infinite;
+}
+
+.cast-bar-bg {
+  fill: rgba(15, 23, 42, 0.14);
+}
+
+.cast-bar-fill {
+  fill: #c2414b;
+  transform-origin: 72px 42px;
+  animation: cast-fill 1.8s ease-in-out infinite;
+}
+
+.arrow-pad {
+  fill: rgba(37, 99, 235, 0.22);
+  stroke: #2563eb;
+  stroke-width: 3;
+  animation: arrow-blink 1s ease-in-out infinite;
+}
+
+.pillar {
+  fill: #64748b;
+  stroke: #334155;
+  stroke-width: 2;
+}
+
+.danger-ring {
+  fill: none;
+  stroke: #c2414b;
+  stroke-width: 8;
+  stroke-dasharray: 16 10;
+  stroke-linecap: round;
+  animation: danger-ring 1.2s linear infinite;
+}
+
+.cinematic-bottom-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.cinematic-bottom-grid section {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.cinematic-bottom-grid section > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+
+.cinematic-bottom-grid h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.cinematic-bottom-grid article {
+  padding: 9px 0;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.cinematic-bottom-grid article:first-of-type {
+  border-top: 0;
+}
+
+.cinematic-bottom-grid b,
+.cinematic-bottom-grid span,
+.cinematic-bottom-grid small {
+  display: block;
+  line-height: 1.42;
+  word-break: keep-all;
+}
+
+.cinematic-bottom-grid b {
+  color: var(--teal);
+  font-size: 12px;
+}
+
+.cinematic-bottom-grid span,
+.cinematic-bottom-grid small {
+  margin-top: 4px;
+  color: #43515f;
+  font-size: 12px;
+}
+
+@keyframes player-breathe {
+  50% { transform: scale(1.24); }
+}
+
+@keyframes danger-pulse {
+  50% { opacity: 0.46; }
+}
+
+@keyframes twister-run {
+  to { stroke-dashoffset: -36; }
+}
+
+@keyframes safe-run {
+  to { stroke-dashoffset: -22; }
+}
+
+@keyframes safe-glow {
+  50% { opacity: 0.38; transform: scale(1.08); }
+}
+
+@keyframes hook-pull {
+  to { stroke-dashoffset: -18; }
+}
+
+@keyframes cast-fill {
+  0% { transform: scaleX(0.08); }
+  70% { transform: scaleX(1); }
+  100% { transform: scaleX(1); opacity: 0.35; }
+}
+
+@keyframes arrow-blink {
+  50% { fill: rgba(37, 99, 235, 0.44); }
+}
+
+@keyframes danger-ring {
+  to { stroke-dashoffset: -26; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cinematic-motion *,
+  .windrunner-cinematic * {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 .dungeon-card,
@@ -3279,8 +3685,19 @@ a {
   .bis-summary,
   .guide-metrics,
   .dungeon-brief-grid,
-  .micro-note-grid {
+  .micro-note-grid,
+  .cinematic-survival,
+  .cinematic-bottom-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cinematic-hero,
+  .cinematic-phase {
+    grid-template-columns: 1fr;
+  }
+
+  .cinematic-motion {
+    min-height: 190px;
   }
 
   .gear-map-layout,
@@ -3407,9 +3824,28 @@ a {
   .dungeon-brief-grid,
   .boss-grid,
   .micro-note-grid,
+  .cinematic-survival,
+  .cinematic-phase-copy dl,
+  .cinematic-bottom-grid,
   .boss-micro-grid,
   .wythic-metrics {
     grid-template-columns: 1fr;
+  }
+
+  .windrunner-cinematic {
+    margin: 12px 10px 0;
+  }
+
+  .cinematic-hero h2 {
+    font-size: 25px;
+  }
+
+  .cinematic-phase {
+    padding: 10px;
+  }
+
+  .cinematic-motion {
+    min-height: 170px;
   }
 
   .wythic-fallback {

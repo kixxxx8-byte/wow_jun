@@ -73,6 +73,20 @@ test("dungeon tab shows personal micro survival notes", async ({ page }) => {
   expect(hasOverflow).toBe(false);
 });
 
+test("windrunner dungeon exposes cinematic field guide", async ({ page }) => {
+  await page.goto("./");
+  await page.getByRole("navigation", { name: "주요 화면" }).getByRole("button", { name: "던전", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "윈드러너 첨탑 실전 작전" })).toBeVisible();
+  await expect(page.getByText("회오리 길을 먼저 보고")).toBeVisible();
+  await expect(page.locator(".cinematic-motion").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "윈드러너 첨탑 상세 작전 보기" })).toBeVisible();
+  await expect(page.getByText("쫄 구간 위험 시전")).toBeVisible();
+  await page.getByPlaceholder("던전, 보스, 위험 요소 검색").fill("화살");
+  await expect(page.getByRole("heading", { name: "윈드러너 첨탑 실전 작전" })).toBeVisible();
+  const hasOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
+  expect(hasOverflow).toBe(false);
+});
+
 test("top navigation keeps notes settings visible on tablet widths", async ({ page }) => {
   await page.setViewportSize({ width: 900, height: 720 });
   await page.goto("./");
