@@ -158,6 +158,8 @@ describe("today planning domain", () => {
     expect(dungeonGuideCatalog).toHaveLength(8);
     expect(dungeonGuideCatalog.every((guide) => guide.bosses.length > 0)).toBe(true);
     expect(dungeonGuideCatalog.some((guide) => guide.videoUrl && guide.meta.href.includes("wythic.com"))).toBe(true);
+    expect(dungeonGuideCatalog.every((guide) => guide.audit.confidenceLabelKo && guide.audit.lastChecked)).toBe(true);
+    expect(dungeonGuideCatalog.some((guide) => guide.audit.confidence === "needs_feedback")).toBe(true);
   });
 
   it("adds personal survival micro notes without replacing the simple guide", () => {
@@ -171,7 +173,8 @@ describe("today planning domain", () => {
     const windrunner = dungeonGuideCatalog.find((guide) => guide.id === "windrunner");
     expect(dungeonGuideCatalog).toHaveLength(8);
     expect(windrunner?.cinematicGuide?.titleKo).toContain("윈드러너");
-    expect(windrunner?.cinematicGuide?.sources).toHaveLength(3);
+    expect(windrunner?.audit.confidence).toBe("cross_checked");
+    expect(windrunner?.cinematicGuide?.audit.sources).toHaveLength(3);
     expect(windrunner?.cinematicGuide?.phases).toHaveLength(4);
     expect(windrunner?.cinematicGuide?.oneLineKo).toContain("어보미-벤시-대상자");
     expect(windrunner?.cinematicGuide?.phases.find((phase) => phase.id === "windrunner-hook-interrupt")?.moveKo).toContain("내장 걸쇠 - 칼리스 - 대상자");
@@ -182,6 +185,7 @@ describe("today planning domain", () => {
       expect(phase.moveKo).toBeTruthy();
       expect(phase.defensiveKo).toBeTruthy();
       expect(phase.animationType).toBeTruthy();
+      expect(phase.audit.confidenceLabelKo).toBeTruthy();
     });
   });
 });

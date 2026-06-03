@@ -7,6 +7,13 @@ import type { Target, TodaySnapshot } from "../types";
 
 type DiagramKey = keyof typeof legacyDiagramInfo;
 
+const auditTone: Record<RichDungeonGuide["audit"]["confidence"], "ok" | "warn" | "err"> = {
+  verified: "ok",
+  cross_checked: "ok",
+  reviewing: "warn",
+  needs_feedback: "err",
+};
+
 function TargetItemIcon({ target, className = "", placeholder = "목표" }: { target?: Target | null; className?: string; placeholder?: string }) {
   const icon = target ? itemIcon({ icon: target.icon }) : "";
   return icon ? (
@@ -32,6 +39,15 @@ function microGuideSearchText(guide: RichDungeonGuide) {
     ...cinematic.failRecovery.flatMap((row) => Object.values(row)),
   ] : [];
   return [micro?.focusKo, micro?.oneLineKo, ...top, ...boss, ...cinematicText].filter(Boolean).join(" ");
+}
+
+function GuideAuditBadge({ audit }: { audit: RichDungeonGuide["audit"] }) {
+  return (
+    <div className={`guide-audit guide-audit-${audit.confidence}`} aria-label={`공략 신뢰도 ${audit.confidenceLabelKo}`}>
+      <b>{audit.confidenceLabelKo}</b>
+      <span>{audit.lastChecked}</span>
+    </div>
+  );
 }
 
 function CinematicMotion({ type }: { type: NonNullable<RichDungeonGuide["cinematicGuide"]>["phases"][number]["animationType"] }) {
@@ -108,9 +124,10 @@ function WindrunnerCinematicGuide({ guide, priority }: { guide: RichDungeonGuide
       </div>
       <div className="cinematic-sources" aria-label="공략 검수 출처">
         <span>검수 기준</span>
-        {cinematic.sources.map((source) => (
+        {cinematic.audit.sources.map((source) => (
           <a key={source.href} href={source.href} target="_blank" rel="noreferrer">{source.labelKo}</a>
         ))}
+        <small>{cinematic.audit.summaryKo}</small>
       </div>
       <div className="cinematic-survival">
         <div><ShieldAlert size={18} /><b>오늘 죽지 말 것 3개</b></div>
@@ -121,6 +138,7 @@ function WindrunnerCinematicGuide({ guide, priority }: { guide: RichDungeonGuide
           <article key={phase.id} className={`cinematic-phase severity-${phase.severity}`}>
             <div className="cinematic-phase-copy">
               <small>{index + 1} · {phase.bossKo}</small>
+              <GuideAuditBadge audit={phase.audit} />
               <h3>{phase.phaseKo}</h3>
               <strong>{phase.oneLineKo}</strong>
               <dl>
@@ -172,11 +190,16 @@ function DungeonGuideCard({ guide, priority, onOpenCinematic }: { guide: RichDun
       <header className="dungeon-guide-head">
         <div>
           <p className="eyebrow">{guide.short} · {guide.timer}</p>
-          <h3>{guide.name}</h3>
+          <div className="dungeon-title-row">
+            <h3>{guide.name}</h3>
+            <GuideAuditBadge audit={guide.audit} />
+          </div>
           <p>{guide.meta.why}</p>
+          <p className="guide-audit-summary">{guide.audit.summaryKo}</p>
         </div>
         <div className="dungeon-score-box">
           <StatusPill tone={priority?.count ? "warn" : "ok"}>{priority?.count ? `오늘 목표 ${priority.count}` : guide.danger}</StatusPill>
+          <StatusPill tone={auditTone[guide.audit.confidence]}>{guide.audit.confidenceLabelKo}</StatusPill>
           <strong>{worstBoss?.ko || worstBoss?.name || "핵심 보스"}</strong>
           <small>{worstBoss?.one || guide.route}</small>
           {guide.cinematicGuide ? <button type="button" onClick={() => onOpenCinematic(guide.id)} aria-label={`${guide.name} 상세 작전 보기`}>상세 작전 보기</button> : null}

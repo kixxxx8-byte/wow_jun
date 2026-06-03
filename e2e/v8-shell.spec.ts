@@ -67,6 +67,7 @@ test("dungeon tab shows personal micro survival notes", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "던전 컨닝" })).toBeVisible();
   await expect(page.getByText("초정밀 생존 노트").first()).toBeVisible();
   await expect(page.getByText("오늘 죽지 말 것").first()).toBeVisible();
+  await expect(page.getByText("피드백 필요").first()).toBeVisible();
   await page.getByPlaceholder("던전, 보스, 위험 요소 검색").fill("그망");
   await expect(page.getByText("오늘 죽지 말 것").first()).toBeVisible();
   const hasOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
@@ -79,6 +80,7 @@ test("windrunner dungeon exposes cinematic field guide", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "윈드러너 첨탑 실전 작전" })).toBeVisible();
   await expect(page.getByText("바닥은 외곽, 갈고리는 어보미-벤시-대상자, 막넴은 화살로 바람 고리를 넘습니다.")).toBeVisible();
   await expect(page.getByText("검수 기준")).toBeVisible();
+  await expect(page.getByText("교차 검수").first()).toBeVisible();
   await expect(page.locator(".cinematic-motion").first()).toBeVisible();
   await expect(page.getByRole("button", { name: "윈드러너 첨탑 상세 작전 보기" })).toBeVisible();
   await expect(page.getByText("쫄 구간 위험 시전")).toBeVisible();

@@ -2252,6 +2252,60 @@ a {
   background: var(--teal-soft);
 }
 
+.dungeon-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.dungeon-title-row h3 {
+  margin: 0;
+}
+
+.guide-audit {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.guide-audit b {
+  color: var(--ink);
+  font-weight: 950;
+}
+
+.guide-audit-cross_checked,
+.guide-audit-verified {
+  border-color: rgba(15, 118, 110, 0.22);
+  background: rgba(204, 251, 241, 0.5);
+}
+
+.guide-audit-reviewing {
+  border-color: rgba(183, 121, 31, 0.25);
+  background: rgba(254, 243, 199, 0.48);
+}
+
+.guide-audit-needs_feedback {
+  border-color: rgba(194, 65, 75, 0.22);
+  background: rgba(254, 226, 226, 0.5);
+}
+
+.guide-audit-summary {
+  margin-top: 6px !important;
+  color: #6b7280;
+  font-size: 12px;
+}
+
 .dungeon-brief-grid {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
@@ -2475,6 +2529,12 @@ a {
   font-size: 12px;
   font-weight: 900;
   text-decoration: none;
+}
+
+.cinematic-sources small {
+  flex-basis: 100%;
+  color: var(--muted);
+  line-height: 1.4;
 }
 
 .cinematic-survival {

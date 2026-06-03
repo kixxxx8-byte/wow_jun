@@ -1,5 +1,20 @@
 export type DungeonCinematicAnimation = "twister_breath" | "hook_interrupt" | "add_interrupt" | "arrow_hide";
 export type DungeonCinematicSeverity = "high" | "lethal" | "control";
+export type DungeonGuideConfidence = "verified" | "cross_checked" | "reviewing" | "needs_feedback";
+
+export type DungeonGuideSource = {
+  labelKo: string;
+  href: string;
+};
+
+export type DungeonGuideAudit = {
+  confidence: DungeonGuideConfidence;
+  confidenceLabelKo: string;
+  summaryKo: string;
+  lastChecked: string;
+  sources: DungeonGuideSource[];
+  needsUserFeedback?: boolean;
+};
 
 export type DungeonCinematicPhase = {
   id: string;
@@ -13,6 +28,7 @@ export type DungeonCinematicPhase = {
   failRecoveryKo: string;
   animationType: DungeonCinematicAnimation;
   severity: DungeonCinematicSeverity;
+  audit: DungeonGuideAudit;
 };
 
 export type DungeonCinematicGuide = {
@@ -20,10 +36,7 @@ export type DungeonCinematicGuide = {
   titleKo: string;
   subtitleKo: string;
   oneLineKo: string;
-  sources: {
-    labelKo: string;
-    href: string;
-  }[];
+  audit: DungeonGuideAudit;
   survivalFocusKo: string[];
   phases: DungeonCinematicPhase[];
   trashAlerts: {
@@ -42,17 +55,27 @@ export type DungeonCinematicGuide = {
   }[];
 };
 
+const windrunnerSources: DungeonGuideSource[] = [
+  { labelKo: "Wowhead 던전 저널", href: "https://www.wowhead.com/guide/midnight/windrunner-spire-dungeon-overview-location-rewards" },
+  { labelKo: "Method M+ 가이드", href: "https://www.method.gg/guides/dungeons/windrunner-spire" },
+  { labelKo: "Around the Mage Table 공략", href: "https://www.aroundthemagetable.com/guides/windrunner-spire" },
+];
+
+const crossCheckedAudit = (summaryKo: string): DungeonGuideAudit => ({
+  confidence: "cross_checked",
+  confidenceLabelKo: "교차 검수",
+  summaryKo,
+  lastChecked: "2026-06-04",
+  sources: windrunnerSources,
+});
+
 export const dungeonCinematicGuides: Record<string, DungeonCinematicGuide> = {
   windrunner: {
     dungeonId: "windrunner",
     titleKo: "윈드러너 첨탑 실전 작전",
     subtitleKo: "근딜/도적 기준 · 던전 저널과 M+ 가이드를 대조한 생존 공략",
     oneLineKo: "바닥은 외곽, 갈고리는 어보미-벤시-대상자, 막넴은 화살로 바람 고리를 넘습니다.",
-    sources: [
-      { labelKo: "Wowhead 던전 저널", href: "https://www.wowhead.com/guide/midnight/windrunner-spire-dungeon-overview-location-rewards" },
-      { labelKo: "Method M+ 가이드", href: "https://www.method.gg/guides/dungeons/windrunner-spire" },
-      { labelKo: "Around the Mage Table 공략", href: "https://www.aroundthemagetable.com/guides/windrunner-spire" },
-    ],
+    audit: crossCheckedAudit("던전 저널과 M+ 공략을 대조했고, 사용자 실전 피드백으로 보정 중입니다."),
     survivalFocusKo: [
       "엠버돈: 상승기류 바닥은 외곽에 두고, 광풍 때 전방/회오리 경로를 먼저 봅니다.",
       "버려진 듀오: 칼리스 절규는 내장 걸쇠 갈고리가 칼리스를 맞아야 끊깁니다.",
@@ -71,6 +94,7 @@ export const dungeonCinematicGuides: Record<string, DungeonCinematicGuide> = {
         failRecoveryKo: "회오리를 맞고 튕기면 즉시 딜 중단, 다음 전방을 피할 공간부터 확보합니다.",
         animationType: "twister_breath",
         severity: "high",
+        audit: crossCheckedAudit("상승기류 외곽 배치와 광풍 회피 기준을 대조했습니다."),
       },
       {
         id: "windrunner-hook-interrupt",
@@ -84,6 +108,7 @@ export const dungeonCinematicGuides: Record<string, DungeonCinematicGuide> = {
         failRecoveryKo: "절규가 새면 다음 행동보다 생석/물약과 개인 생존기로 먼저 버팁니다.",
         animationType: "hook_interrupt",
         severity: "lethal",
+        audit: crossCheckedAudit("갈고리 라인은 사용자 피드백을 반영해 어보미-벤시-대상자 순서로 보정했습니다."),
       },
       {
         id: "windrunner-add-interrupt",
@@ -97,6 +122,7 @@ export const dungeonCinematicGuides: Record<string, DungeonCinematicGuide> = {
         failRecoveryKo: "혼자 떨어져 공포 각이면 즉시 파티원 쪽으로 붙고, 늦었으면 생존기부터 사용합니다.",
         animationType: "add_interrupt",
         severity: "control",
+        audit: crossCheckedAudit("도약, 외침, 66/33% 쫄 처리 우선순위를 대조했습니다."),
       },
       {
         id: "windrunner-arrow-hide",
@@ -110,6 +136,7 @@ export const dungeonCinematicGuides: Record<string, DungeonCinematicGuide> = {
         failRecoveryKo: "화살을 놓쳐 고리를 맞을 각이면 이동기와 생존기를 동시에 사용해 다음 안전 구간까지 버팁니다.",
         animationType: "arrow_hide",
         severity: "lethal",
+        audit: crossCheckedAudit("화살 점프와 Bolt Gale 전방 처리 기준을 재검수했습니다."),
       },
     ],
     trashAlerts: [
