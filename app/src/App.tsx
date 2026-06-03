@@ -11,26 +11,8 @@ import {
   X,
 } from "lucide-react";
 import { Suspense, lazy, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import {
-  GoogleAuthProvider,
-  User,
-  onAuthStateChanged,
-  signInWithPopup,
-  signOut,
-} from "firebase/auth";
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  limit,
-  orderBy,
-  query,
-  serverTimestamp,
-  setDoc,
-} from "firebase/firestore";
 import { AiRequestError, requestTodayPlan } from "./api/ai";
-import { auth, db } from "./api/firebase";
+import { getFirebaseServices, type FirebaseUser } from "./api/firebase";
 import { requestWowheadBis } from "./api/items";
 import { DataCard, EmptyState, LockState, MetricCard, Panel, StatusPill, Toast } from "./components/ui";
 import { dungeonGuideCatalog } from "./domain/dungeonCatalog";
@@ -121,7 +103,7 @@ function characterImage(character: Character, rio: RioProfile | null) {
   return media.main || media.inset || media.avatar || rio?.thumbnail_url || "";
 }
 
-function authName(user: User | null) {
+function authName(user: FirebaseUser | null) {
   if (!user) return "연결 전";
   return user.isAnonymous ? "체험 모드" : user.email || user.displayName || "Google";
 }
@@ -705,7 +687,7 @@ function TodayView({
 }
 
 export default function App() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<FirebaseUser | null>(null);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [activeCharacterId, setActiveCharacterId] = useState("");
   const [settings, setSettings] = useState<V8Settings>({ done: {}, hidden: {}, note: "", lastView: "today" });
@@ -790,32 +772,44 @@ export default function App() {
   }, [activeCharacterId, characters, pickerCharacters]);
 
   useEffect(() => {
-    return onAuthStateChanged(auth, async (nextUser) => {
-      if (!nextUser) {
-        setUser(null);
-        setCloudReady(false);
-        setCharacters([]);
-        setActiveCharacterId("");
-        setSelectionPhase("idle");
-        setShowAiDiagnosis(false);
-        setAiUsageCount(0);
-        setSettings({ done: {}, hidden: {}, note: "", lastView: "today" });
-        return;
-      }
-      if (nextUser.isAnonymous) {
-        setUser(null);
-        setCloudReady(false);
-        setCharacters([]);
-        setActiveCharacterId("");
-        setSelectionPhase("idle");
-        setShowAiDiagnosis(false);
-        setAiUsageCount(0);
-        await signOut(auth).catch(() => undefined);
-        return;
-      }
-      setUser(nextUser);
-      await loadCloud(nextUser);
-    });
+    let cancelled = false;
+    let unsubscribe: undefined | (() => void);
+    const resetCloudState = () => {
+      setUser(null);
+      setCloudReady(false);
+      setCharacters([]);
+      setActiveCharacterId("");
+      setSelectionPhase("idle");
+      setShowAiDiagnosis(false);
+      setAiUsageCount(0);
+      setSettings({ done: {}, hidden: {}, note: "", lastView: "today" });
+    };
+
+    void getFirebaseServices()
+      .then(({ auth, onAuthStateChanged, signOut }) => {
+        if (cancelled) return;
+        unsubscribe = onAuthStateChanged(auth, async (nextUser) => {
+          if (!nextUser) {
+            resetCloudState();
+            return;
+          }
+          if (nextUser.isAnonymous) {
+            resetCloudState();
+            await signOut(auth).catch(() => undefined);
+            return;
+          }
+          setUser(nextUser);
+          await loadCloud(nextUser);
+        });
+      })
+      .catch(() => {
+        if (!cancelled) resetCloudState();
+      });
+
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, []);
 
   useEffect(() => clearSelectionTimers, []);
@@ -859,7 +853,8 @@ export default function App() {
     setAutoState(plan && plan.model !== "local-fallback" ? "ready" : "idle");
   }, [loggedIn, cloudReady, hasSelectedCharacter, character.id, character.equipment, plan?.id, plan?.model]);
 
-  async function loadCloud(nextUser: User) {
+  async function loadCloud(nextUser: FirebaseUser) {
+    const { db, collection, doc, getDoc, getDocs, limit, orderBy, query } = await getFirebaseServices();
     const userRef = doc(db, "wowGuideUsers", nextUser.uid);
     const [v8Snap, mainSnap, charsSnap, plansSnap, usageSnap] = await Promise.all([
       getDoc(doc(userRef, "settings", "v8")),
@@ -891,6 +886,7 @@ export default function App() {
   }
 
   async function googleLogin() {
+    const { auth, GoogleAuthProvider, signInWithPopup } = await getFirebaseServices();
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: "select_account" });
     try {
@@ -909,6 +905,7 @@ export default function App() {
     const next = { ...settings, ...patch };
     setSettings(next);
     if (!loggedIn || !user) return;
+    const { db, doc, serverTimestamp, setDoc } = await getFirebaseServices();
     await setDoc(doc(db, "wowGuideUsers", user.uid, "settings", "v8"), { ...next, updatedAt: serverTimestamp() }, { merge: true });
   }
 
@@ -1030,6 +1027,11 @@ export default function App() {
     });
   }
 
+  async function logout() {
+    const { auth, signOut } = await getFirebaseServices();
+    await signOut(auth);
+  }
+
   async function generatePlan() {
     if (!loggedIn || !user) {
       await googleLogin();
@@ -1120,6 +1122,7 @@ export default function App() {
       }, 1750),
     ];
     if (loggedIn && user) {
+      const { db, doc, serverTimestamp, setDoc } = await getFirebaseServices();
       await Promise.all([
         saveSettings({ activeCharacterId: id }),
         setDoc(doc(db, "wowGuideUsers", user.uid, "settings", "main"), { activeCharacterId: id, updatedAt: serverTimestamp() }, { merge: true }),
@@ -1152,7 +1155,7 @@ export default function App() {
                   <span className="account-state">저장 연결됨</span>
                   <span className="account-name">{authName(user)}</span>
                 </summary>
-                <button type="button" onClick={() => signOut(auth)}><LogOut size={16} /> 로그아웃</button>
+                <button type="button" onClick={() => void logout()}><LogOut size={16} /> 로그아웃</button>
               </details>
             ) : (
               <button type="button" onClick={googleLogin}><LogIn size={16} /> Google 로그인</button>
