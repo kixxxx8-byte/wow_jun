@@ -35,6 +35,7 @@ import type {
   AiTrigger,
   BnetSyncResponse,
   Character,
+  DungeonGuideFeedback,
   EquipmentItem,
   EquipmentRow,
   Target,
@@ -909,6 +910,23 @@ export default function App() {
     await setDoc(doc(db, "wowGuideUsers", user.uid, "settings", "v8"), { ...next, updatedAt: serverTimestamp() }, { merge: true });
   }
 
+  async function saveDungeonGuideFeedback(input: Omit<DungeonGuideFeedback, "id" | "createdAt">) {
+    if (!loggedIn || !user) {
+      setToast("로그인 후 공략 피드백 저장 가능");
+      return;
+    }
+    const createdAt = new Date().toISOString();
+    const nextFeedback: DungeonGuideFeedback = {
+      ...input,
+      id: `${input.dungeonId}-${input.phaseId || input.bossName || "general"}-${Date.now()}`,
+      createdAt,
+    };
+    await saveSettings({
+      dungeonGuideFeedback: [nextFeedback, ...(settings.dungeonGuideFeedback || [])].slice(0, 80),
+    });
+    setToast("공략 피드백을 저장했습니다.");
+  }
+
   async function refreshRaiderIO(force = true) {
     if (!hasSelectedCharacter || !character.name) return;
     const url = new URL("https://raider.io/api/v1/characters/profile");
@@ -1201,7 +1219,13 @@ export default function App() {
             <GuidesView />
           ) : view === "dungeons" ? (
             <div className={`workspace-wrap ${selectionPhase === "revealed" ? "revealed" : ""}`}>
-              <DungeonsView recommendations={snapshot.dungeonRecommendations} gearRecommendation={snapshot.gearRecommendation} />
+              <DungeonsView
+                recommendations={snapshot.dungeonRecommendations}
+                gearRecommendation={snapshot.gearRecommendation}
+                loggedIn={loggedIn}
+                feedback={settings.dungeonGuideFeedback || []}
+                onFeedback={saveDungeonGuideFeedback}
+              />
             </div>
           ) : (
             <div className={`workspace-wrap ${selectionPhase === "revealed" ? "revealed" : ""}`}>

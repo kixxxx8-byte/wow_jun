@@ -169,23 +169,33 @@ describe("today planning domain", () => {
     expect(dungeonGuideCatalog.some((guide) => [guide.route, guide.danger, guide.microGuide?.oneLineKo].join(" ").includes("차단"))).toBe(true);
   });
 
-  it("adds a cinematic Windrunner field guide without changing the rest of the dungeon catalog", () => {
+  it("adds cinematic field guides to every dungeon without replacing the simple catalog", () => {
     const windrunner = dungeonGuideCatalog.find((guide) => guide.id === "windrunner");
     expect(dungeonGuideCatalog).toHaveLength(8);
+    expect(dungeonGuideCatalog.every((guide) => guide.cinematicGuide)).toBe(true);
+    dungeonGuideCatalog.forEach((guide) => {
+      expect(guide.cinematicGuide?.phases.length).toBeGreaterThanOrEqual(3);
+      expect(guide.cinematicGuide?.audit.sources.length).toBeGreaterThanOrEqual(1);
+      expect(guide.cinematicGuide?.audit.confidenceLabelKo).toBeTruthy();
+      expect(guide.cinematicGuide?.audit.lastChecked).toBeTruthy();
+      expect(guide.cinematicGuide?.audit.summaryKo).toBeTruthy();
+      guide.cinematicGuide?.phases.forEach((phase) => {
+        expect(phase.oneLineKo).toBeTruthy();
+        expect(phase.watchKo).toBeTruthy();
+        expect(phase.moveKo).toBeTruthy();
+        expect(phase.defensiveKo).toBeTruthy();
+        expect(phase.animationType).toBeTruthy();
+        expect(phase.audit.confidenceLabelKo).toBeTruthy();
+        expect(phase.audit.lastChecked).toBeTruthy();
+        expect(phase.audit.sources.length).toBeGreaterThanOrEqual(1);
+      });
+    });
     expect(windrunner?.cinematicGuide?.titleKo).toContain("윈드러너");
     expect(windrunner?.audit.confidence).toBe("cross_checked");
-    expect(windrunner?.cinematicGuide?.audit.sources).toHaveLength(3);
+    expect(windrunner?.cinematicGuide?.audit.sources.length).toBeGreaterThanOrEqual(3);
     expect(windrunner?.cinematicGuide?.phases).toHaveLength(4);
     expect(windrunner?.cinematicGuide?.oneLineKo).toContain("어보미-벤시-대상자");
     expect(windrunner?.cinematicGuide?.phases.find((phase) => phase.id === "windrunner-hook-interrupt")?.moveKo).toContain("내장 걸쇠 - 칼리스 - 대상자");
     expect(windrunner?.cinematicGuide?.phases.find((phase) => phase.id === "windrunner-arrow-hide")?.oneLineKo).toContain("바람 고리");
-    windrunner?.cinematicGuide?.phases.forEach((phase) => {
-      expect(phase.oneLineKo).toBeTruthy();
-      expect(phase.watchKo).toBeTruthy();
-      expect(phase.moveKo).toBeTruthy();
-      expect(phase.defensiveKo).toBeTruthy();
-      expect(phase.animationType).toBeTruthy();
-      expect(phase.audit.confidenceLabelKo).toBeTruthy();
-    });
   });
 });

@@ -316,6 +316,18 @@ export type AiPlanRequest = {
   trigger: AiTrigger;
 };
 
+export type DungeonGuideFeedbackType = "wrong" | "unclear" | "worked" | "needs_more_detail";
+
+export type DungeonGuideFeedback = {
+  id: string;
+  dungeonId: string;
+  phaseId?: string;
+  bossName?: string;
+  feedbackType: DungeonGuideFeedbackType;
+  message: string;
+  createdAt: string;
+};
+
 export type V8Settings = {
   done?: Record<string, boolean>;
   hidden?: Record<string, boolean>;
@@ -329,4 +341,5 @@ export type V8Settings = {
   lastRioRefreshAt?: string;
   lastWowheadBisRefreshAt?: string;
   gearCoachPreferences?: GearCoachPreferences;
+  dungeonGuideFeedback?: DungeonGuideFeedback[];
 };

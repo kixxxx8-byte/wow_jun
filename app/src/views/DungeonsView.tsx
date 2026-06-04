@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { EmptyState, StatusPill } from "../components/ui";
 import { dungeonGuideCatalog, legacyDiagramInfo, WOW_KR_YOUTUBE, type RichDungeonGuide } from "../domain/dungeonCatalog";
 import { itemIcon } from "../domain/planning";
-import type { Target, TodaySnapshot } from "../types";
+import type { DungeonGuideFeedback, DungeonGuideFeedbackType, Target, TodaySnapshot } from "../types";
 
 type DiagramKey = keyof typeof legacyDiagramInfo;
 
@@ -32,8 +32,23 @@ function microGuideSearchText(guide: RichDungeonGuide) {
     cinematic.titleKo,
     cinematic.subtitleKo,
     cinematic.oneLineKo,
+    cinematic.audit.confidenceLabelKo,
+    cinematic.audit.summaryKo,
+    ...cinematic.audit.sources.flatMap((source) => [source.labelKo, source.href]),
     ...cinematic.survivalFocusKo,
-    ...cinematic.phases.flatMap((phase) => Object.values(phase)),
+    ...cinematic.phases.flatMap((phase) => [
+      phase.phaseKo,
+      phase.bossKo,
+      phase.oneLineKo,
+      phase.watchKo,
+      phase.moveKo,
+      phase.interruptKo,
+      phase.defensiveKo,
+      phase.failRecoveryKo,
+      phase.audit.confidenceLabelKo,
+      phase.audit.summaryKo,
+      ...phase.audit.sources.flatMap((source) => [source.labelKo, source.href]),
+    ]),
     ...cinematic.trashAlerts.flatMap((alert) => Object.values(alert)),
     ...cinematic.defensivePlan.flatMap((plan) => Object.values(plan)),
     ...cinematic.failRecovery.flatMap((row) => Object.values(row)),
@@ -105,11 +120,83 @@ function CinematicMotion({ type }: { type: NonNullable<RichDungeonGuide["cinemat
   );
 }
 
-function WindrunnerCinematicGuide({ guide, priority }: { guide: RichDungeonGuide; priority?: TodaySnapshot["dungeonRecommendations"][number] }) {
+const feedbackLabels: Record<DungeonGuideFeedbackType, string> = {
+  wrong: "틀림",
+  unclear: "애매함",
+  worked: "도움됨",
+  needs_more_detail: "더 자세히",
+};
+
+function DungeonGuideFeedbackPanel({
+  guide,
+  loggedIn,
+  feedback,
+  onFeedback,
+}: {
+  guide: RichDungeonGuide;
+  loggedIn: boolean;
+  feedback: DungeonGuideFeedback[];
+  onFeedback: (input: Omit<DungeonGuideFeedback, "id" | "createdAt">) => void;
+}) {
+  const [feedbackType, setFeedbackType] = useState<DungeonGuideFeedbackType>("wrong");
+  const [message, setMessage] = useState("");
+  const guideFeedback = feedback.filter((item) => item.dungeonId === guide.id);
+  const save = () => {
+    if (!loggedIn) return;
+    onFeedback({
+      dungeonId: guide.id,
+      feedbackType,
+      message: message.trim(),
+    });
+    setMessage("");
+  };
+  return (
+    <section className="guide-feedback-panel" aria-label={`${guide.name} 공략 피드백`}>
+      <div className="guide-feedback-head">
+        <div>
+          <p className="eyebrow">Guide feedback</p>
+          <h3>공략 피드백</h3>
+        </div>
+        {guideFeedback.length ? <StatusPill tone="warn">사용자 피드백 있음 {guideFeedback.length}</StatusPill> : <StatusPill tone="ok">검수 루프 대기</StatusPill>}
+      </div>
+      <p>{loggedIn ? "틀린 부분이나 실제로 잘 맞은 부분을 남기면 다음 검수 기준으로 사용합니다." : "로그인 후 틀린 기믹, 애매한 설명, 실제로 도움된 내용을 저장할 수 있습니다."}</p>
+      <div className="feedback-type-row" role="group" aria-label="피드백 종류">
+        {(Object.keys(feedbackLabels) as DungeonGuideFeedbackType[]).map((type) => (
+          <button key={type} type="button" className={feedbackType === type ? "active" : ""} onClick={() => setFeedbackType(type)} disabled={!loggedIn}>
+            {feedbackLabels[type]}
+          </button>
+        ))}
+      </div>
+      <textarea
+        value={message}
+        onChange={(event) => setMessage(event.target.value)}
+        placeholder="예: 2넴 쫄 차단 순서가 다름 / 갈고리 위치 설명이 애매함"
+        disabled={!loggedIn}
+      />
+      <button type="button" onClick={save} disabled={!loggedIn}>
+        {loggedIn ? "피드백 저장" : "로그인 후 피드백 저장 가능"}
+      </button>
+    </section>
+  );
+}
+
+function CinematicDungeonGuide({
+  guide,
+  priority,
+  loggedIn,
+  feedback,
+  onFeedback,
+}: {
+  guide: RichDungeonGuide;
+  priority?: TodaySnapshot["dungeonRecommendations"][number];
+  loggedIn: boolean;
+  feedback: DungeonGuideFeedback[];
+  onFeedback: (input: Omit<DungeonGuideFeedback, "id" | "createdAt">) => void;
+}) {
   const cinematic = guide.cinematicGuide;
   if (!cinematic) return null;
   return (
-    <section className="panel windrunner-cinematic" aria-label="윈드러너 첨탑 상세 작전">
+    <section className="panel cinematic-dungeon-guide" aria-label={`${guide.name} 상세 작전`}>
       <div className="cinematic-hero">
         <div>
           <p className="eyebrow">완성형 실전 공략</p>
@@ -177,6 +264,7 @@ function WindrunnerCinematicGuide({ guide, priority }: { guide: RichDungeonGuide
           ))}
         </section>
       </div>
+      <DungeonGuideFeedbackPanel guide={guide} loggedIn={loggedIn} feedback={feedback} onFeedback={onFeedback} />
     </section>
   );
 }
@@ -298,7 +386,19 @@ function DungeonGuideCard({ guide, priority, onOpenCinematic }: { guide: RichDun
   );
 }
 
-export default function DungeonsView({ recommendations, gearRecommendation }: { recommendations: TodaySnapshot["dungeonRecommendations"]; gearRecommendation?: TodaySnapshot["gearRecommendation"] }) {
+export default function DungeonsView({
+  recommendations,
+  gearRecommendation,
+  loggedIn = false,
+  feedback = [],
+  onFeedback = () => undefined,
+}: {
+  recommendations: TodaySnapshot["dungeonRecommendations"];
+  gearRecommendation?: TodaySnapshot["gearRecommendation"];
+  loggedIn?: boolean;
+  feedback?: DungeonGuideFeedback[];
+  onFeedback?: (input: Omit<DungeonGuideFeedback, "id" | "createdAt">) => void;
+}) {
   const [query, setQuery] = useState("");
   const [onlyTargets, setOnlyTargets] = useState(false);
   const [activeCinematicId, setActiveCinematicId] = useState("windrunner");
@@ -316,7 +416,7 @@ export default function DungeonsView({ recommendations, gearRecommendation }: { 
     return [guide.name, guide.short, guide.en, guide.danger, guide.route, microGuideSearchText(guide)].filter(Boolean).some((value) => String(value).toLowerCase().includes(normalizedQuery));
   });
   const top = sorted[0];
-  const activeCinematicGuide = visible.find((guide) => guide.id === activeCinematicId && guide.cinematicGuide);
+  const activeCinematicGuide = visible.find((guide) => guide.id === activeCinematicId && guide.cinematicGuide) || visible.find((guide) => guide.cinematicGuide);
   return (
     <div className="view-stack">
       {gearRecommendation?.farmingRoutes.length ? (
@@ -359,7 +459,14 @@ export default function DungeonsView({ recommendations, gearRecommendation }: { 
           {visible.map((guide, index) => {
             const priority = priorityById.get(guide.id);
             return (
-              <a key={guide.id} className={index === 0 ? "active" : ""} href={`#dungeon-${guide.id}`}>
+              <a
+                key={guide.id}
+                className={guide.id === (activeCinematicGuide?.id || "") || (!activeCinematicGuide && index === 0) ? "active" : ""}
+                href={`#dungeon-${guide.id}`}
+                onClick={() => {
+                  if (guide.cinematicGuide) setActiveCinematicId(guide.id);
+                }}
+              >
                 {guide.short || guide.name}
                 <span>{priority?.count ? `목표 ${priority.count}` : guide.timer}</span>
               </a>
@@ -367,7 +474,13 @@ export default function DungeonsView({ recommendations, gearRecommendation }: { 
           })}
         </div>
         {activeCinematicGuide ? (
-          <WindrunnerCinematicGuide guide={activeCinematicGuide} priority={priorityById.get(activeCinematicGuide.id)} />
+          <CinematicDungeonGuide
+            guide={activeCinematicGuide}
+            priority={priorityById.get(activeCinematicGuide.id)}
+            loggedIn={loggedIn}
+            feedback={feedback}
+            onFeedback={onFeedback}
+          />
         ) : null}
         <div className="dungeon-guide-list">
           {visible.map((guide) => {
