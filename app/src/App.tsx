@@ -577,9 +577,9 @@ function TodayView({
           <h1>{plan.title}</h1>
           <p>{plan.summary}</p>
           <div className="hero-actions">
-            <button className="primary-btn" type="button" onClick={onGenerate} disabled={!loggedIn || aiLoading}>
+            <button className="primary-btn" type="button" onClick={onGenerate} disabled={aiLoading}>
               {aiLoading ? <Loader2 className="spin" size={17} /> : <Brain size={17} />}
-              AI 다시 판단
+              {loggedIn ? "AI 다시 판단" : "로그인하고 AI 판단"}
             </button>
             <button type="button" onClick={onSync} disabled={!loggedIn || syncLoading}>
               {syncLoading ? <Loader2 className="spin" size={17} /> : <Database size={17} />}

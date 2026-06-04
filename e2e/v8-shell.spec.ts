@@ -21,7 +21,7 @@ test("no character is auto-selected on first load", async ({ page }) => {
   await expect(page.getByText("캐릭터를 선택해주세요")).toBeVisible();
   await expect(page.locator("select").first()).toHaveValue("");
   await expect(page.getByText("로그인 전 기본 데이터 기준입니다.")).toBeVisible();
-  await expect(page.getByRole("button", { name: /AI 다시 판단/ })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "로그인하고 AI 판단" })).toBeEnabled();
   const hasOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
   expect(hasOverflow).toBe(false);
 });
@@ -43,6 +43,9 @@ test("logged-out preview keeps mutating controls locked", async ({ page }) => {
   await expect(page.getByText("로그인 후 메모 저장 가능")).toBeVisible();
   await expect(page.locator("textarea").first()).toBeDisabled();
   await expect(page.getByRole("button", { name: /AI 재생성/ })).toBeDisabled();
+
+  await nav.getByRole("button", { name: "AI 작전실", exact: true }).click();
+  await expect(page.getByRole("button", { name: "로그인하고 AI 판단 받기" })).toBeEnabled();
 });
 
 test("guide tab exposes all supported specs with a shared template", async ({ page }) => {

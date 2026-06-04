@@ -174,9 +174,9 @@ function PreferencePanel({
           />
         </Field>
       </details>
-      <button className="primary-btn wide" type="button" onClick={onGenerate} disabled={loading || disabled}>
+      <button className="primary-btn wide" type="button" onClick={onGenerate} disabled={loading}>
         {loading ? <Loader2 className="spin" size={18} /> : <Sparkles size={18} />}
-        오늘의 최적 답 받기
+        {disabled ? "로그인하고 AI 판단 받기" : "오늘의 최적 답 받기"}
       </button>
     </section>
   );
