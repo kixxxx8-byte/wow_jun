@@ -1418,6 +1418,62 @@ a {
   margin-top: 14px;
 }
 
+.ai-coach-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+  grid-template-areas:
+    "brief controls"
+    "plan controls"
+    "plan history";
+}
+
+.ai-coach-grid .ai-explain-brief {
+  grid-area: brief;
+}
+
+.ai-coach-grid .plan-panel {
+  grid-area: plan;
+}
+
+.ai-coach-grid .input-panel {
+  grid-area: controls;
+}
+
+.ai-coach-grid .history-panel {
+  grid-area: history;
+}
+
+.ai-explain-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px 16px 16px;
+}
+
+.ai-explain-grid article {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.ai-explain-grid b,
+.ai-explain-grid span {
+  display: block;
+}
+
+.ai-explain-grid b {
+  margin-bottom: 7px;
+  color: var(--ink);
+}
+
+.ai-explain-grid span {
+  color: #43515f;
+  font-size: 13px;
+  line-height: 1.48;
+  word-break: keep-all;
+}
+
 .field-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3843,6 +3899,8 @@ a {
   .now-strip,
   .split-grid,
   .ai-grid,
+  .ai-coach-grid,
+  .ai-explain-grid,
   .settings-grid,
   .wythic-command,
   .guide-grid,
@@ -3854,6 +3912,14 @@ a {
   .cinematic-phase,
   .cinematic-bottom-grid {
     grid-template-columns: 1fr;
+  }
+
+  .ai-coach-grid {
+    grid-template-areas:
+      "brief"
+      "plan"
+      "controls"
+      "history";
   }
 
   .topbar {

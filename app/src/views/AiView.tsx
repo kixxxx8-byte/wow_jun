@@ -111,8 +111,8 @@ function PreferencePanel({
     <section className="panel input-panel">
       <div className="section-head">
         <div>
-          <p className="eyebrow">조건</p>
-          <h2>AI 판단 조건</h2>
+          <p className="eyebrow">보조 기준</p>
+          <h2>필요할 때만 바꾸는 기준</h2>
         </div>
         <StatusPill tone={preferences.useWeb ? "warn" : "ok"}>{preferences.useWeb ? "최신 검색 사용" : "내 데이터 기준"}</StatusPill>
       </div>
@@ -123,7 +123,7 @@ function PreferencePanel({
         <span>{preferences.useWeb ? "최신 메타 반영" : "저장 데이터 기준"}</span>
       </div>
       <details className="advanced-settings">
-        <summary>고급 조건 조정</summary>
+        <summary>시간/목표 기준 바꾸기</summary>
         <div className="field-grid">
           <Field label="시간">
             <select value={preferences.timeBudget} onChange={(event) => setValue("timeBudget", event.target.value as AiPreferences["timeBudget"])} disabled={disabled}>
@@ -176,8 +176,51 @@ function PreferencePanel({
       </details>
       <button className="primary-btn wide" type="button" onClick={onGenerate} disabled={loading}>
         {loading ? <Loader2 className="spin" size={18} /> : <Sparkles size={18} />}
-        {disabled ? "로그인하고 AI 판단 받기" : "오늘의 최적 답 받기"}
+        {disabled ? "로그인 후 AI 설명 받기" : "현재 데이터로 다시 설명 받기"}
       </button>
+    </section>
+  );
+}
+
+function AiExplanationBrief({
+  plan,
+  fallback,
+  stale,
+}: {
+  plan: AiPlan;
+  fallback: boolean;
+  stale: boolean;
+}) {
+  const visibleActions = plan.actions.filter((action) => !isReferenceBisAction(action));
+  const firstAction = visibleActions[0];
+  const uncertainty = [...plan.dataWarnings, ...plan.assumptions][0];
+  return (
+    <section className="panel ai-explain-brief" aria-label="AI 작전실 역할 요약">
+      <div className="section-head compact">
+        <div>
+          <p className="eyebrow">AI 작전실</p>
+          <h2>추천을 만드는 곳이 아니라, 현재 판단을 설명하는 곳</h2>
+        </div>
+        <StatusPill tone={stale ? "warn" : fallback ? "warn" : "ok"}>{stale ? "이전 데이터" : fallback ? "기본 판단" : "설명 전용"}</StatusPill>
+      </div>
+      <div className="ai-explain-grid">
+        <article>
+          <b>현재 확인된 것</b>
+          <span>{plan.summary}</span>
+        </article>
+        <article>
+          <b>추천하는 행동</b>
+          <span>{firstAction ? `${firstAction.title} · ${firstAction.reason}` : "표시할 실행 항목이 없습니다. 장비 동기화 또는 장비 점검 결과가 더 필요합니다."}</span>
+        </article>
+        <article>
+          <b>주의할 점</b>
+          <span>{plan.avoid[0] || "오늘 목표와 직접 연결되지 않는 반복 파밍은 우선순위에서 내립니다."}</span>
+        </article>
+        <article>
+          <b>확실하지 않은 것</b>
+          <span>{uncertainty || "현재 표시된 판단은 저장된 장비/던전/메모 데이터 안에서만 설명합니다."}</span>
+        </article>
+      </div>
     </section>
   );
 }
@@ -276,9 +319,10 @@ export default function AiView({
   onSelectPlan: (plan: AiPlan) => void;
 }) {
   return (
-    <div className="ai-grid">
-      <PreferencePanel preferences={preferences} snapshot={snapshot} onChange={onPreferencesChange} onGenerate={onGenerate} loading={aiLoading} disabled={disabled} />
+    <div className="ai-grid ai-coach-grid">
+      <AiExplanationBrief plan={activePlan} fallback={fallback} stale={activePlanStale} />
       <PlanResult plan={activePlan} fallback={fallback} stale={activePlanStale} error={aiError} onDone={onDone} onJump={onJump} disabled={disabled} />
+      <PreferencePanel preferences={preferences} snapshot={snapshot} onChange={onPreferencesChange} onGenerate={onGenerate} loading={aiLoading} disabled={disabled} />
       <aside className="panel history-panel">
         <div className="section-head compact"><div><p className="eyebrow">History</p><h2>판단 기록</h2></div><History size={18} /></div>
         {historyPlans.length ? historyPlans.map((item) => (

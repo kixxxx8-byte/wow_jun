@@ -45,7 +45,8 @@ test("logged-out preview keeps mutating controls locked", async ({ page }) => {
   await expect(page.getByRole("button", { name: /AI 재생성/ })).toBeDisabled();
 
   await nav.getByRole("button", { name: "AI 작전실", exact: true }).click();
-  await expect(page.getByRole("button", { name: "로그인하고 AI 판단 받기" })).toBeEnabled();
+  await expect(page.getByRole("heading", { name: "추천을 만드는 곳이 아니라, 현재 판단을 설명하는 곳" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "로그인 후 AI 설명 받기" })).toBeEnabled();
 });
 
 test("guide tab exposes all supported specs with a shared template", async ({ page }) => {
