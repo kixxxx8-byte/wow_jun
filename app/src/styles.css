@@ -418,6 +418,7 @@ a {
 }
 
 .panel {
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.94);
@@ -684,7 +685,12 @@ a {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  min-width: 0;
   padding: 16px 16px 0;
+}
+
+.section-head > div {
+  min-width: 0;
 }
 
 .section-head.compact {
@@ -898,6 +904,7 @@ a {
 .view-stack {
   display: grid;
   gap: 14px;
+  min-width: 0;
   margin-top: 14px;
 }
 
@@ -1124,6 +1131,42 @@ a {
   grid-column: 2;
   color: var(--muted);
   font-size: 12px;
+}
+
+.coach-brief {
+  order: -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+  padding: 12px;
+}
+
+.coach-brief article {
+  display: grid;
+  align-content: start;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.coach-brief h2 {
+  margin: 6px 0;
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.coach-brief span {
+  color: #43515f;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.coach-brief button {
+  justify-self: start;
+  margin-top: 12px;
 }
 
 .data-card b {
@@ -2575,6 +2618,15 @@ a {
   margin-top: 14px;
 }
 
+.cinematic-phase-tabs,
+.cinematic-selected-phase {
+  display: none;
+}
+
+.cinematic-desktop-feedback {
+  margin-top: 12px;
+}
+
 .cinematic-phase {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
@@ -2655,7 +2707,9 @@ a {
 
 .cinematic-motion {
   width: 100%;
+  max-width: 100%;
   min-height: 220px;
+  aspect-ratio: 4 / 3;
   border: 1px solid rgba(15, 118, 110, 0.16);
   border-radius: 8px;
   background: radial-gradient(circle at center, #f9fffd 0, #edf7ff 70%);
@@ -3791,7 +3845,14 @@ a {
   .ai-grid,
   .settings-grid,
   .wythic-command,
-  .guide-grid {
+  .guide-grid,
+  .dungeon-command,
+  .dungeon-tools,
+  .dungeon-guide-head,
+  .cinematic-hero,
+  .cinematic-survival,
+  .cinematic-phase,
+  .cinematic-bottom-grid {
     grid-template-columns: 1fr;
   }
 
@@ -3926,27 +3987,54 @@ a {
   }
 
   .app-shell {
-    width: min(100% - 18px, 1480px);
-    padding-top: 8px;
+    width: min(100% - 14px, 1480px);
+    padding-top: 6px;
   }
 
   .topbar {
-    top: 8px;
-    grid-template-columns: 1fr;
+    top: 6px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px;
+    min-height: 0;
+    padding: 6px;
   }
 
   .topbar nav {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 2px;
   }
 
   .topbar nav button {
-    min-width: 0;
-    padding: 0 8px;
+    flex: 0 0 auto;
+    min-width: 72px;
+    min-height: 34px;
+    padding: 0 10px;
   }
 
   .topbar-tools {
-    align-items: stretch;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    min-width: 0;
+  }
+
+  .brand {
+    min-height: 34px;
+    padding: 0;
+  }
+
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+  }
+
+  .account-strip button,
+  .ai-usage-counter {
+    min-height: 34px;
+    padding: 0 9px;
   }
 
   .brand small {
@@ -3954,15 +4042,39 @@ a {
   }
 
   .lock-strip {
-    display: grid;
+    display: none;
   }
 
   .preview-strip {
     display: grid;
+    gap: 8px;
+    margin: 8px 0;
+    padding: 10px;
+  }
+
+  .preview-strip span {
+    display: none;
+  }
+
+  .preview-strip button {
+    width: 100%;
   }
 
   .command-bar {
-    padding: 14px;
+    margin-top: 8px;
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .command-bar {
+    grid-template-areas:
+      "picker"
+      "metrics";
+  }
+
+  .character-status-line,
+  .command-bar .command-actions {
+    display: none;
   }
 
   .command-bar.has-hero-image .character-hero-bg {
@@ -3973,6 +4085,7 @@ a {
   .quick-metrics,
   .data-grid,
   .now-actions,
+  .coach-brief,
   .field-grid,
   .gear-summary,
   .bis-summary,
@@ -3993,6 +4106,58 @@ a {
     grid-template-columns: 1fr;
   }
 
+  .quick-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .quick-metrics article {
+    min-height: 52px;
+    padding: 7px 8px;
+  }
+
+  .quick-metrics b {
+    font-size: 17px;
+  }
+
+  .character-select-wrap select {
+    height: 40px;
+    min-height: 40px;
+  }
+
+  .coach-brief {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .coach-brief article {
+    padding: 10px;
+  }
+
+  .coach-brief button {
+    width: 100%;
+    justify-self: stretch;
+  }
+
+  .dungeon-command,
+  .dungeon-tools,
+  .dungeon-tabs,
+  .dungeon-guide-list,
+  .dungeon-guide,
+  .cinematic-dungeon-guide {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .dungeon-tabs {
+    position: static;
+    margin: 10px 10px 0;
+  }
+
+  .dungeon-tabs a {
+    min-width: 112px;
+  }
+
   .cinematic-dungeon-guide,
   .windrunner-cinematic {
     margin: 12px 10px 0;
@@ -4003,7 +4168,53 @@ a {
   }
 
   .cinematic-phase {
+    grid-template-columns: 1fr;
     padding: 10px;
+  }
+
+  .cinematic-phase-tabs {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .cinematic-phase-tabs button {
+    flex: 0 0 auto;
+    justify-content: flex-start;
+    min-width: 118px;
+    min-height: 42px;
+    padding: 0 10px;
+  }
+
+  .cinematic-phase-tabs button.active {
+    border-color: rgba(15, 118, 110, 0.42);
+    color: var(--teal);
+    background: var(--teal-soft);
+  }
+
+  .cinematic-phase-tabs span {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: rgba(15, 118, 110, 0.12);
+  }
+
+  .cinematic-selected-phase {
+    display: grid;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .cinematic-phase-grid {
+    display: none;
+  }
+
+  .cinematic-desktop-feedback {
+    display: none;
   }
 
   .cinematic-motion {

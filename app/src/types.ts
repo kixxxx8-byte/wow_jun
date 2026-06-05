@@ -316,7 +316,15 @@ export type AiPlanRequest = {
   trigger: AiTrigger;
 };
 
-export type DungeonGuideFeedbackType = "wrong" | "unclear" | "worked" | "needs_more_detail";
+export type DungeonGuideFeedbackType =
+  | "wrong"
+  | "mechanic_wrong"
+  | "order_wrong"
+  | "unclear"
+  | "too_long"
+  | "mobile_hard"
+  | "worked"
+  | "needs_more_detail";
 
 export type DungeonGuideFeedback = {
   id: string;

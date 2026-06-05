@@ -14,7 +14,7 @@ import { Suspense, lazy, useEffect, useMemo, useRef, useState, type CSSPropertie
 import { AiRequestError, requestTodayPlan } from "./api/ai";
 import { getFirebaseServices, type FirebaseUser } from "./api/firebase";
 import { requestWowheadBis } from "./api/items";
-import { DataCard, EmptyState, LockState, MetricCard, Panel, StatusPill, Toast } from "./components/ui";
+import { DataCard, EmptyState, MetricCard, Panel, StatusPill, Toast } from "./components/ui";
 import { dungeonGuideCatalog } from "./domain/dungeonCatalog";
 import { useGearRecommendation } from "./features/gear/hooks/useGearRecommendation";
 import { defaultGearCoachPreferences } from "./features/gear/domain/gearRecommendation";
@@ -432,22 +432,11 @@ function aiStatusCopy(autoState: AutoState, fallback: boolean, generatedAt: stri
   return { title: "AI 수동 대기", detail: "원할 때 버튼을 눌렀을 때만 AI 진단을 실행합니다.", tone: "warn" as const };
 }
 
-function LockNotice({ onLogin }: { onLogin: () => void }) {
-  return (
-    <LockState
-      title="읽기용 미리보기"
-      body="로그인 없이 주요 화면을 둘러볼 수 있습니다. 내 캐릭터 동기화, 저장, AI 생성은 Google 로그인 후 사용할 수 있습니다."
-      action="Google 로그인"
-      onAction={onLogin}
-    />
-  );
-}
-
 function ReadOnlyPreviewNotice({ loggedIn, onLogin }: { loggedIn: boolean; onLogin: () => void }) {
   return (
     <section className="preview-strip panel">
       <div>
-        <p className="eyebrow">읽기 전용</p>
+        <p className="eyebrow">읽기용 미리보기</p>
         <b>{loggedIn ? "캐릭터 선택 전 기본 데이터 기준입니다." : "로그인 전 기본 데이터 기준입니다."}</b>
         <span>오늘 판단, 장비 점검, 던전 공략은 미리 볼 수 있고 저장/동기화/AI 생성은 잠겨 있습니다.</span>
       </div>
@@ -560,6 +549,9 @@ function TodayView({
 }) {
   const aiStatus = aiStatusCopy(autoState, fallback, plan.generatedAt, rateLimitKind);
   const gearActions = snapshot.gearRecommendation?.weeklyActionPlan.actions || [];
+  const gearPriorityUpgrades = snapshot.gearRecommendation?.priorityUpgrades || [];
+  const topDungeonRoute = snapshot.gearRecommendation?.farmingRoutes.find((route) => route.routeType === "dungeon");
+  const topDungeonGuide = topDungeonRoute?.sourceKey ? dungeonGuideCatalog.find((guide) => guide.id === topDungeonRoute.sourceKey) : dungeonGuideCatalog.find((guide) => guide.cinematicGuide?.audit.needsUserFeedback) || dungeonGuideCatalog.find((guide) => guide.id === "windrunner");
   const visiblePlanActions = plan.actions.filter((action) => !isReferenceBisAction(action));
   const visibleTodayTasks = snapshot.todayTasks.filter((task) => !isReferenceBisTask(task));
   const snapshotTargets = useMemo(() => {
@@ -595,6 +587,31 @@ function TodayView({
           <b>{aiStatus.title}</b>
           <span>{aiStatus.detail}</span>
         </div>
+      </section>
+      <section className="coach-brief panel" aria-label="오늘 개인 코치 요약">
+        <article>
+          <p className="eyebrow">오늘 할 일</p>
+          <h2>{gearActions[0]?.titleKo || visiblePlanActions[0]?.title || "장비 데이터 확인"}</h2>
+          <span>{gearActions[0]?.descriptionKo || visiblePlanActions[0]?.reason || "내 캐릭터 기준 판단을 위해 장비 동기화와 기본 데이터를 먼저 확인합니다."}</span>
+        </article>
+        <article>
+          <p className="eyebrow">장비에서 확인할 것</p>
+          <h2>{gearPriorityUpgrades.length ? `${gearPriorityUpgrades.length}개 후보` : "장비 추천 없음"}</h2>
+          <span>{gearPriorityUpgrades.length ? "검증된 후보만 장비 점검에 노출합니다." : "이유: 검증 후보 부족 · 다음 행동: Battle.net 동기화 / DB 보강 / SimC 확인"}</span>
+          <button type="button" onClick={() => onJump("gear")}>장비 점검 보기</button>
+        </article>
+        <article>
+          <p className="eyebrow">주의할 던전/패턴</p>
+          <h2>{topDungeonGuide?.name || "던전 공략 확인"}</h2>
+          <span>{topDungeonGuide?.cinematicGuide?.survivalFocusKo[0] || "오늘 죽지 말 것 3개를 먼저 확인합니다."}</span>
+          <button type="button" onClick={() => onJump("dungeons")}>던전 공략 보기</button>
+        </article>
+        <article>
+          <p className="eyebrow">AI 설명 상태</p>
+          <h2>{aiStatus.title}</h2>
+          <span>AI는 추천을 만들지 않고 현재 확인된 결과만 설명합니다.</span>
+          <button type="button" onClick={() => onJump("ai")}>AI 설명 보기</button>
+        </article>
       </section>
       <section className="now-strip panel">
         <div>
@@ -1181,8 +1198,6 @@ export default function App() {
           </div>
         </div>
       </header>
-
-      {!loggedIn ? <LockNotice onLogin={googleLogin} /> : null}
 
       <main>
         <section className={`command-bar panel ${hasSelectedCharacter && avatar ? "has-hero-image" : ""}`} style={commandHeroStyle}>

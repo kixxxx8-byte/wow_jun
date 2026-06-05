@@ -122,29 +122,37 @@ function CinematicMotion({ type }: { type: NonNullable<RichDungeonGuide["cinemat
 
 const feedbackLabels: Record<DungeonGuideFeedbackType, string> = {
   wrong: "틀림",
+  mechanic_wrong: "기믹 틀림",
+  order_wrong: "순서 틀림",
   unclear: "애매함",
+  too_long: "너무 김",
+  mobile_hard: "모바일 불편",
   worked: "도움됨",
   needs_more_detail: "더 자세히",
 };
 
 function DungeonGuideFeedbackPanel({
   guide,
+  phase,
   loggedIn,
   feedback,
   onFeedback,
 }: {
   guide: RichDungeonGuide;
+  phase?: NonNullable<RichDungeonGuide["cinematicGuide"]>["phases"][number];
   loggedIn: boolean;
   feedback: DungeonGuideFeedback[];
   onFeedback: (input: Omit<DungeonGuideFeedback, "id" | "createdAt">) => void;
 }) {
   const [feedbackType, setFeedbackType] = useState<DungeonGuideFeedbackType>("wrong");
   const [message, setMessage] = useState("");
-  const guideFeedback = feedback.filter((item) => item.dungeonId === guide.id);
+  const guideFeedback = feedback.filter((item) => item.dungeonId === guide.id && (!phase || item.phaseId === phase.id));
   const save = () => {
     if (!loggedIn) return;
     onFeedback({
       dungeonId: guide.id,
+      phaseId: phase?.id,
+      bossName: phase?.bossKo,
       feedbackType,
       message: message.trim(),
     });
@@ -155,7 +163,7 @@ function DungeonGuideFeedbackPanel({
       <div className="guide-feedback-head">
         <div>
           <p className="eyebrow">Guide feedback</p>
-          <h3>공략 피드백</h3>
+          <h3>{phase ? `${phase.bossKo} 피드백` : "공략 피드백"}</h3>
         </div>
         {guideFeedback.length ? <StatusPill tone="warn">사용자 피드백 있음 {guideFeedback.length}</StatusPill> : <StatusPill tone="ok">검수 루프 대기</StatusPill>}
       </div>
@@ -180,6 +188,31 @@ function DungeonGuideFeedbackPanel({
   );
 }
 
+function PhaseBriefCard({
+  phase,
+}: {
+  phase: NonNullable<RichDungeonGuide["cinematicGuide"]>["phases"][number];
+}) {
+  return (
+    <article className={`cinematic-phase severity-${phase.severity}`}>
+      <div className="cinematic-phase-copy">
+        <small>{phase.bossKo}</small>
+        <GuideAuditBadge audit={phase.audit} />
+        <h3>{phase.phaseKo}</h3>
+        <strong>{phase.oneLineKo}</strong>
+        <dl>
+          <div><dt>볼 것</dt><dd>{phase.watchKo}</dd></div>
+          <div><dt>움직임</dt><dd>{phase.moveKo}</dd></div>
+          <div><dt>차단/스턴</dt><dd>{phase.interruptKo}</dd></div>
+          <div><dt>생존기</dt><dd>{phase.defensiveKo}</dd></div>
+          <div><dt>실패 시 복구</dt><dd>{phase.failRecoveryKo}</dd></div>
+        </dl>
+      </div>
+      <CinematicMotion type={phase.animationType} />
+    </article>
+  );
+}
+
 function CinematicDungeonGuide({
   guide,
   priority,
@@ -194,7 +227,9 @@ function CinematicDungeonGuide({
   onFeedback: (input: Omit<DungeonGuideFeedback, "id" | "createdAt">) => void;
 }) {
   const cinematic = guide.cinematicGuide;
+  const [activePhaseId, setActivePhaseId] = useState("");
   if (!cinematic) return null;
+  const selectedPhase = cinematic.phases.find((phase) => phase.id === activePhaseId) || cinematic.phases[0];
   return (
     <section className="panel cinematic-dungeon-guide" aria-label={`${guide.name} 상세 작전`}>
       <div className="cinematic-hero">
@@ -220,25 +255,30 @@ function CinematicDungeonGuide({
         <div><ShieldAlert size={18} /><b>오늘 죽지 말 것 3개</b></div>
         {cinematic.survivalFocusKo.map((item) => <article key={item}>{item}</article>)}
       </div>
+      <div className="cinematic-phase-tabs" aria-label={`${guide.name} 보스별 패턴 선택`}>
+        {cinematic.phases.map((phase, index) => (
+          <button
+            key={phase.id}
+            type="button"
+            className={selectedPhase.id === phase.id ? "active" : ""}
+            onClick={() => setActivePhaseId(phase.id)}
+          >
+            <span>{index + 1}</span>
+            {phase.bossKo}
+          </button>
+        ))}
+      </div>
       <div className="cinematic-phase-grid">
         {cinematic.phases.map((phase, index) => (
-          <article key={phase.id} className={`cinematic-phase severity-${phase.severity}`}>
-            <div className="cinematic-phase-copy">
-              <small>{index + 1} · {phase.bossKo}</small>
-              <GuideAuditBadge audit={phase.audit} />
-              <h3>{phase.phaseKo}</h3>
-              <strong>{phase.oneLineKo}</strong>
-              <dl>
-                <div><dt>볼 것</dt><dd>{phase.watchKo}</dd></div>
-                <div><dt>움직임</dt><dd>{phase.moveKo}</dd></div>
-                <div><dt>차단/스턴</dt><dd>{phase.interruptKo}</dd></div>
-                <div><dt>생존기</dt><dd>{phase.defensiveKo}</dd></div>
-                <div><dt>실패 시 복구</dt><dd>{phase.failRecoveryKo}</dd></div>
-              </dl>
-            </div>
-            <CinematicMotion type={phase.animationType} />
-          </article>
+          <PhaseBriefCard key={phase.id} phase={{ ...phase, bossKo: `${index + 1} · ${phase.bossKo}` }} />
         ))}
+      </div>
+      <div className="cinematic-desktop-feedback">
+        <DungeonGuideFeedbackPanel guide={guide} phase={cinematic.phases[0]} loggedIn={loggedIn} feedback={feedback} onFeedback={onFeedback} />
+      </div>
+      <div className="cinematic-selected-phase">
+        <PhaseBriefCard phase={selectedPhase} />
+        <DungeonGuideFeedbackPanel guide={guide} phase={selectedPhase} loggedIn={loggedIn} feedback={feedback} onFeedback={onFeedback} />
       </div>
       <div className="cinematic-bottom-grid">
         <section>
@@ -264,7 +304,6 @@ function CinematicDungeonGuide({
           ))}
         </section>
       </div>
-      <DungeonGuideFeedbackPanel guide={guide} loggedIn={loggedIn} feedback={feedback} onFeedback={onFeedback} />
     </section>
   );
 }
