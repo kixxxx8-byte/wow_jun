@@ -3464,6 +3464,85 @@ a {
   font-weight: 950;
 }
 
+.outlaw-practical-card,
+.outlaw-cheat-card {
+  grid-column: 1 / -1;
+}
+
+.outlaw-priority-grid,
+.outlaw-opener-grid,
+.outlaw-advanced-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.outlaw-priority-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.outlaw-opener-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.outlaw-advanced-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.outlaw-priority-grid section,
+.outlaw-opener-grid section,
+.outlaw-advanced-grid section {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.outlaw-priority-grid h3,
+.outlaw-opener-grid h3,
+.outlaw-advanced-grid h3 {
+  margin: 0 0 8px;
+  font-size: 17px;
+}
+
+.outlaw-priority-grid b {
+  display: block;
+  margin-bottom: 9px;
+  color: var(--teal);
+  line-height: 1.4;
+}
+
+.outlaw-priority-grid ol,
+.outlaw-opener-grid ol,
+.outlaw-advanced-grid ul,
+.outlaw-cheat-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+  color: #43515f;
+  line-height: 1.48;
+}
+
+.outlaw-advanced-grid p {
+  margin: 0 0 9px;
+}
+
+.outlaw-advanced-grid small {
+  display: block;
+  margin-top: 10px;
+  color: var(--amber);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.42;
+}
+
+.outlaw-cheat-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-left: 28px;
+}
+
 .talent-list {
   display: grid;
   gap: 10px;
@@ -3904,6 +3983,10 @@ a {
   .settings-grid,
   .wythic-command,
   .guide-grid,
+  .outlaw-priority-grid,
+  .outlaw-opener-grid,
+  .outlaw-advanced-grid,
+  .outlaw-cheat-list,
   .dungeon-command,
   .dungeon-tools,
   .dungeon-guide-head,
@@ -4168,7 +4251,11 @@ a {
   .cinematic-phase-copy dl,
   .cinematic-bottom-grid,
   .boss-micro-grid,
-  .wythic-metrics {
+  .wythic-metrics,
+  .outlaw-priority-grid,
+  .outlaw-opener-grid,
+  .outlaw-advanced-grid,
+  .outlaw-cheat-list {
     grid-template-columns: 1fr;
   }
 

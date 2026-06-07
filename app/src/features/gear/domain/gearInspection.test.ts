@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Character } from "../../../types";
 import { midnightS1Items } from "../data/midnightS1Items";
 import { evaluateCharacterGear, evaluateGearSlot, getGearCandidatesForSlot } from "./gearInspection";
-import { specProfiles } from "./specGuides";
+import { classGuides, specProfiles } from "./specGuides";
 
 const character: Character = {
   id: "azshara:test",
@@ -27,6 +27,18 @@ describe("gear inspection", () => {
       "rogue-subtlety",
     ]);
     expect(Object.values(specProfiles).every((profile) => profile.source.url.includes("wowhead.com"))).toBe(true);
+  });
+
+  it("keeps the detailed outlaw guide data separate from other specs", () => {
+    const outlaw = classGuides["rogue-outlaw"];
+    expect(outlaw.priorityGuide?.summaryKo).toContain("우선순위");
+    expect(outlaw.priorityGuide?.groups.map((group) => group.titleKo)).toEqual(["1. 쿨기", "2. 마무리 일격", "3. 생성기"]);
+    expect(outlaw.openerGuide?.summaryKo).toContain("오프닝");
+    expect(outlaw.advancedGuide?.some((item) => item.titleKo.includes("Supercharger"))).toBe(true);
+    expect(outlaw.quickCheatSheet?.some((item) => item.includes("쿨기 > 마무리 일격 > 생성기"))).toBe(true);
+
+    expect(classGuides["rogue-assassination"].priorityGuide).toBeUndefined();
+    expect(classGuides["rogue-subtlety"].advancedGuide).toBeUndefined();
   });
 
   it("finds slot candidates without returning already equipped items", () => {

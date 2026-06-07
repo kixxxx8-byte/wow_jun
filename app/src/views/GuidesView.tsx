@@ -2,6 +2,75 @@ import { ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { MetricCard, StatusPill } from "../components/ui";
 import { classGuides, guideSpecOrder, specLabel, specProfiles } from "../features/gear/domain/specGuides";
+import type { ClassGuide } from "../features/gear/domain/specGuides";
+
+function OutlawPracticalGuide({ guide }: { guide: ClassGuide }) {
+  if (!guide.priorityGuide || !guide.openerGuide || !guide.advancedGuide || !guide.quickCheatSheet) return null;
+  return (
+    <>
+      <article className="panel guide-card outlaw-practical-card">
+        <p className="eyebrow">실전 우선순위</p>
+        <h2>쿨기 &gt; 마무리 일격 &gt; 생성기</h2>
+        <p>{guide.priorityGuide.summaryKo}</p>
+        <div className="outlaw-priority-grid">
+          {guide.priorityGuide.groups.map((group) => (
+            <section key={group.titleKo}>
+              <h3>{group.titleKo}</h3>
+              <b>{group.ruleKo}</b>
+              <ol>
+                {group.steps.map((step) => <li key={step}>{step}</li>)}
+              </ol>
+            </section>
+          ))}
+        </div>
+      </article>
+
+      <article className="panel guide-card outlaw-practical-card">
+        <p className="eyebrow">오프닝</p>
+        <h2>풀 전 준비와 첫 사이클</h2>
+        <p>{guide.openerGuide.summaryKo}</p>
+        <div className="outlaw-opener-grid">
+          {guide.openerGuide.sequences.map((sequence) => (
+            <section key={sequence.titleKo}>
+              <h3>{sequence.titleKo}</h3>
+              <ol>
+                {sequence.steps.map((step) => <li key={step}>{step}</li>)}
+              </ol>
+            </section>
+          ))}
+        </div>
+        <ul className="guide-list">
+          {guide.openerGuide.cautions.map((item) => <li key={item}>{item}</li>)}
+        </ul>
+      </article>
+
+      <article className="panel guide-card outlaw-practical-card">
+        <p className="eyebrow">미세 최적화</p>
+        <h2>숙련자용 예외 규칙</h2>
+        <div className="outlaw-advanced-grid">
+          {guide.advancedGuide.map((item) => (
+            <section key={item.titleKo}>
+              <h3>{item.titleKo}</h3>
+              <p>{item.detailKo}</p>
+              <ul>
+                {item.bullets.map((bullet) => <li key={bullet}>{bullet}</li>)}
+              </ul>
+              {item.noteKo ? <small>{item.noteKo}</small> : null}
+            </section>
+          ))}
+        </div>
+      </article>
+
+      <article className="panel guide-card outlaw-cheat-card">
+        <p className="eyebrow">바로 쓸 요약</p>
+        <h2>던전 중 10초 체크</h2>
+        <ol className="outlaw-cheat-list">
+          {guide.quickCheatSheet.map((item) => <li key={item}>{item}</li>)}
+        </ol>
+      </article>
+    </>
+  );
+}
 
 export default function GuidesView() {
   const [activeSpec, setActiveSpec] = useState(guideSpecOrder[0]);
@@ -61,6 +130,8 @@ export default function GuidesView() {
             {guide.rotation.map((item) => <li key={item}>{item}</li>)}
           </ol>
         </article>
+
+        <OutlawPracticalGuide guide={guide} />
 
         <article className="panel guide-card">
           <p className="eyebrow">장비</p>

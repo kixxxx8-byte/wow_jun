@@ -56,6 +56,10 @@ test("guide tab exposes all supported specs with a shared template", async ({ pa
   await expect(page.getByRole("heading", { name: "암살 도적 핵심 결론" })).toBeVisible();
   await page.getByRole("button", { name: /무법/ }).click();
   await expect(page.getByRole("heading", { name: "무법 도적 핵심 결론" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "쿨기 > 마무리 일격 > 생성기" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "풀 전 준비와 첫 사이클" })).toBeVisible();
+  await expect(page.getByText("도박의 연속(KIR)")).toBeVisible();
+  await expect(page.getByText("Supercharger와 미간 적중 보류")).toBeVisible();
   await page.getByRole("button", { name: /잠행/ }).click();
   await expect(page.getByRole("heading", { name: "잠행 도적 핵심 결론" })).toBeVisible();
   await page.getByRole("button", { name: /Devourer/ }).click();
