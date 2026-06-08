@@ -19,6 +19,13 @@ export type OutlawCombatAction = {
   skillKo: OutlawCombatSkill;
 };
 
+export type OutlawKeybind = {
+  key: string;
+  eventCode: string;
+  skillKo: OutlawCombatSkill;
+  labelKo: string;
+};
+
 export type OutlawCombatScenarioId =
   | "single_dummy"
   | "aoe_pull"
@@ -90,6 +97,8 @@ export type OutlawCombatLogEntry = {
   result: "correct" | "okay" | "wrong" | "unavailable";
   messageKo: string;
   expectedSkillKo: OutlawCombatSkill;
+  inputKey?: string;
+  reactionMs?: number;
 };
 
 export type OutlawActionAvailability = {
@@ -114,6 +123,29 @@ export const outlawCombatActions: OutlawCombatAction[] = [
   { skillKo: "교란" },
   { skillKo: "그림자 망토" },
 ];
+
+export const outlawDefaultKeybinds: OutlawKeybind[] = [
+  { key: "Q", eventCode: "KeyQ", skillKo: "폭풍의 칼날", labelKo: "광역 스위치" },
+  { key: "R", eventCode: "KeyR", skillKo: "아드레날린 촉진", labelKo: "흐름 열기" },
+  { key: "F", eventCode: "KeyF", skillKo: "뼈주사위", labelKo: "주사위" },
+  { key: "5", eventCode: "Digit5", skillKo: "난도질", labelKo: "유지" },
+  { key: "Shift+F", eventCode: "Shift+KeyF", skillKo: "도박의 연속(KIR)", labelKo: "좋은 주사위 고정" },
+  { key: "E", eventCode: "KeyE", skillKo: "Blade Rush", labelKo: "공격 쿨기" },
+  { key: "1", eventCode: "Digit1", skillKo: "사악한 일격", labelKo: "기본 생성기" },
+  { key: "2", eventCode: "Digit2", skillKo: "권총 사격", labelKo: "기회 반응" },
+  { key: "4", eventCode: "Digit4", skillKo: "미간 적중", labelKo: "핵심 마무리" },
+  { key: "3", eventCode: "Digit3", skillKo: "속결", labelKo: "마무리" },
+  { key: "Shift+E", eventCode: "Shift+KeyE", skillKo: "광기의 학살자", labelKo: "강한 쿨기" },
+  { key: "Shift+R", eventCode: "Shift+KeyR", skillKo: "준비", labelKo: "쿨기 재진입" },
+  { key: "C", eventCode: "KeyC", skillKo: "발차기", labelKo: "차단" },
+  { key: "V", eventCode: "KeyV", skillKo: "교란", labelKo: "광역 생존" },
+  { key: "Shift+C", eventCode: "Shift+KeyC", skillKo: "그림자 망토", labelKo: "마법 생존" },
+];
+
+export function getOutlawKeybindByCode(eventCode: string, shiftKey: boolean): OutlawKeybind | undefined {
+  const normalizedCode = shiftKey ? `Shift+${eventCode}` : eventCode;
+  return outlawDefaultKeybinds.find((keybind) => keybind.eventCode === normalizedCode);
+}
 
 export const outlawCombatScenarios: OutlawCombatScenario[] = [
   {

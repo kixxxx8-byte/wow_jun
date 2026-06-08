@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Character } from "../../../types";
 import { midnightS1Items } from "../data/midnightS1Items";
 import { evaluateCharacterGear, evaluateGearSlot, getGearCandidatesForSlot } from "./gearInspection";
-import { advanceOutlawTime, applyOutlawAction, createOutlawScenarioState, getOutlawActionAvailability, getOutlawRecommendation, scoreOutlawAction } from "./outlawCombatSim";
+import { advanceOutlawTime, applyOutlawAction, createOutlawScenarioState, getOutlawActionAvailability, getOutlawKeybindByCode, getOutlawRecommendation, scoreOutlawAction } from "./outlawCombatSim";
 import type { OutlawCombatState } from "./outlawCombatSim";
 import { classGuides, specProfiles } from "./specGuides";
 
@@ -241,6 +241,13 @@ describe("outlaw combat simulator", () => {
     expect(next.cooldowns.bladeRush).toBe(12);
     expect(next.comboPoints).toBe(state.comboPoints);
     expect(next.mistakes).toBe(state.mistakes + 1);
+  });
+
+  it("maps keyboard input to practical outlaw buttons", () => {
+    expect(getOutlawKeybindByCode("Digit1", false)?.skillKo).toBe("사악한 일격");
+    expect(getOutlawKeybindByCode("KeyC", false)?.skillKo).toBe("발차기");
+    expect(getOutlawKeybindByCode("KeyC", true)?.skillKo).toBe("그림자 망토");
+    expect(getOutlawKeybindByCode("KeyF", true)?.skillKo).toBe("도박의 연속(KIR)");
   });
 });
 

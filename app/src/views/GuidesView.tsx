@@ -8,8 +8,10 @@ import {
   applyOutlawAction,
   createOutlawScenarioState,
   getOutlawActionAvailability,
+  getOutlawKeybindByCode,
   getOutlawRecommendation,
   outlawCombatActions,
+  outlawDefaultKeybinds,
   outlawCombatScenarios,
   outlawScenarioMechanics,
   scoreOutlawAction,
@@ -267,9 +269,11 @@ function OutlawCombatSimulator() {
   const [scenarioId, setScenarioId] = useState<OutlawCombatScenarioId>("aoe_pull");
   const [combatState, setCombatState] = useState(() => createOutlawScenarioState("aoe_pull"));
   const [hintMode, setHintMode] = useState(true);
+  const [keyboardMode, setKeyboardMode] = useState(false);
   const [running, setRunning] = useState(false);
   const [logs, setLogs] = useState<OutlawCombatLogEntry[]>([]);
   const [lastFeedback, setLastFeedback] = useState("스킬 버튼을 눌러보세요. 틀려도 상태는 진행되고, 왜 손해인지 알려줍니다.");
+  const [lastPromptAt, setLastPromptAt] = useState(() => Date.now());
   const recommendation = getOutlawRecommendation(combatState);
   const currentScenario = outlawCombatScenarios.find((scenario) => scenario.id === scenarioId);
   const upcomingMechanic = outlawScenarioMechanics[scenarioId].find(
@@ -283,6 +287,25 @@ function OutlawCombatSimulator() {
     }, 1000);
     return () => window.clearInterval(timer);
   }, [running]);
+
+  useEffect(() => {
+    setLastPromptAt(Date.now());
+  }, [recommendation.skillKo, combatState.activeMechanic?.id]);
+
+  useEffect(() => {
+    if (!keyboardMode) return undefined;
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLInputElement | HTMLElement | null;
+      if (target?.tagName === "TEXTAREA" || target?.tagName === "SELECT") return;
+      if (target?.tagName === "INPUT" && (target as HTMLInputElement).type !== "checkbox") return;
+      const keybind = getOutlawKeybindByCode(event.code, event.shiftKey);
+      if (!keybind) return;
+      event.preventDefault();
+      pressAction(keybind.skillKo, keybind.key);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [keyboardMode, combatState, lastPromptAt]);
 
   const selectScenario = (nextScenarioId: OutlawCombatScenarioId) => {
     setRunning(false);
@@ -299,20 +322,23 @@ function OutlawCombatSimulator() {
     setLastFeedback("처음 상태로 되돌렸습니다.");
   };
 
-  const pressAction = (skillKo: OutlawCombatLogEntry["skillKo"]) => {
+  function pressAction(skillKo: OutlawCombatLogEntry["skillKo"], inputKey?: string) {
     const result = scoreOutlawAction(combatState, { skillKo });
     const nextState = applyOutlawAction(combatState, { skillKo });
+    const reactionMs = Math.max(0, Date.now() - lastPromptAt);
     setCombatState(nextState);
-    setLastFeedback(result.messageKo);
+    setLastFeedback(inputKey ? `${inputKey} 입력 · ${skillKo} · ${Math.round(reactionMs / 100) / 10}초 반응 · ${result.messageKo}` : result.messageKo);
     setLogs((prev) => [
       {
         ...result,
         id: `${combatState.elapsedSeconds}-${skillKo}-${prev.length}`,
         elapsedSeconds: combatState.elapsedSeconds,
+        inputKey,
+        reactionMs,
       },
       ...prev,
     ].slice(0, 8));
-  };
+  }
 
   const statusChips = [
     `시간 ${combatState.elapsedSeconds.toFixed(0)}초`,
@@ -352,6 +378,10 @@ function OutlawCombatSimulator() {
         <label className="outlaw-hint-toggle">
           <input type="checkbox" checked={hintMode} onChange={(event) => setHintMode(event.target.checked)} />
           힌트 표시
+        </label>
+        <label className="outlaw-hint-toggle">
+          <input type="checkbox" checked={keyboardMode} onChange={(event) => setKeyboardMode(event.target.checked)} />
+          키보드 입력
         </label>
       </div>
 
@@ -458,13 +488,26 @@ function OutlawCombatSimulator() {
           <ol>
             {logs.map((log) => (
               <li key={log.id} className={log.result}>
-                <b>{log.elapsedSeconds.toFixed(0)}초 · {log.skillKo}</b>
+                <b>{log.elapsedSeconds.toFixed(0)}초 · {log.inputKey ? `${log.inputKey} · ` : ""}{log.skillKo}</b>
                 <span>{log.messageKo}</span>
+                {log.reactionMs !== undefined ? <small>반응 {Math.round(log.reactionMs / 100) / 10}초</small> : null}
               </li>
             ))}
           </ol>
         )}
       </details>
+
+      <div className="outlaw-keyboard-map" aria-label="무법 실전 허수아비 키맵">
+        <b>기본 키맵</b>
+        <div>
+          {outlawDefaultKeybinds.map((keybind) => (
+            <span key={keybind.eventCode}>
+              <kbd>{keybind.key}</kbd>
+              {keybind.skillKo}
+            </span>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }
