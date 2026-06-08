@@ -58,7 +58,12 @@ test("guide tab exposes all supported specs with a shared template", async ({ pa
   await expect(page.getByRole("heading", { name: "무법 도적 핵심 결론" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "무법 연습장" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "무법 실전 허수아비" })).toBeVisible();
+  await expect(page.getByText("다음 위험 패턴")).toBeVisible();
+  await expect(page.getByText("세션 결과")).toBeVisible();
   await expect(page.getByLabel("무법 실전 허수아비 추천 스킬").getByText("폭풍의 칼날", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "1초 진행" }).click();
+  await page.getByRole("button", { name: "1초 진행" }).click();
+  await expect(page.getByText("지금 위험 패턴")).toBeVisible();
   await page.getByLabel("무법 실전 허수아비 스킬 버튼").getByRole("button", { name: "사악한 일격" }).click();
   await expect(page.locator(".outlaw-combat-feedback").getByText("지금은 폭풍의 칼날부터 봐야 합니다.")).toBeVisible();
   await page.getByLabel("무법 실전 허수아비 시나리오").getByRole("button", { name: "광역 풀" }).click();

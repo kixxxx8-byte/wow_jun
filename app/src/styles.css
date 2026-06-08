@@ -3531,6 +3531,52 @@ a {
   line-height: 1.45;
 }
 
+.outlaw-combat-session {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid rgba(15, 118, 110, 0.18);
+  border-radius: 8px;
+  background: rgba(248, 250, 252, 0.82);
+}
+
+.outlaw-combat-session div:first-child {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.outlaw-combat-session b,
+.outlaw-combat-session span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.outlaw-combat-session span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.outlaw-combat-session-actions {
+  display: flex;
+  gap: 7px;
+  flex: 0 0 auto;
+}
+
+.outlaw-combat-session-actions button {
+  min-height: 36px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
 .outlaw-hint-toggle {
   display: inline-flex;
   align-items: center;
@@ -3569,6 +3615,50 @@ a {
   border: 1px solid rgba(15, 118, 110, 0.28);
   border-radius: 10px;
   background: linear-gradient(135deg, rgba(240, 253, 250, 0.96), rgba(255, 255, 255, 0.96));
+}
+
+.outlaw-mechanic-alert {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid rgba(15, 118, 110, 0.18);
+  border-radius: 10px;
+  background: rgba(240, 253, 250, 0.74);
+}
+
+.outlaw-mechanic-alert.active {
+  border-color: rgba(220, 38, 38, 0.26);
+  background: rgba(254, 242, 242, 0.9);
+}
+
+.outlaw-mechanic-alert span {
+  color: var(--teal);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.outlaw-mechanic-alert.active span {
+  color: #b91c1c;
+}
+
+.outlaw-mechanic-alert b,
+.outlaw-mechanic-alert p,
+.outlaw-mechanic-alert small {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.outlaw-mechanic-alert p,
+.outlaw-mechanic-alert small {
+  color: #43515f;
+  line-height: 1.4;
+}
+
+.outlaw-mechanic-alert small {
+  font-weight: 900;
 }
 
 .outlaw-next-skill span {
@@ -3655,6 +3745,27 @@ a {
   display: grid;
   gap: 10px;
   align-content: start;
+}
+
+.outlaw-combat-score {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid rgba(15, 118, 110, 0.18);
+  border-radius: 8px;
+  background: rgba(240, 253, 250, 0.78);
+}
+
+.outlaw-combat-score strong {
+  color: #0f172a;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.outlaw-combat-score span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
 }
 
 .outlaw-combat-side b {
@@ -5188,6 +5299,19 @@ a {
 
   .outlaw-combat-head {
     display: grid;
+  }
+
+  .outlaw-combat-session {
+    display: grid;
+  }
+
+  .outlaw-combat-session-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .outlaw-combat-session-actions button {
+    width: 100%;
   }
 
   .outlaw-hint-toggle {

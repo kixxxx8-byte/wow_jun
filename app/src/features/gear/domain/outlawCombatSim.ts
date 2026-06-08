@@ -10,7 +10,10 @@ export type OutlawCombatSkill =
   | "미간 적중"
   | "속결"
   | "광기의 학살자"
-  | "준비";
+  | "준비"
+  | "발차기"
+  | "교란"
+  | "그림자 망토";
 
 export type OutlawCombatAction = {
   skillKo: OutlawCombatSkill;
@@ -29,6 +32,17 @@ export type OutlawCombatScenario = {
   descriptionKo: string;
 };
 
+export type OutlawCombatMechanic = {
+  id: string;
+  triggerAt: number;
+  duration: number;
+  titleKo: string;
+  detailKo: string;
+  expectedSkillKo: OutlawCombatSkill;
+  severity: "medium" | "high" | "lethal";
+  targetCount?: 1 | 2 | 4;
+};
+
 export type OutlawCombatState = {
   scenarioId: OutlawCombatScenarioId;
   elapsedSeconds: number;
@@ -37,6 +51,13 @@ export type OutlawCombatState = {
   comboPoints: number;
   rollStage: 0 | 1 | 2 | 3 | 4;
   opportunityStacks: 0 | 3 | 6;
+  gcdRemaining: number;
+  health: number;
+  mistakes: number;
+  score: number;
+  streak: number;
+  activeMechanic?: OutlawCombatMechanic;
+  resolvedMechanicIds: string[];
   buffs: {
     bladeFlurry: number;
     sliceAndDice: number;
@@ -50,6 +71,9 @@ export type OutlawCombatState = {
     killingSpree: number;
     keepItRolling: number;
     rollTheBones: number;
+    kick: number;
+    feint: number;
+    cloakOfShadows: number;
   };
 };
 
@@ -81,6 +105,9 @@ export const outlawCombatActions: OutlawCombatAction[] = [
   { skillKo: "속결" },
   { skillKo: "광기의 학살자" },
   { skillKo: "준비" },
+  { skillKo: "발차기" },
+  { skillKo: "교란" },
+  { skillKo: "그림자 망토" },
 ];
 
 export const outlawCombatScenarios: OutlawCombatScenario[] = [
@@ -111,6 +138,111 @@ export const outlawCombatScenarios: OutlawCombatScenario[] = [
   },
 ];
 
+export const outlawScenarioMechanics: Record<OutlawCombatScenarioId, OutlawCombatMechanic[]> = {
+  single_dummy: [
+    {
+      id: "single-kick-1",
+      triggerAt: 6,
+      duration: 4,
+      titleKo: "위험 시전",
+      detailKo: "보스가 끊어야 하는 시전을 시작했습니다.",
+      expectedSkillKo: "발차기",
+      severity: "high",
+    },
+    {
+      id: "single-defensive-1",
+      triggerAt: 14,
+      duration: 5,
+      titleKo: "광역 피해",
+      detailKo: "큰 광역 피해가 곧 들어옵니다.",
+      expectedSkillKo: "교란",
+      severity: "medium",
+    },
+  ],
+  aoe_pull: [
+    {
+      id: "aoe-switch-1",
+      triggerAt: 2,
+      duration: 6,
+      titleKo: "쫄이 붙음",
+      detailKo: "적이 여러 마리입니다. 광역 스위치가 먼저입니다.",
+      expectedSkillKo: "폭풍의 칼날",
+      severity: "high",
+      targetCount: 4,
+    },
+    {
+      id: "aoe-kick-1",
+      triggerAt: 8,
+      duration: 3,
+      titleKo: "위험 시전",
+      detailKo: "쫄 하나가 위험한 주문을 시전합니다.",
+      expectedSkillKo: "발차기",
+      severity: "lethal",
+    },
+    {
+      id: "aoe-defensive-1",
+      triggerAt: 15,
+      duration: 4,
+      titleKo: "광역 폭발",
+      detailKo: "피하기 어려운 광역 피해가 겹칩니다.",
+      expectedSkillKo: "교란",
+      severity: "high",
+    },
+  ],
+  boss_with_adds: [
+    {
+      id: "boss-adds-1",
+      triggerAt: 4,
+      duration: 7,
+      titleKo: "쫄 합류",
+      detailKo: "보스 옆에 쫄이 붙었습니다. 단일에서 광역으로 전환합니다.",
+      expectedSkillKo: "폭풍의 칼날",
+      severity: "high",
+      targetCount: 4,
+    },
+    {
+      id: "boss-magic-1",
+      triggerAt: 11,
+      duration: 4,
+      titleKo: "마법 디버프",
+      detailKo: "해제 전까지 위험한 마법 피해가 들어옵니다.",
+      expectedSkillKo: "그림자 망토",
+      severity: "high",
+    },
+  ],
+  cooldowns_locked: [
+    {
+      id: "locked-kick-1",
+      triggerAt: 5,
+      duration: 4,
+      titleKo: "시전 겹침",
+      detailKo: "딜 쿨기가 막힌 와중에 차단할 시전이 올라옵니다.",
+      expectedSkillKo: "발차기",
+      severity: "high",
+    },
+  ],
+  mistake_recovery: [
+    {
+      id: "recovery-defensive-1",
+      triggerAt: 3,
+      duration: 4,
+      titleKo: "체력 위험",
+      detailKo: "이미 흐름이 꼬인 상태에서 광역 피해가 들어옵니다.",
+      expectedSkillKo: "교란",
+      severity: "high",
+    },
+    {
+      id: "recovery-magic-1",
+      triggerAt: 10,
+      duration: 4,
+      titleKo: "마법 피해",
+      detailKo: "맞으면 크게 흔들리는 마법 피해입니다.",
+      expectedSkillKo: "그림자 망토",
+      severity: "lethal",
+    },
+  ],
+};
+
 export function createOutlawScenarioState(scenarioId: OutlawCombatScenarioId): OutlawCombatState {
   const base: OutlawCombatState = {
     scenarioId,
@@ -120,6 +252,12 @@ export function createOutlawScenarioState(scenarioId: OutlawCombatScenarioId): O
     comboPoints: 0,
     rollStage: 0,
     opportunityStacks: 0,
+    gcdRemaining: 0,
+    health: 100,
+    mistakes: 0,
+    score: 0,
+    streak: 0,
+    resolvedMechanicIds: [],
     buffs: {
       bladeFlurry: 0,
       sliceAndDice: 0,
@@ -133,6 +271,9 @@ export function createOutlawScenarioState(scenarioId: OutlawCombatScenarioId): O
       killingSpree: 0,
       keepItRolling: 0,
       rollTheBones: 0,
+      kick: 0,
+      feint: 0,
+      cloakOfShadows: 0,
     },
   };
 
@@ -191,6 +332,14 @@ export function createOutlawScenarioState(scenarioId: OutlawCombatScenarioId): O
 }
 
 export function getOutlawRecommendation(state: OutlawCombatState): OutlawRecommendation {
+  if (state.activeMechanic) {
+    return {
+      skillKo: state.activeMechanic.expectedSkillKo,
+      reasonKo: `${state.activeMechanic.titleKo}: ${state.activeMechanic.detailKo}`,
+      noteKo: "실전에서는 생존/차단/광역 전환이 딜 버튼보다 먼저입니다.",
+    };
+  }
+
   if (state.targets >= 2 && state.buffs.bladeFlurry <= 0) {
     return {
       skillKo: "폭풍의 칼날",
@@ -306,6 +455,8 @@ export function scoreOutlawAction(state: OutlawCombatState, action: OutlawCombat
   const okaySkills: OutlawCombatSkill[] = [];
   if (state.comboPoints >= 6 && action.skillKo === "속결") okaySkills.push("속결");
   if (state.cooldowns.bladeRush <= 0 && action.skillKo === "Blade Rush" && state.targets <= 1) okaySkills.push("Blade Rush");
+  if (state.activeMechanic?.expectedSkillKo === "교란" && action.skillKo === "그림자 망토") okaySkills.push("그림자 망토");
+  if (state.activeMechanic?.expectedSkillKo === "그림자 망토" && action.skillKo === "교란") okaySkills.push("교란");
 
   if (okaySkills.includes(action.skillKo)) {
     return {
@@ -328,11 +479,19 @@ export function advanceOutlawTime(state: OutlawCombatState, seconds: number): Ou
   const recovery = state.buffs.adrenalineRush > 0 ? 18 : 10;
   const nextEnergy = Math.min(100, state.energy + recovery * seconds);
   const tick = (value: number) => Math.max(0, Math.round((value - seconds) * 10) / 10);
+  const activeMechanic = state.activeMechanic;
+  const expiredMechanic = activeMechanic && state.elapsedSeconds + seconds > activeMechanic.triggerAt + activeMechanic.duration;
+  const penalty = expiredMechanic ? getMechanicPenalty(activeMechanic) : 0;
 
-  return {
+  const nextState: OutlawCombatState = {
     ...state,
     elapsedSeconds: Math.round((state.elapsedSeconds + seconds) * 10) / 10,
     energy: Math.round(nextEnergy),
+    gcdRemaining: tick(state.gcdRemaining),
+    health: Math.max(0, state.health - penalty),
+    mistakes: state.mistakes + (expiredMechanic ? 1 : 0),
+    streak: expiredMechanic ? 0 : state.streak,
+    activeMechanic: expiredMechanic ? undefined : state.activeMechanic,
     buffs: {
       bladeFlurry: tick(state.buffs.bladeFlurry),
       sliceAndDice: tick(state.buffs.sliceAndDice),
@@ -346,13 +505,27 @@ export function advanceOutlawTime(state: OutlawCombatState, seconds: number): Ou
       killingSpree: tick(state.cooldowns.killingSpree),
       keepItRolling: tick(state.cooldowns.keepItRolling),
       rollTheBones: tick(state.cooldowns.rollTheBones),
+      kick: tick(state.cooldowns.kick),
+      feint: tick(state.cooldowns.feint),
+      cloakOfShadows: tick(state.cooldowns.cloakOfShadows),
     },
   };
+
+  return activateNextMechanic(nextState);
 }
 
 export function applyOutlawAction(state: OutlawCombatState, action: OutlawCombatAction): OutlawCombatState {
-  const withCosts = applySkillEffect(state, action.skillKo);
-  return advanceOutlawTime(withCosts, 1);
+  const scored = scoreOutlawAction(state, action);
+  const withMechanicResult = resolveMechanicIfNeeded(applySkillEffect(state, action.skillKo), action.skillKo, scored.result);
+  const withScore = {
+    ...withMechanicResult,
+    gcdRemaining: 1,
+    score: Math.max(0, withMechanicResult.score + getActionScore(scored.result)),
+    mistakes: withMechanicResult.mistakes + (scored.result === "wrong" ? 1 : 0),
+    streak: scored.result === "correct" ? withMechanicResult.streak + 1 : 0,
+    health: Math.max(0, withMechanicResult.health - (scored.result === "wrong" ? 8 : 0)),
+  };
+  return advanceOutlawTime(withScore, 1);
 }
 
 function applySkillEffect(state: OutlawCombatState, skillKo: OutlawCombatSkill): OutlawCombatState {
@@ -462,5 +635,59 @@ function applySkillEffect(state: OutlawCombatState, skillKo: OutlawCombatSkill):
     };
   }
 
+  if (skillKo === "발차기") {
+    return { ...state, cooldowns: { ...state.cooldowns, kick: 15 } };
+  }
+
+  if (skillKo === "교란") {
+    return { ...state, cooldowns: { ...state.cooldowns, feint: 12 } };
+  }
+
+  if (skillKo === "그림자 망토") {
+    return { ...state, cooldowns: { ...state.cooldowns, cloakOfShadows: 90 } };
+  }
+
   return state;
+}
+
+function activateNextMechanic(state: OutlawCombatState): OutlawCombatState {
+  if (state.activeMechanic) return state;
+
+  const nextMechanic = outlawScenarioMechanics[state.scenarioId].find(
+    (mechanic) => state.elapsedSeconds >= mechanic.triggerAt && !state.resolvedMechanicIds.includes(mechanic.id)
+  );
+
+  if (!nextMechanic) return state;
+
+  return {
+    ...state,
+    targets: nextMechanic.targetCount ?? state.targets,
+    activeMechanic: nextMechanic,
+  };
+}
+
+function resolveMechanicIfNeeded(state: OutlawCombatState, skillKo: OutlawCombatSkill, result: OutlawCombatLogEntry["result"]): OutlawCombatState {
+  const mechanic = state.activeMechanic;
+  if (!mechanic) return state;
+  if (result === "wrong") return state;
+  if (skillKo !== mechanic.expectedSkillKo && result !== "okay") return state;
+
+  return {
+    ...state,
+    activeMechanic: undefined,
+    resolvedMechanicIds: [...state.resolvedMechanicIds, mechanic.id],
+    health: Math.min(100, state.health + (result === "correct" ? 3 : 0)),
+  };
+}
+
+function getMechanicPenalty(mechanic: OutlawCombatMechanic): number {
+  if (mechanic.severity === "lethal") return 35;
+  if (mechanic.severity === "high") return 24;
+  return 14;
+}
+
+function getActionScore(result: OutlawCombatLogEntry["result"]): number {
+  if (result === "correct") return 100;
+  if (result === "okay") return 35;
+  return -60;
 }

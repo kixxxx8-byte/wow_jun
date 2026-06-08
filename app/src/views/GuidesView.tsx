@@ -1,14 +1,16 @@
 import { ShieldCheck } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MetricCard, StatusPill } from "../components/ui";
 import { classGuides, guideSpecOrder, specLabel, specProfiles } from "../features/gear/domain/specGuides";
 import type { ClassGuide } from "../features/gear/domain/specGuides";
 import {
+  advanceOutlawTime,
   applyOutlawAction,
   createOutlawScenarioState,
   getOutlawRecommendation,
   outlawCombatActions,
   outlawCombatScenarios,
+  outlawScenarioMechanics,
   scoreOutlawAction,
 } from "../features/gear/domain/outlawCombatSim";
 import type { OutlawCombatLogEntry, OutlawCombatScenarioId } from "../features/gear/domain/outlawCombatSim";
@@ -264,11 +266,25 @@ function OutlawCombatSimulator() {
   const [scenarioId, setScenarioId] = useState<OutlawCombatScenarioId>("aoe_pull");
   const [combatState, setCombatState] = useState(() => createOutlawScenarioState("aoe_pull"));
   const [hintMode, setHintMode] = useState(true);
+  const [running, setRunning] = useState(false);
   const [logs, setLogs] = useState<OutlawCombatLogEntry[]>([]);
   const [lastFeedback, setLastFeedback] = useState("스킬 버튼을 눌러보세요. 틀려도 상태는 진행되고, 왜 손해인지 알려줍니다.");
   const recommendation = getOutlawRecommendation(combatState);
+  const currentScenario = outlawCombatScenarios.find((scenario) => scenario.id === scenarioId);
+  const upcomingMechanic = outlawScenarioMechanics[scenarioId].find(
+    (mechanic) => mechanic.triggerAt > combatState.elapsedSeconds && !combatState.resolvedMechanicIds.includes(mechanic.id)
+  );
+
+  useEffect(() => {
+    if (!running) return undefined;
+    const timer = window.setInterval(() => {
+      setCombatState((prev) => advanceOutlawTime(prev, 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [running]);
 
   const selectScenario = (nextScenarioId: OutlawCombatScenarioId) => {
+    setRunning(false);
     setScenarioId(nextScenarioId);
     setCombatState(createOutlawScenarioState(nextScenarioId));
     setLogs([]);
@@ -276,6 +292,7 @@ function OutlawCombatSimulator() {
   };
 
   const resetScenario = () => {
+    setRunning(false);
     setCombatState(createOutlawScenarioState(scenarioId));
     setLogs([]);
     setLastFeedback("처음 상태로 되돌렸습니다.");
@@ -301,6 +318,8 @@ function OutlawCombatSimulator() {
     `대상 ${combatState.targets}마리`,
     `기력 ${combatState.energy}`,
     `CP ${combatState.comboPoints}`,
+    `체력 ${combatState.health}`,
+    `실수 ${combatState.mistakes}`,
     `주사위 ${combatState.rollStage || "없음"}`,
     `기회 ${combatState.opportunityStacks || "없음"}`,
   ];
@@ -317,6 +336,9 @@ function OutlawCombatSimulator() {
     ["준비", combatState.cooldowns.preparation],
     ["광기의 학살자", combatState.cooldowns.killingSpree],
     ["도박의 연속", combatState.cooldowns.keepItRolling],
+    ["발차기", combatState.cooldowns.kick],
+    ["교란", combatState.cooldowns.feint],
+    ["그림자 망토", combatState.cooldowns.cloakOfShadows],
   ] as const;
 
   return (
@@ -332,6 +354,17 @@ function OutlawCombatSimulator() {
         </label>
       </div>
 
+      <div className="outlaw-combat-session">
+        <div>
+          <b>{currentScenario?.labelKo}</b>
+          <span>{currentScenario?.descriptionKo}</span>
+        </div>
+        <div className="outlaw-combat-session-actions">
+          <button type="button" onClick={() => setRunning((prev) => !prev)}>{running ? "정지" : "전투 시작"}</button>
+          <button type="button" onClick={() => setCombatState((prev) => advanceOutlawTime(prev, 1))}>1초 진행</button>
+        </div>
+      </div>
+
       <div className="outlaw-preset-row" aria-label="무법 실전 허수아비 시나리오">
         {outlawCombatScenarios.map((scenario) => (
           <button key={scenario.id} type="button" className={scenario.id === scenarioId ? "active" : ""} onClick={() => selectScenario(scenario.id)}>
@@ -343,6 +376,23 @@ function OutlawCombatSimulator() {
 
       <div className="outlaw-combat-layout">
         <section className="outlaw-combat-main">
+          <div className={combatState.activeMechanic ? "outlaw-mechanic-alert active" : "outlaw-mechanic-alert"}>
+            {combatState.activeMechanic ? (
+              <>
+                <span>지금 위험 패턴</span>
+                <b>{combatState.activeMechanic.titleKo}</b>
+                <p>{combatState.activeMechanic.detailKo}</p>
+                <small>{combatState.activeMechanic.expectedSkillKo}로 처리</small>
+              </>
+            ) : (
+              <>
+                <span>다음 위험 패턴</span>
+                <b>{upcomingMechanic ? `${Math.max(0, Math.ceil(upcomingMechanic.triggerAt - combatState.elapsedSeconds))}초 후 · ${upcomingMechanic.titleKo}` : "현재 예정 없음"}</b>
+                <p>{upcomingMechanic ? upcomingMechanic.detailKo : "지금은 딜 사이클과 버프 유지에 집중합니다."}</p>
+              </>
+            )}
+          </div>
+
           <div className="outlaw-next-skill" aria-label="무법 실전 허수아비 추천 스킬">
             <span>지금 누를 버튼</span>
             <strong>{recommendation.skillKo}</strong>
@@ -360,6 +410,7 @@ function OutlawCombatSimulator() {
                 key={action.skillKo}
                 type="button"
                 className={hintMode && action.skillKo === recommendation.skillKo ? "recommended" : ""}
+                disabled={combatState.health <= 0}
                 onClick={() => pressAction(action.skillKo)}
               >
                 {action.skillKo}
@@ -373,6 +424,11 @@ function OutlawCombatSimulator() {
         </section>
 
         <aside className="outlaw-combat-side">
+          <div className="outlaw-combat-score">
+            <b>세션 결과</b>
+            <strong>{combatState.score}점</strong>
+            <span>연속 정답 {combatState.streak}회</span>
+          </div>
           <div>
             <b>버프</b>
             <div className="outlaw-combat-mini-grid">

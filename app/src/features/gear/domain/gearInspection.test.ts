@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { Character } from "../../../types";
 import { midnightS1Items } from "../data/midnightS1Items";
 import { evaluateCharacterGear, evaluateGearSlot, getGearCandidatesForSlot } from "./gearInspection";
-import { createOutlawScenarioState, getOutlawRecommendation, scoreOutlawAction } from "./outlawCombatSim";
+import { advanceOutlawTime, applyOutlawAction, createOutlawScenarioState, getOutlawRecommendation, scoreOutlawAction } from "./outlawCombatSim";
+import type { OutlawCombatState } from "./outlawCombatSim";
 import { classGuides, specProfiles } from "./specGuides";
 
 const character: Character = {
@@ -18,6 +19,10 @@ const character: Character = {
     HEAD: { id: 1004, name: "현재 머리", level: 260 },
   },
 };
+
+function advanceOutlawMany(state: OutlawCombatState, seconds: number) {
+  return Array.from({ length: seconds }).reduce<OutlawCombatState>((nextState) => advanceOutlawTime(nextState, 1), state);
+}
 
 describe("gear inspection", () => {
   it("registers all supported guide profiles", () => {
@@ -184,6 +189,33 @@ describe("outlaw combat simulator", () => {
     expect(result.result).toBe("wrong");
     expect(result.messageKo).toContain("폭풍의 칼날");
     expect(result.messageKo).toContain("2타겟 이상");
+  });
+
+  it("surfaces timed mechanics above damage buttons", () => {
+    const firstMechanic = advanceOutlawMany(createOutlawScenarioState("aoe_pull"), 2);
+    const afterFlurry = applyOutlawAction(firstMechanic, { skillKo: "폭풍의 칼날" });
+    const state = advanceOutlawMany(afterFlurry, 5);
+    expect(state.activeMechanic?.titleKo).toBe("위험 시전");
+    expect(getOutlawRecommendation(state).skillKo).toBe("발차기");
+  });
+
+  it("resolves mechanics and rewards correct reactions", () => {
+    const firstMechanic = advanceOutlawMany(createOutlawScenarioState("aoe_pull"), 2);
+    const afterFlurry = applyOutlawAction(firstMechanic, { skillKo: "폭풍의 칼날" });
+    const state = advanceOutlawMany(afterFlurry, 5);
+    const next = applyOutlawAction(state, { skillKo: "발차기" });
+    expect(next.resolvedMechanicIds).toContain("aoe-kick-1");
+    expect(next.score).toBeGreaterThan(state.score);
+    expect(next.streak).toBeGreaterThan(0);
+  });
+
+  it("penalizes missed lethal mechanics over time", () => {
+    const firstMechanic = advanceOutlawMany(createOutlawScenarioState("aoe_pull"), 2);
+    const afterFlurry = applyOutlawAction(firstMechanic, { skillKo: "폭풍의 칼날" });
+    const activeKick = advanceOutlawMany(afterFlurry, 5);
+    const state = advanceOutlawMany(activeKick, 4);
+    expect(state.health).toBeLessThan(100);
+    expect(state.mistakes).toBeGreaterThan(0);
   });
 });
 
