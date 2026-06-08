@@ -3470,6 +3470,9 @@ a {
 
 .outlaw-summary-grid,
 .outlaw-simple-cycle-grid,
+.outlaw-trainer-layout,
+.outlaw-control-grid,
+.outlaw-toggle-grid,
 .outlaw-visual-row,
 .outlaw-deep-grid,
 .outlaw-practice-grid,
@@ -3484,6 +3487,150 @@ a {
 
 .outlaw-summary-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.outlaw-trainer-card {
+  border-color: rgba(15, 118, 110, 0.28);
+  background: linear-gradient(135deg, rgba(240, 253, 250, 0.98), rgba(255, 255, 255, 0.98));
+}
+
+.outlaw-trainer-card > p:not(.eyebrow) {
+  max-width: 820px;
+  color: #43515f;
+  font-weight: 800;
+}
+
+.outlaw-trainer-layout {
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  align-items: start;
+}
+
+.outlaw-trainer-controls,
+.outlaw-trainer-result,
+.outlaw-trainer-notes {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.outlaw-trainer-controls h3 {
+  margin: 0 0 10px;
+  font-size: 17px;
+}
+
+.outlaw-preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 10px;
+}
+
+.outlaw-preset-row button {
+  min-height: 34px;
+  padding: 7px 10px;
+  border-radius: 999px;
+}
+
+.outlaw-control-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.outlaw-control-grid label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.outlaw-control-grid select {
+  width: 100%;
+  min-height: 38px;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: #0f172a;
+  background: #fff;
+  font-weight: 900;
+}
+
+.outlaw-toggle-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 10px;
+}
+
+.outlaw-toggle-grid label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid rgba(15, 118, 110, 0.14);
+  border-radius: 8px;
+  color: #334155;
+  background: rgba(248, 250, 252, 0.78);
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.outlaw-toggle-grid input {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+.outlaw-trainer-result {
+  display: grid;
+  gap: 8px;
+  border-color: rgba(15, 118, 110, 0.26);
+}
+
+.outlaw-trainer-result span {
+  width: fit-content;
+  padding: 4px 9px;
+  border-radius: 999px;
+  color: var(--teal);
+  background: var(--teal-soft);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.outlaw-trainer-result strong {
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.05;
+}
+
+.outlaw-trainer-result p {
+  margin: 0;
+  color: #334155;
+  font-weight: 850;
+  line-height: 1.48;
+}
+
+.outlaw-trainer-result small {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.outlaw-trainer-notes {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.outlaw-trainer-notes b {
+  flex: 0 0 auto;
+  color: var(--teal);
+}
+
+.outlaw-trainer-notes span {
+  color: #43515f;
+  line-height: 1.45;
 }
 
 .outlaw-simple-cycle-card {
@@ -4370,6 +4517,9 @@ a {
   .guide-grid,
   .outlaw-summary-grid,
   .outlaw-simple-cycle-grid,
+  .outlaw-trainer-layout,
+  .outlaw-control-grid,
+  .outlaw-toggle-grid,
   .outlaw-visual-row,
   .outlaw-deep-grid,
   .outlaw-practice-grid,
@@ -4654,6 +4804,9 @@ a {
   .wythic-metrics,
   .outlaw-summary-grid,
   .outlaw-simple-cycle-grid,
+  .outlaw-trainer-layout,
+  .outlaw-control-grid,
+  .outlaw-toggle-grid,
   .outlaw-visual-row,
   .outlaw-deep-grid,
   .outlaw-practice-grid,
@@ -4675,6 +4828,10 @@ a {
 
   .outlaw-keycap {
     min-height: 70px;
+  }
+
+  .outlaw-trainer-notes {
+    display: grid;
   }
 
   .quick-metrics article {

@@ -56,6 +56,10 @@ test("guide tab exposes all supported specs with a shared template", async ({ pa
   await expect(page.getByRole("heading", { name: "암살 도적 핵심 결론" })).toBeVisible();
   await page.getByRole("button", { name: /무법/ }).click();
   await expect(page.getByRole("heading", { name: "무법 도적 핵심 결론" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "지금 뭐 누르지?" })).toBeVisible();
+  await expect(page.getByLabel("무법 도적 다음 추천 스킬").getByText("폭풍의 칼날")).toBeVisible();
+  await page.getByRole("button", { name: "준비 타이밍" }).click();
+  await expect(page.getByLabel("무법 도적 다음 추천 스킬").getByText("준비")).toBeVisible();
   await expect(page.getByRole("heading", { name: "초간단 실전 사이클" })).toBeVisible();
   await expect(page.getByText("처음엔 이것만 따라가도 됩니다")).toBeVisible();
   await expect(page.getByText("버프 준비")).toBeVisible();

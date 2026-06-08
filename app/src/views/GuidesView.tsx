@@ -4,11 +4,299 @@ import { MetricCard, StatusPill } from "../components/ui";
 import { classGuides, guideSpecOrder, specLabel, specProfiles } from "../features/gear/domain/specGuides";
 import type { ClassGuide } from "../features/gear/domain/specGuides";
 
+type OutlawPracticeState = {
+  targets: 1 | 2 | 4;
+  comboPoints: number;
+  rollStage: 0 | 1 | 2 | 3 | 4;
+  adrenalineRush: "ready" | "active" | "cooldown";
+  bladeFlurryActive: boolean;
+  bladeRushReady: boolean;
+  betweenTheEyesReady: boolean;
+  preparationReady: boolean;
+  killingSpreeReady: boolean;
+  keepItRollingReady: boolean;
+  opportunityStacks: 0 | 3 | 6;
+};
+
+const initialOutlawPracticeState: OutlawPracticeState = {
+  targets: 2,
+  comboPoints: 0,
+  rollStage: 0,
+  adrenalineRush: "ready",
+  bladeFlurryActive: false,
+  bladeRushReady: true,
+  betweenTheEyesReady: true,
+  preparationReady: true,
+  killingSpreeReady: true,
+  keepItRollingReady: true,
+  opportunityStacks: 0,
+};
+
+const outlawPracticePresets: Array<{ labelKo: string; state: OutlawPracticeState }> = [
+  {
+    labelKo: "광역 시작",
+    state: initialOutlawPracticeState,
+  },
+  {
+    labelKo: "단일 반복",
+    state: {
+      ...initialOutlawPracticeState,
+      targets: 1,
+      comboPoints: 4,
+      rollStage: 2,
+      adrenalineRush: "cooldown",
+      bladeFlurryActive: false,
+      bladeRushReady: false,
+      betweenTheEyesReady: true,
+      preparationReady: false,
+      killingSpreeReady: true,
+      keepItRollingReady: false,
+      opportunityStacks: 3,
+    },
+  },
+  {
+    labelKo: "마무리 직전",
+    state: {
+      ...initialOutlawPracticeState,
+      targets: 1,
+      comboPoints: 6,
+      rollStage: 3,
+      adrenalineRush: "active",
+      bladeFlurryActive: false,
+      bladeRushReady: false,
+      betweenTheEyesReady: true,
+      preparationReady: false,
+      killingSpreeReady: true,
+      keepItRollingReady: true,
+      opportunityStacks: 0,
+    },
+  },
+  {
+    labelKo: "준비 타이밍",
+    state: {
+      ...initialOutlawPracticeState,
+      targets: 2,
+      comboPoints: 2,
+      rollStage: 2,
+      adrenalineRush: "cooldown",
+      bladeFlurryActive: true,
+      bladeRushReady: false,
+      betweenTheEyesReady: false,
+      preparationReady: true,
+      killingSpreeReady: false,
+      keepItRollingReady: false,
+      opportunityStacks: 0,
+    },
+  },
+];
+
+function getOutlawPracticeRecommendation(state: OutlawPracticeState) {
+  if (state.targets >= 2 && !state.bladeFlurryActive) {
+    return {
+      skillKo: "폭풍의 칼날",
+      reasonKo: "적이 2마리 이상인데 광역 스위치가 꺼져 있습니다.",
+      noteKo: "광역에서는 이걸 먼저 켜야 뒤 기술들이 광역 피해로 이어집니다.",
+    };
+  }
+
+  if (state.rollStage <= 1) {
+    return {
+      skillKo: "뼈주사위",
+      reasonKo: "뼈주사위가 없거나 1단계라 다시 굴리는 상황입니다.",
+      noteKo: "좋은 주사위가 딜사이클 전체를 안정시킵니다.",
+    };
+  }
+
+  if (state.keepItRollingReady && state.rollStage >= 3) {
+    return {
+      skillKo: "도박의 연속(KIR)",
+      reasonKo: "뼈주사위가 3단계 이상이라 좋은 버프를 붙잡을 타이밍입니다.",
+      noteKo: "2단계 예외는 숙련자 판단입니다. 연습기는 3단계 이상을 기본으로 둡니다.",
+    };
+  }
+
+  if (
+    state.preparationReady &&
+    state.adrenalineRush === "cooldown" &&
+    !state.betweenTheEyesReady &&
+    !state.bladeRushReady
+  ) {
+    return {
+      skillKo: "준비",
+      reasonKo: "아드레날린 촉진, 미간 적중, Blade Rush가 모두 막혀 있습니다.",
+      noteKo: "단, 아드레날린 촉진 쿨이 곧 돌아오는 실제 상황이면 성급히 쓰지 않습니다.",
+    };
+  }
+
+  if (state.adrenalineRush === "ready" && state.comboPoints <= 2) {
+    return {
+      skillKo: "아드레날린 촉진",
+      reasonKo: "아드레날린 촉진이 준비됐고 현재 CP가 낮습니다.",
+      noteKo: "무법은 큰 한 방보다 쿨기를 자주 돌리는 흐름이 중요합니다.",
+    };
+  }
+
+  if (state.bladeRushReady) {
+    return {
+      skillKo: "Blade Rush",
+      reasonKo: "Blade Rush가 준비되어 있어 쿨마다 확인하는 구간입니다.",
+      noteKo: "광역이면 폭풍의 칼날이 켜진 뒤 쓰는지 먼저 확인합니다.",
+    };
+  }
+
+  if (state.betweenTheEyesReady && state.comboPoints >= 6) {
+    return {
+      skillKo: "미간 적중",
+      reasonKo: "6CP 이상이고 미간 적중이 준비되어 있습니다.",
+      noteKo: "초보 연습에서는 5CP에 급하게 쓰지 않고 높은 CP에서 쓰는 습관을 둡니다.",
+    };
+  }
+
+  if (state.killingSpreeReady && state.comboPoints >= 5) {
+    return {
+      skillKo: "광기의 학살자",
+      reasonKo: "광기의 학살자가 준비됐고 5CP 이상입니다.",
+      noteKo: "이동/위험 패턴이 겹치는 실제 던전에서는 안전한 타이밍도 같이 봅니다.",
+    };
+  }
+
+  if (state.comboPoints >= 6) {
+    return {
+      skillKo: "속결",
+      reasonKo: "마무리할 CP가 충분하지만 미간 적중 우선 조건이 없습니다.",
+      noteKo: "미간 적중이 쿨이면 속결로 CP를 넘치지 않게 비웁니다.",
+    };
+  }
+
+  if (state.opportunityStacks === 6 || (state.opportunityStacks === 3 && state.comboPoints >= 1 && state.comboPoints <= 3)) {
+    return {
+      skillKo: "권총 사격",
+      reasonKo: "기회 중첩과 현재 CP가 권총 사격 조건에 맞습니다.",
+      noteKo: "반짝인다고 무조건 누르지 말고 현재 CP를 같이 봅니다.",
+    };
+  }
+
+  return {
+    skillKo: "사악한 일격",
+    reasonKo: "위 조건이 모두 아니라면 기본 생성기로 CP를 모읍니다.",
+    noteKo: "CP가 6 이상이 되면 생성기를 멈추고 마무리 일격을 확인합니다.",
+  };
+}
+
+function OutlawCycleTrainer() {
+  const [state, setState] = useState<OutlawPracticeState>(initialOutlawPracticeState);
+  const recommendation = getOutlawPracticeRecommendation(state);
+
+  const setPartialState = (partial: Partial<OutlawPracticeState>) => setState((prev) => ({ ...prev, ...partial }));
+
+  return (
+    <article className="panel guide-card outlaw-section-card outlaw-trainer-card">
+      <p className="eyebrow">딜사이클 연습용</p>
+      <h2>지금 뭐 누르지?</h2>
+      <p>완벽한 시뮬레이터는 아니지만, 대상 수·CP·버프·쿨기 상태를 바꿔 보며 무법의 우선순위를 현실적으로 연습하는 도구입니다.</p>
+
+      <div className="outlaw-trainer-layout">
+        <section className="outlaw-trainer-controls">
+          <h3>상황 고르기</h3>
+          <div className="outlaw-preset-row">
+            {outlawPracticePresets.map((preset) => (
+              <button key={preset.labelKo} type="button" onClick={() => setState(preset.state)}>
+                {preset.labelKo}
+              </button>
+            ))}
+          </div>
+
+          <div className="outlaw-control-grid">
+            <label>
+              대상 수
+              <select value={state.targets} onChange={(event) => setPartialState({ targets: Number(event.target.value) as OutlawPracticeState["targets"] })}>
+                <option value={1}>1마리</option>
+                <option value={2}>2마리</option>
+                <option value={4}>4마리 이상</option>
+              </select>
+            </label>
+
+            <label>
+              현재 CP
+              <select value={state.comboPoints} onChange={(event) => setPartialState({ comboPoints: Number(event.target.value) })}>
+                {[0, 1, 2, 3, 4, 5, 6, 7].map((point) => <option key={point} value={point}>{point} CP</option>)}
+              </select>
+            </label>
+
+            <label>
+              뼈주사위 단계
+              <select value={state.rollStage} onChange={(event) => setPartialState({ rollStage: Number(event.target.value) as OutlawPracticeState["rollStage"] })}>
+                <option value={0}>없음</option>
+                <option value={1}>1단계</option>
+                <option value={2}>2단계</option>
+                <option value={3}>3단계</option>
+                <option value={4}>4단계</option>
+              </select>
+            </label>
+
+            <label>
+              기회 중첩
+              <select value={state.opportunityStacks} onChange={(event) => setPartialState({ opportunityStacks: Number(event.target.value) as OutlawPracticeState["opportunityStacks"] })}>
+                <option value={0}>없음</option>
+                <option value={3}>3중첩</option>
+                <option value={6}>6중첩</option>
+              </select>
+            </label>
+
+            <label>
+              아드레날린 촉진
+              <select value={state.adrenalineRush} onChange={(event) => setPartialState({ adrenalineRush: event.target.value as OutlawPracticeState["adrenalineRush"] })}>
+                <option value="ready">준비됨</option>
+                <option value="active">켜짐</option>
+                <option value="cooldown">쿨타임</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="outlaw-toggle-grid">
+            {[
+              ["bladeFlurryActive", "폭풍의 칼날 켜짐"],
+              ["bladeRushReady", "Blade Rush 준비"],
+              ["betweenTheEyesReady", "미간 적중 준비"],
+              ["preparationReady", "준비 사용 가능"],
+              ["killingSpreeReady", "광기의 학살자 준비"],
+              ["keepItRollingReady", "KIR 사용 가능"],
+            ].map(([key, label]) => (
+              <label key={key}>
+                <input
+                  type="checkbox"
+                  checked={Boolean(state[key as keyof OutlawPracticeState])}
+                  onChange={(event) => setPartialState({ [key]: event.target.checked } as Partial<OutlawPracticeState>)}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+        </section>
+
+        <section className="outlaw-trainer-result" aria-label="무법 도적 다음 추천 스킬">
+          <span>다음 버튼</span>
+          <strong>{recommendation.skillKo}</strong>
+          <p>{recommendation.reasonKo}</p>
+          <small>{recommendation.noteKo}</small>
+        </section>
+      </div>
+
+      <div className="outlaw-trainer-notes">
+        <b>연습기 기준</b>
+        <span>실제 전투의 이동, 보스 패턴, 장신구, 특성 차이는 반영하지 않습니다. 대신 CP 넘침 방지, 주요 쿨기 우선순위, 권총 사격 조건, 준비 타이밍 공부용으로 씁니다.</span>
+      </div>
+    </article>
+  );
+}
+
 function OutlawPracticalGuide({ guide }: { guide: ClassGuide }) {
   if (!guide.simpleCycleGuide || !guide.coreSummary || !guide.deepGuide || !guide.practiceGuide || !guide.keybindGuide || !guide.masteryGuide || !guide.visualGuides) return null;
 
   return (
     <>
+      <OutlawCycleTrainer />
+
       <article className="panel guide-card outlaw-section-card outlaw-simple-cycle-card">
         <p className="eyebrow">입문용 빠른 손순서</p>
         <h2>{guide.simpleCycleGuide.titleKo}</h2>
