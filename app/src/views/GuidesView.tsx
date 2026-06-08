@@ -3,6 +3,15 @@ import { useState } from "react";
 import { MetricCard, StatusPill } from "../components/ui";
 import { classGuides, guideSpecOrder, specLabel, specProfiles } from "../features/gear/domain/specGuides";
 import type { ClassGuide } from "../features/gear/domain/specGuides";
+import {
+  applyOutlawAction,
+  createOutlawScenarioState,
+  getOutlawRecommendation,
+  outlawCombatActions,
+  outlawCombatScenarios,
+  scoreOutlawAction,
+} from "../features/gear/domain/outlawCombatSim";
+import type { OutlawCombatLogEntry, OutlawCombatScenarioId } from "../features/gear/domain/outlawCombatSim";
 
 type OutlawPracticeState = {
   targets: 1 | 2 | 4;
@@ -246,6 +255,158 @@ function getOutlawPracticeRecommendation(state: OutlawPracticeState) {
   };
 }
 
+function formatCombatSeconds(value: number) {
+  if (value <= 0) return "준비";
+  return `${Math.ceil(value)}초`;
+}
+
+function OutlawCombatSimulator() {
+  const [scenarioId, setScenarioId] = useState<OutlawCombatScenarioId>("aoe_pull");
+  const [combatState, setCombatState] = useState(() => createOutlawScenarioState("aoe_pull"));
+  const [hintMode, setHintMode] = useState(true);
+  const [logs, setLogs] = useState<OutlawCombatLogEntry[]>([]);
+  const [lastFeedback, setLastFeedback] = useState("스킬 버튼을 눌러보세요. 틀려도 상태는 진행되고, 왜 손해인지 알려줍니다.");
+  const recommendation = getOutlawRecommendation(combatState);
+
+  const selectScenario = (nextScenarioId: OutlawCombatScenarioId) => {
+    setScenarioId(nextScenarioId);
+    setCombatState(createOutlawScenarioState(nextScenarioId));
+    setLogs([]);
+    setLastFeedback("새 상황입니다. 지금 누를 버튼을 먼저 판단해보세요.");
+  };
+
+  const resetScenario = () => {
+    setCombatState(createOutlawScenarioState(scenarioId));
+    setLogs([]);
+    setLastFeedback("처음 상태로 되돌렸습니다.");
+  };
+
+  const pressAction = (skillKo: OutlawCombatLogEntry["skillKo"]) => {
+    const result = scoreOutlawAction(combatState, { skillKo });
+    const nextState = applyOutlawAction(combatState, { skillKo });
+    setCombatState(nextState);
+    setLastFeedback(result.messageKo);
+    setLogs((prev) => [
+      {
+        ...result,
+        id: `${combatState.elapsedSeconds}-${skillKo}-${prev.length}`,
+        elapsedSeconds: combatState.elapsedSeconds,
+      },
+      ...prev,
+    ].slice(0, 8));
+  };
+
+  const statusChips = [
+    `시간 ${combatState.elapsedSeconds.toFixed(0)}초`,
+    `대상 ${combatState.targets}마리`,
+    `기력 ${combatState.energy}`,
+    `CP ${combatState.comboPoints}`,
+    `주사위 ${combatState.rollStage || "없음"}`,
+    `기회 ${combatState.opportunityStacks || "없음"}`,
+  ];
+
+  const buffChips = [
+    ["폭풍의 칼날", combatState.buffs.bladeFlurry],
+    ["난도질", combatState.buffs.sliceAndDice],
+    ["아드레날린 촉진", combatState.buffs.adrenalineRush],
+  ] as const;
+
+  const cooldownChips = [
+    ["Blade Rush", combatState.cooldowns.bladeRush],
+    ["미간 적중", combatState.cooldowns.betweenTheEyes],
+    ["준비", combatState.cooldowns.preparation],
+    ["광기의 학살자", combatState.cooldowns.killingSpree],
+    ["도박의 연속", combatState.cooldowns.keepItRolling],
+  ] as const;
+
+  return (
+    <section className="outlaw-combat-sim" aria-label="무법 실전 허수아비">
+      <div className="outlaw-combat-head">
+        <div>
+          <h3>무법 실전 허수아비</h3>
+          <p>정확한 DPS 심크가 아니라, 상황에 맞게 지금 뭘 눌러야 하는지 익히는 추천 우선순위 훈련용입니다.</p>
+        </div>
+        <label className="outlaw-hint-toggle">
+          <input type="checkbox" checked={hintMode} onChange={(event) => setHintMode(event.target.checked)} />
+          힌트 표시
+        </label>
+      </div>
+
+      <div className="outlaw-preset-row" aria-label="무법 실전 허수아비 시나리오">
+        {outlawCombatScenarios.map((scenario) => (
+          <button key={scenario.id} type="button" className={scenario.id === scenarioId ? "active" : ""} onClick={() => selectScenario(scenario.id)}>
+            {scenario.labelKo}
+          </button>
+        ))}
+        <button type="button" onClick={resetScenario}>처음부터</button>
+      </div>
+
+      <div className="outlaw-combat-layout">
+        <section className="outlaw-combat-main">
+          <div className="outlaw-next-skill" aria-label="무법 실전 허수아비 추천 스킬">
+            <span>지금 누를 버튼</span>
+            <strong>{recommendation.skillKo}</strong>
+            <p>{recommendation.reasonKo}</p>
+            <small>{recommendation.noteKo}</small>
+          </div>
+
+          <div className="outlaw-combat-chip-grid" aria-label="무법 현재 상태">
+            {statusChips.map((chip) => <span key={chip}>{chip}</span>)}
+          </div>
+
+          <div className="outlaw-sim-pad" aria-label="무법 실전 허수아비 스킬 버튼">
+            {outlawCombatActions.map((action) => (
+              <button
+                key={action.skillKo}
+                type="button"
+                className={hintMode && action.skillKo === recommendation.skillKo ? "recommended" : ""}
+                onClick={() => pressAction(action.skillKo)}
+              >
+                {action.skillKo}
+              </button>
+            ))}
+          </div>
+
+          <div className="outlaw-combat-feedback" aria-live="polite">
+            {lastFeedback}
+          </div>
+        </section>
+
+        <aside className="outlaw-combat-side">
+          <div>
+            <b>버프</b>
+            <div className="outlaw-combat-mini-grid">
+              {buffChips.map(([label, value]) => <span key={label}>{label}: {formatCombatSeconds(value)}</span>)}
+            </div>
+          </div>
+          <div>
+            <b>쿨다운</b>
+            <div className="outlaw-combat-mini-grid">
+              {cooldownChips.map(([label, value]) => <span key={label}>{label}: {formatCombatSeconds(value)}</span>)}
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <details className="outlaw-combat-log">
+        <summary>전투 로그 보기</summary>
+        {logs.length === 0 ? (
+          <p>아직 누른 버튼이 없습니다. 추천 버튼을 보거나 힌트를 끄고 직접 눌러보세요.</p>
+        ) : (
+          <ol>
+            {logs.map((log) => (
+              <li key={log.id} className={log.result}>
+                <b>{log.elapsedSeconds.toFixed(0)}초 · {log.skillKo}</b>
+                <span>{log.messageKo}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </details>
+    </section>
+  );
+}
+
 function OutlawSequenceTrainer() {
   const [scenarioIndex, setScenarioIndex] = useState(0);
   const [stepIndex, setStepIndex] = useState(0);
@@ -335,8 +496,9 @@ function OutlawCycleTrainer() {
     <article className="panel guide-card outlaw-section-card outlaw-trainer-card">
       <p className="eyebrow">딜사이클 연습용</p>
       <h2>무법 연습장</h2>
-      <p>순서대로 눌러보는 연습과, 상황을 바꿔 다음 버튼을 확인하는 판단 연습을 같이 둡니다.</p>
+      <p>실전 허수아비로 먼저 상황 판단을 익히고, 아래에서 손순서와 세부 조건을 보조로 확인합니다.</p>
 
+      <OutlawCombatSimulator />
       <OutlawSequenceTrainer />
 
       <div className="outlaw-trainer-layout">

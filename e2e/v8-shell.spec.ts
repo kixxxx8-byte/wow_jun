@@ -57,6 +57,17 @@ test("guide tab exposes all supported specs with a shared template", async ({ pa
   await page.getByRole("button", { name: /무법/ }).click();
   await expect(page.getByRole("heading", { name: "무법 도적 핵심 결론" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "무법 연습장" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "무법 실전 허수아비" })).toBeVisible();
+  await expect(page.getByLabel("무법 실전 허수아비 추천 스킬").getByText("폭풍의 칼날", { exact: true })).toBeVisible();
+  await page.getByLabel("무법 실전 허수아비 스킬 버튼").getByRole("button", { name: "사악한 일격" }).click();
+  await expect(page.locator(".outlaw-combat-feedback").getByText("지금은 폭풍의 칼날부터 봐야 합니다.")).toBeVisible();
+  await page.getByLabel("무법 실전 허수아비 시나리오").getByRole("button", { name: "광역 풀" }).click();
+  await page.getByLabel("무법 실전 허수아비 스킬 버튼").getByRole("button", { name: "폭풍의 칼날" }).click();
+  await expect(page.locator(".outlaw-combat-feedback").getByText("좋습니다. 지금은 폭풍의 칼날이 맞습니다.")).toBeVisible();
+  await page.getByLabel("무법 실전 허수아비 시나리오").getByRole("button", { name: "단일 허수아비" }).click();
+  await expect(page.getByLabel("무법 실전 허수아비 추천 스킬").getByText("뼈주사위", { exact: true })).toBeVisible();
+  await page.getByLabel("무법 실전 허수아비 시나리오").getByRole("button", { name: "쿨기 막힘" }).click();
+  await expect(page.getByLabel("무법 실전 허수아비 추천 스킬").getByText("준비", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "순서대로 눌러보기" })).toBeVisible();
   await expect(page.getByLabel("무법 도적 순차 연습").getByText("현재 단계: 광역 스위치")).toBeVisible();
   await page.getByLabel("무법 도적 연습 스킬 버튼").getByRole("button", { name: "사악한 일격" }).click();

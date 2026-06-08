@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Character } from "../../../types";
 import { midnightS1Items } from "../data/midnightS1Items";
 import { evaluateCharacterGear, evaluateGearSlot, getGearCandidatesForSlot } from "./gearInspection";
+import { createOutlawScenarioState, getOutlawRecommendation, scoreOutlawAction } from "./outlawCombatSim";
 import { classGuides, specProfiles } from "./specGuides";
 
 const character: Character = {
@@ -128,6 +129,61 @@ describe("gear inspection", () => {
     expect(result.summary.craftedRecommended).toBeGreaterThan(0);
     expect(result.summary.trinketChecks).toBeGreaterThan(0);
     expect(result.todo.length).toBeGreaterThan(0);
+  });
+});
+
+describe("outlaw combat simulator", () => {
+  it("prioritizes Blade Flurry when multiple targets are active", () => {
+    const state = createOutlawScenarioState("aoe_pull");
+    expect(getOutlawRecommendation(state).skillKo).toBe("폭풍의 칼날");
+  });
+
+  it("prioritizes Keep It Rolling when Roll the Bones is strong", () => {
+    const state = {
+      ...createOutlawScenarioState("single_dummy"),
+      rollStage: 3 as const,
+      buffs: { bladeFlurry: 0, sliceAndDice: 18, adrenalineRush: 0 },
+      cooldowns: { ...createOutlawScenarioState("single_dummy").cooldowns, keepItRolling: 0, rollTheBones: 30 },
+    };
+
+    expect(getOutlawRecommendation(state).skillKo).toBe("도박의 연속(KIR)");
+  });
+
+  it("uses Between the Eyes at high combo points", () => {
+    const state = {
+      ...createOutlawScenarioState("single_dummy"),
+      comboPoints: 6,
+      rollStage: 2 as const,
+      buffs: { bladeFlurry: 0, sliceAndDice: 18, adrenalineRush: 0 },
+      cooldowns: { ...createOutlawScenarioState("single_dummy").cooldowns, bladeRush: 15, betweenTheEyes: 0, rollTheBones: 30 },
+    };
+
+    expect(getOutlawRecommendation(state).skillKo).toBe("미간 적중");
+  });
+
+  it("does not recommend Pistol Shot only because opportunity exists", () => {
+    const state = {
+      ...createOutlawScenarioState("single_dummy"),
+      comboPoints: 0,
+      rollStage: 2 as const,
+      opportunityStacks: 3 as const,
+      buffs: { bladeFlurry: 0, sliceAndDice: 18, adrenalineRush: 0 },
+      cooldowns: { ...createOutlawScenarioState("single_dummy").cooldowns, bladeRush: 15, rollTheBones: 30 },
+    };
+
+    expect(getOutlawRecommendation(state).skillKo).toBe("아드레날린 촉진");
+  });
+
+  it("uses Preparation only when core cooldowns are locked", () => {
+    expect(getOutlawRecommendation(createOutlawScenarioState("cooldowns_locked")).skillKo).toBe("준비");
+    expect(getOutlawRecommendation(createOutlawScenarioState("single_dummy")).skillKo).not.toBe("준비");
+  });
+
+  it("records why a wrong button is wrong", () => {
+    const result = scoreOutlawAction(createOutlawScenarioState("aoe_pull"), { skillKo: "사악한 일격" });
+    expect(result.result).toBe("wrong");
+    expect(result.messageKo).toContain("폭풍의 칼날");
+    expect(result.messageKo).toContain("2타겟 이상");
   });
 });
 
