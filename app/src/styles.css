@@ -3692,6 +3692,50 @@ a {
   margin-top: 10px;
 }
 
+.outlaw-target-frame {
+  position: relative;
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  margin-top: 10px;
+  padding: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(15, 118, 110, 0.18);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.outlaw-target-frame div {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.outlaw-target-frame b,
+.outlaw-target-frame span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.outlaw-target-frame span {
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.outlaw-target-frame i {
+  display: block;
+  height: 9px;
+  max-width: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #0f766e, #38bdf8);
+  transition: width 0.2s ease;
+}
+
 .outlaw-combat-chip-grid span,
 .outlaw-combat-mini-grid span {
   min-width: 0;

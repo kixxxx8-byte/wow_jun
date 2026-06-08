@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Character } from "../../../types";
 import { midnightS1Items } from "../data/midnightS1Items";
 import { evaluateCharacterGear, evaluateGearSlot, getGearCandidatesForSlot } from "./gearInspection";
-import { advanceOutlawTime, applyOutlawAction, createOutlawScenarioState, getOutlawActionAvailability, getOutlawKeybindByCode, getOutlawRecommendation, scoreOutlawAction } from "./outlawCombatSim";
+import { advanceOutlawTime, applyOutlawAction, createOutlawScenarioState, getOutlawActionAvailability, getOutlawKeybindByCode, getOutlawRecommendation, getOutlawSessionResult, scoreOutlawAction } from "./outlawCombatSim";
 import type { OutlawCombatState } from "./outlawCombatSim";
 import { classGuides, specProfiles } from "./specGuides";
 
@@ -248,6 +248,22 @@ describe("outlaw combat simulator", () => {
     expect(getOutlawKeybindByCode("KeyC", false)?.skillKo).toBe("발차기");
     expect(getOutlawKeybindByCode("KeyC", true)?.skillKo).toBe("그림자 망토");
     expect(getOutlawKeybindByCode("KeyF", true)?.skillKo).toBe("도박의 연속(KIR)");
+  });
+
+  it("tracks target progress and session result", () => {
+    const state = {
+      ...createOutlawScenarioState("single_dummy"),
+      targetHealth: 5,
+      comboPoints: 6,
+      rollStage: 2 as const,
+      buffs: { bladeFlurry: 0, sliceAndDice: 20, adrenalineRush: 0 },
+      cooldowns: { ...createOutlawScenarioState("single_dummy").cooldowns, bladeRush: 20, betweenTheEyes: 0, rollTheBones: 30 },
+    };
+    const next = applyOutlawAction(state, { skillKo: "미간 적중" });
+
+    expect(next.targetHealth).toBe(0);
+    expect(getOutlawSessionResult(next)).toBe("success");
+    expect(getOutlawActionAvailability(next, { skillKo: "사악한 일격" }).usable).toBe(false);
   });
 });
 

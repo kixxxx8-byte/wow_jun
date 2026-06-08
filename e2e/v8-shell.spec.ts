@@ -60,8 +60,12 @@ test("guide tab exposes all supported specs with a shared template", async ({ pa
   await expect(page.getByRole("heading", { name: "무법 실전 허수아비" })).toBeVisible();
   await expect(page.getByText("다음 위험 패턴")).toBeVisible();
   await expect(page.getByText("세션 결과")).toBeVisible();
+  await expect(page.getByText("타겟 체력")).toBeVisible();
   await expect(page.getByText("기본 키맵")).toBeVisible();
   await expect(page.getByLabel("무법 실전 허수아비 추천 스킬").getByText("폭풍의 칼날", { exact: true })).toBeVisible();
+  await page.getByLabel("무법 실전 허수아비").getByLabel("실전 모드").check();
+  await expect(page.getByLabel("무법 실전 허수아비 추천 스킬").getByText("직접 판단")).toBeVisible();
+  await page.getByLabel("무법 실전 허수아비").getByLabel("실전 모드").uncheck();
   await page.getByRole("button", { name: "1초 진행" }).click();
   await page.getByRole("button", { name: "1초 진행" }).click();
   await expect(page.getByText("지금 위험 패턴")).toBeVisible();

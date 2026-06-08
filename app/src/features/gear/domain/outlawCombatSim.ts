@@ -54,6 +54,7 @@ export type OutlawCombatState = {
   scenarioId: OutlawCombatScenarioId;
   elapsedSeconds: number;
   targets: 1 | 2 | 4;
+  targetHealth: number;
   energy: number;
   comboPoints: number;
   rollStage: 0 | 1 | 2 | 3 | 4;
@@ -83,6 +84,8 @@ export type OutlawCombatState = {
     cloakOfShadows: number;
   };
 };
+
+export type OutlawSessionResult = "in_progress" | "success" | "failed";
 
 export type OutlawRecommendation = {
   skillKo: OutlawCombatSkill;
@@ -285,6 +288,7 @@ export function createOutlawScenarioState(scenarioId: OutlawCombatScenarioId): O
     scenarioId,
     elapsedSeconds: 0,
     targets: 1,
+    targetHealth: 100,
     energy: 100,
     comboPoints: 0,
     rollStage: 0,
@@ -369,6 +373,22 @@ export function createOutlawScenarioState(scenarioId: OutlawCombatScenarioId): O
 }
 
 export function getOutlawRecommendation(state: OutlawCombatState): OutlawRecommendation {
+  const sessionResult = getOutlawSessionResult(state);
+  if (sessionResult === "success") {
+    return {
+      skillKo: "사악한 일격",
+      reasonKo: "세션을 성공했습니다.",
+      noteKo: "처음부터 다시 시작하거나 다른 상황을 선택하세요.",
+    };
+  }
+  if (sessionResult === "failed") {
+    return {
+      skillKo: "교란",
+      reasonKo: "세션이 실패했습니다.",
+      noteKo: "체력이 0이 되었습니다. 처음부터 다시 시작하세요.",
+    };
+  }
+
   if (state.activeMechanic) {
     return {
       skillKo: state.activeMechanic.expectedSkillKo,
@@ -523,6 +543,8 @@ export function scoreOutlawAction(state: OutlawCombatState, action: OutlawCombat
 }
 
 export function advanceOutlawTime(state: OutlawCombatState, seconds: number): OutlawCombatState {
+  if (getOutlawSessionResult(state) !== "in_progress") return state;
+
   const recovery = state.buffs.adrenalineRush > 0 ? 18 : 10;
   const nextEnergy = Math.min(100, state.energy + recovery * seconds);
   const tick = (value: number) => Math.max(0, Math.round((value - seconds) * 10) / 10);
@@ -562,6 +584,8 @@ export function advanceOutlawTime(state: OutlawCombatState, seconds: number): Ou
 }
 
 export function applyOutlawAction(state: OutlawCombatState, action: OutlawCombatAction): OutlawCombatState {
+  if (getOutlawSessionResult(state) !== "in_progress") return state;
+
   const scored = scoreOutlawAction(state, action);
   if (scored.result === "unavailable") {
     return {
@@ -587,6 +611,7 @@ export function applyOutlawAction(state: OutlawCombatState, action: OutlawCombat
 export function getOutlawActionAvailability(state: OutlawCombatState, action: OutlawCombatAction): OutlawActionAvailability {
   const skillKo = action.skillKo;
 
+  if (state.targetHealth <= 0) return { usable: false, reasonKo: "타겟을 처치했습니다. 새 세션을 시작하세요." };
   if (state.health <= 0) return { usable: false, reasonKo: "체력이 0이라 세션을 처음부터 다시 시작해야 합니다." };
 
   if (skillKo === "뼈주사위" && state.cooldowns.rollTheBones > 0) return { usable: false, reasonKo: `뼈주사위 쿨이 ${Math.ceil(state.cooldowns.rollTheBones)}초 남았습니다.` };
@@ -611,12 +636,24 @@ export function getOutlawActionAvailability(state: OutlawCombatState, action: Ou
   return { usable: true };
 }
 
+export function getOutlawSessionResult(state: OutlawCombatState): OutlawSessionResult {
+  if (state.targetHealth <= 0) return "success";
+  if (state.health <= 0) return "failed";
+  return "in_progress";
+}
+
+export function getOutlawMechanicTimeLeft(state: OutlawCombatState): number | undefined {
+  if (!state.activeMechanic) return undefined;
+  return Math.max(0, Math.round((state.activeMechanic.triggerAt + state.activeMechanic.duration - state.elapsedSeconds) * 10) / 10);
+}
+
 function applySkillEffect(state: OutlawCombatState, skillKo: OutlawCombatSkill): OutlawCombatState {
   const spendEnergy = (amount: number) => Math.max(0, state.energy - amount);
   const gainCp = (amount: number) => Math.min(7, state.comboPoints + amount);
+  const damageTarget = (amount: number) => Math.max(0, state.targetHealth - amount);
 
   if (skillKo === "폭풍의 칼날") {
-    return { ...state, buffs: { ...state.buffs, bladeFlurry: 12 } };
+    return { ...state, targetHealth: damageTarget(state.targets >= 2 ? 4 : 1), buffs: { ...state.buffs, bladeFlurry: 12 } };
   }
 
   if (skillKo === "아드레날린 촉진") {
@@ -660,6 +697,7 @@ function applySkillEffect(state: OutlawCombatState, skillKo: OutlawCombatSkill):
   if (skillKo === "Blade Rush") {
     return {
       ...state,
+      targetHealth: damageTarget(state.targets >= 2 ? 10 : 7),
       energy: Math.min(100, state.energy + 25),
       comboPoints: gainCp(1),
       cooldowns: { ...state.cooldowns, bladeRush: 30 },
@@ -670,6 +708,7 @@ function applySkillEffect(state: OutlawCombatState, skillKo: OutlawCombatSkill):
     const nextOpportunity = state.opportunityStacks === 0 ? 3 : state.opportunityStacks;
     return {
       ...state,
+      targetHealth: damageTarget(state.targets >= 2 && state.buffs.bladeFlurry > 0 ? 7 : 4),
       energy: spendEnergy(45),
       comboPoints: gainCp(1),
       opportunityStacks: nextOpportunity,
@@ -679,6 +718,7 @@ function applySkillEffect(state: OutlawCombatState, skillKo: OutlawCombatSkill):
   if (skillKo === "권총 사격") {
     return {
       ...state,
+      targetHealth: damageTarget(5),
       energy: spendEnergy(35),
       comboPoints: gainCp(state.opportunityStacks >= 3 ? 2 : 1),
       opportunityStacks: 0,
@@ -688,18 +728,20 @@ function applySkillEffect(state: OutlawCombatState, skillKo: OutlawCombatSkill):
   if (skillKo === "미간 적중") {
     return {
       ...state,
+      targetHealth: damageTarget(state.targets >= 2 && state.buffs.bladeFlurry > 0 ? 16 : 11),
       comboPoints: 0,
       cooldowns: { ...state.cooldowns, betweenTheEyes: 18 },
     };
   }
 
   if (skillKo === "속결") {
-    return { ...state, comboPoints: 0, energy: spendEnergy(25) };
+    return { ...state, targetHealth: damageTarget(state.targets >= 2 && state.buffs.bladeFlurry > 0 ? 13 : 9), comboPoints: 0, energy: spendEnergy(25) };
   }
 
   if (skillKo === "광기의 학살자") {
     return {
       ...state,
+      targetHealth: damageTarget(12),
       comboPoints: 0,
       cooldowns: { ...state.cooldowns, killingSpree: 90 },
     };

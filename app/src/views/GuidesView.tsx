@@ -9,7 +9,9 @@ import {
   createOutlawScenarioState,
   getOutlawActionAvailability,
   getOutlawKeybindByCode,
+  getOutlawMechanicTimeLeft,
   getOutlawRecommendation,
+  getOutlawSessionResult,
   outlawCombatActions,
   outlawDefaultKeybinds,
   outlawCombatScenarios,
@@ -270,23 +272,26 @@ function OutlawCombatSimulator() {
   const [combatState, setCombatState] = useState(() => createOutlawScenarioState("aoe_pull"));
   const [hintMode, setHintMode] = useState(true);
   const [keyboardMode, setKeyboardMode] = useState(false);
+  const [realMode, setRealMode] = useState(false);
   const [running, setRunning] = useState(false);
   const [logs, setLogs] = useState<OutlawCombatLogEntry[]>([]);
   const [lastFeedback, setLastFeedback] = useState("스킬 버튼을 눌러보세요. 틀려도 상태는 진행되고, 왜 손해인지 알려줍니다.");
   const [lastPromptAt, setLastPromptAt] = useState(() => Date.now());
   const recommendation = getOutlawRecommendation(combatState);
+  const sessionResult = getOutlawSessionResult(combatState);
+  const mechanicTimeLeft = getOutlawMechanicTimeLeft(combatState);
   const currentScenario = outlawCombatScenarios.find((scenario) => scenario.id === scenarioId);
   const upcomingMechanic = outlawScenarioMechanics[scenarioId].find(
     (mechanic) => mechanic.triggerAt > combatState.elapsedSeconds && !combatState.resolvedMechanicIds.includes(mechanic.id)
   );
 
   useEffect(() => {
-    if (!running) return undefined;
+    if (!running || sessionResult !== "in_progress") return undefined;
     const timer = window.setInterval(() => {
       setCombatState((prev) => advanceOutlawTime(prev, 1));
     }, 1000);
     return () => window.clearInterval(timer);
-  }, [running]);
+  }, [running, sessionResult]);
 
   useEffect(() => {
     setLastPromptAt(Date.now());
@@ -345,6 +350,7 @@ function OutlawCombatSimulator() {
     `대상 ${combatState.targets}마리`,
     `기력 ${combatState.energy}`,
     `CP ${combatState.comboPoints}`,
+    `타겟 ${combatState.targetHealth}%`,
     `체력 ${combatState.health}`,
     `실수 ${combatState.mistakes}`,
     `주사위 ${combatState.rollStage || "없음"}`,
@@ -380,6 +386,10 @@ function OutlawCombatSimulator() {
           힌트 표시
         </label>
         <label className="outlaw-hint-toggle">
+          <input type="checkbox" checked={realMode} onChange={(event) => setRealMode(event.target.checked)} />
+          실전 모드
+        </label>
+        <label className="outlaw-hint-toggle">
           <input type="checkbox" checked={keyboardMode} onChange={(event) => setKeyboardMode(event.target.checked)} />
           키보드 입력
         </label>
@@ -413,7 +423,7 @@ function OutlawCombatSimulator() {
                 <span>지금 위험 패턴</span>
                 <b>{combatState.activeMechanic.titleKo}</b>
                 <p>{combatState.activeMechanic.detailKo}</p>
-                <small>{combatState.activeMechanic.expectedSkillKo}로 처리</small>
+                <small>{realMode ? `남은 시간 ${mechanicTimeLeft ?? 0}초` : `${combatState.activeMechanic.expectedSkillKo}로 처리 · 남은 시간 ${mechanicTimeLeft ?? 0}초`}</small>
               </>
             ) : (
               <>
@@ -425,14 +435,22 @@ function OutlawCombatSimulator() {
           </div>
 
           <div className="outlaw-next-skill" aria-label="무법 실전 허수아비 추천 스킬">
-            <span>지금 누를 버튼</span>
-            <strong>{recommendation.skillKo}</strong>
-            <p>{recommendation.reasonKo}</p>
-            <small>{recommendation.noteKo}</small>
+            <span>{realMode ? "실전 모드" : "지금 누를 버튼"}</span>
+            <strong>{realMode ? "직접 판단" : recommendation.skillKo}</strong>
+            <p>{realMode ? "위험 패턴, 기력, CP, 쿨다운만 보고 직접 누릅니다." : recommendation.reasonKo}</p>
+            <small>{realMode ? "힌트를 끄고 키보드 입력까지 켜면 더 실전처럼 연습할 수 있습니다." : recommendation.noteKo}</small>
           </div>
 
           <div className="outlaw-combat-chip-grid" aria-label="무법 현재 상태">
             {statusChips.map((chip) => <span key={chip}>{chip}</span>)}
+          </div>
+
+          <div className="outlaw-target-frame" aria-label="무법 실전 허수아비 타겟 상태">
+            <div>
+              <b>타겟 체력</b>
+              <span>{combatState.targetHealth}%</span>
+            </div>
+            <i style={{ width: `${combatState.targetHealth}%` }} />
           </div>
 
           <div className="outlaw-sim-pad" aria-label="무법 실전 허수아비 스킬 버튼">
@@ -442,7 +460,7 @@ function OutlawCombatSimulator() {
                 <button
                   key={action.skillKo}
                   type="button"
-                  className={hintMode && action.skillKo === recommendation.skillKo ? "recommended" : ""}
+                  className={hintMode && !realMode && action.skillKo === recommendation.skillKo ? "recommended" : ""}
                   disabled={!availability.usable}
                   title={availability.reasonKo}
                   onClick={() => pressAction(action.skillKo)}
@@ -462,8 +480,8 @@ function OutlawCombatSimulator() {
         <aside className="outlaw-combat-side">
           <div className="outlaw-combat-score">
             <b>세션 결과</b>
-            <strong>{combatState.score}점</strong>
-            <span>연속 정답 {combatState.streak}회</span>
+            <strong>{sessionResult === "success" ? "성공" : sessionResult === "failed" ? "실패" : `${combatState.score}점`}</strong>
+            <span>연속 정답 {combatState.streak}회 · 타겟 {combatState.targetHealth}%</span>
           </div>
           <div>
             <b>버프</b>
