@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Character } from "../../../types";
 import { midnightS1Items } from "../data/midnightS1Items";
 import { evaluateCharacterGear, evaluateGearSlot, getGearCandidatesForSlot } from "./gearInspection";
-import { advanceOutlawTime, applyOutlawAction, createOutlawScenarioState, getOutlawRecommendation, scoreOutlawAction } from "./outlawCombatSim";
+import { advanceOutlawTime, applyOutlawAction, createOutlawScenarioState, getOutlawActionAvailability, getOutlawRecommendation, scoreOutlawAction } from "./outlawCombatSim";
 import type { OutlawCombatState } from "./outlawCombatSim";
 import { classGuides, specProfiles } from "./specGuides";
 
@@ -216,6 +216,31 @@ describe("outlaw combat simulator", () => {
     const state = advanceOutlawMany(activeKick, 4);
     expect(state.health).toBeLessThan(100);
     expect(state.mistakes).toBeGreaterThan(0);
+  });
+
+  it("blocks cooldown and resource locked buttons", () => {
+    const state = {
+      ...createOutlawScenarioState("single_dummy"),
+      energy: 20,
+      comboPoints: 1,
+      cooldowns: { ...createOutlawScenarioState("single_dummy").cooldowns, bladeRush: 12, betweenTheEyes: 8 },
+    };
+
+    expect(getOutlawActionAvailability(state, { skillKo: "Blade Rush" }).usable).toBe(false);
+    expect(getOutlawActionAvailability(state, { skillKo: "사악한 일격" }).reasonKo).toContain("기력");
+    expect(getOutlawActionAvailability(state, { skillKo: "미간 적중" }).reasonKo).toContain("쿨");
+  });
+
+  it("does not apply effects for unavailable actions", () => {
+    const state = {
+      ...createOutlawScenarioState("single_dummy"),
+      cooldowns: { ...createOutlawScenarioState("single_dummy").cooldowns, bladeRush: 12 },
+    };
+    const next = applyOutlawAction(state, { skillKo: "Blade Rush" });
+
+    expect(next.cooldowns.bladeRush).toBe(12);
+    expect(next.comboPoints).toBe(state.comboPoints);
+    expect(next.mistakes).toBe(state.mistakes + 1);
   });
 });
 

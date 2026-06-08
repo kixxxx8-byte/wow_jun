@@ -87,9 +87,14 @@ export type OutlawCombatLogEntry = {
   id: string;
   elapsedSeconds: number;
   skillKo: OutlawCombatSkill;
-  result: "correct" | "okay" | "wrong";
+  result: "correct" | "okay" | "wrong" | "unavailable";
   messageKo: string;
   expectedSkillKo: OutlawCombatSkill;
+};
+
+export type OutlawActionAvailability = {
+  usable: boolean;
+  reasonKo?: string;
 };
 
 export const outlawCombatActions: OutlawCombatAction[] = [
@@ -442,6 +447,16 @@ export function getOutlawRecommendation(state: OutlawCombatState): OutlawRecomme
 
 export function scoreOutlawAction(state: OutlawCombatState, action: OutlawCombatAction): Omit<OutlawCombatLogEntry, "id" | "elapsedSeconds"> {
   const expected = getOutlawRecommendation(state);
+  const availability = getOutlawActionAvailability(state, action);
+
+  if (!availability.usable) {
+    return {
+      skillKo: action.skillKo,
+      result: "unavailable",
+      expectedSkillKo: expected.skillKo,
+      messageKo: `${action.skillKo}는 지금 사용할 수 없습니다. ${availability.reasonKo ?? ""} 지금 봐야 할 버튼은 ${expected.skillKo}입니다.`,
+    };
+  }
 
   if (action.skillKo === expected.skillKo) {
     return {
@@ -516,6 +531,15 @@ export function advanceOutlawTime(state: OutlawCombatState, seconds: number): Ou
 
 export function applyOutlawAction(state: OutlawCombatState, action: OutlawCombatAction): OutlawCombatState {
   const scored = scoreOutlawAction(state, action);
+  if (scored.result === "unavailable") {
+    return {
+      ...state,
+      mistakes: state.mistakes + 1,
+      streak: 0,
+      score: Math.max(0, state.score - 30),
+    };
+  }
+
   const withMechanicResult = resolveMechanicIfNeeded(applySkillEffect(state, action.skillKo), action.skillKo, scored.result);
   const withScore = {
     ...withMechanicResult,
@@ -526,6 +550,33 @@ export function applyOutlawAction(state: OutlawCombatState, action: OutlawCombat
     health: Math.max(0, withMechanicResult.health - (scored.result === "wrong" ? 8 : 0)),
   };
   return advanceOutlawTime(withScore, 1);
+}
+
+export function getOutlawActionAvailability(state: OutlawCombatState, action: OutlawCombatAction): OutlawActionAvailability {
+  const skillKo = action.skillKo;
+
+  if (state.health <= 0) return { usable: false, reasonKo: "체력이 0이라 세션을 처음부터 다시 시작해야 합니다." };
+
+  if (skillKo === "뼈주사위" && state.cooldowns.rollTheBones > 0) return { usable: false, reasonKo: `뼈주사위 쿨이 ${Math.ceil(state.cooldowns.rollTheBones)}초 남았습니다.` };
+  if (skillKo === "도박의 연속(KIR)" && state.cooldowns.keepItRolling > 0) return { usable: false, reasonKo: `도박의 연속 쿨이 ${Math.ceil(state.cooldowns.keepItRolling)}초 남았습니다.` };
+  if (skillKo === "아드레날린 촉진" && state.cooldowns.adrenalineRush > 0) return { usable: false, reasonKo: `아드레날린 촉진 쿨이 ${Math.ceil(state.cooldowns.adrenalineRush)}초 남았습니다.` };
+  if (skillKo === "Blade Rush" && state.cooldowns.bladeRush > 0) return { usable: false, reasonKo: `Blade Rush 쿨이 ${Math.ceil(state.cooldowns.bladeRush)}초 남았습니다.` };
+  if (skillKo === "미간 적중" && state.cooldowns.betweenTheEyes > 0) return { usable: false, reasonKo: `미간 적중 쿨이 ${Math.ceil(state.cooldowns.betweenTheEyes)}초 남았습니다.` };
+  if (skillKo === "광기의 학살자" && state.cooldowns.killingSpree > 0) return { usable: false, reasonKo: `광기의 학살자 쿨이 ${Math.ceil(state.cooldowns.killingSpree)}초 남았습니다.` };
+  if (skillKo === "준비" && state.cooldowns.preparation > 0) return { usable: false, reasonKo: `준비 쿨이 ${Math.ceil(state.cooldowns.preparation)}초 남았습니다.` };
+  if (skillKo === "발차기" && state.cooldowns.kick > 0) return { usable: false, reasonKo: `발차기 쿨이 ${Math.ceil(state.cooldowns.kick)}초 남았습니다.` };
+  if (skillKo === "교란" && state.cooldowns.feint > 0) return { usable: false, reasonKo: `교란 쿨이 ${Math.ceil(state.cooldowns.feint)}초 남았습니다.` };
+  if (skillKo === "그림자 망토" && state.cooldowns.cloakOfShadows > 0) return { usable: false, reasonKo: `그림자 망토 쿨이 ${Math.ceil(state.cooldowns.cloakOfShadows)}초 남았습니다.` };
+
+  if (skillKo === "사악한 일격" && state.energy < 45) return { usable: false, reasonKo: `기력이 ${45 - state.energy} 부족합니다.` };
+  if (skillKo === "권총 사격" && state.energy < 35) return { usable: false, reasonKo: `기력이 ${35 - state.energy} 부족합니다.` };
+  if (skillKo === "속결" && state.energy < 25) return { usable: false, reasonKo: `기력이 ${25 - state.energy} 부족합니다.` };
+
+  if ((skillKo === "미간 적중" || skillKo === "속결") && state.comboPoints < 5) return { usable: false, reasonKo: "마무리 일격을 쓰기엔 CP가 부족합니다." };
+  if (skillKo === "광기의 학살자" && state.comboPoints < 5) return { usable: false, reasonKo: "광기의 학살자는 5CP 이상에서 확인합니다." };
+  if (skillKo === "도박의 연속(KIR)" && state.rollStage < 3) return { usable: false, reasonKo: "뼈주사위가 3단계 이상일 때 사용합니다." };
+
+  return { usable: true };
 }
 
 function applySkillEffect(state: OutlawCombatState, skillKo: OutlawCombatSkill): OutlawCombatState {
@@ -689,5 +740,6 @@ function getMechanicPenalty(mechanic: OutlawCombatMechanic): number {
 function getActionScore(result: OutlawCombatLogEntry["result"]): number {
   if (result === "correct") return 100;
   if (result === "okay") return 35;
+  if (result === "unavailable") return -30;
   return -60;
 }

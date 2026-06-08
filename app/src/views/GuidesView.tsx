@@ -7,6 +7,7 @@ import {
   advanceOutlawTime,
   applyOutlawAction,
   createOutlawScenarioState,
+  getOutlawActionAvailability,
   getOutlawRecommendation,
   outlawCombatActions,
   outlawCombatScenarios,
@@ -405,17 +406,22 @@ function OutlawCombatSimulator() {
           </div>
 
           <div className="outlaw-sim-pad" aria-label="무법 실전 허수아비 스킬 버튼">
-            {outlawCombatActions.map((action) => (
-              <button
-                key={action.skillKo}
-                type="button"
-                className={hintMode && action.skillKo === recommendation.skillKo ? "recommended" : ""}
-                disabled={combatState.health <= 0}
-                onClick={() => pressAction(action.skillKo)}
-              >
-                {action.skillKo}
-              </button>
-            ))}
+            {outlawCombatActions.map((action) => {
+              const availability = getOutlawActionAvailability(combatState, action);
+              return (
+                <button
+                  key={action.skillKo}
+                  type="button"
+                  className={hintMode && action.skillKo === recommendation.skillKo ? "recommended" : ""}
+                  disabled={!availability.usable}
+                  title={availability.reasonKo}
+                  onClick={() => pressAction(action.skillKo)}
+                >
+                  <span>{action.skillKo}</span>
+                  {!availability.usable ? <small>{availability.reasonKo}</small> : null}
+                </button>
+              );
+            })}
           </div>
 
           <div className="outlaw-combat-feedback" aria-live="polite">

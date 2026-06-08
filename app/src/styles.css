@@ -3714,12 +3714,34 @@ a {
 }
 
 .outlaw-sim-pad button {
+  display: grid;
+  gap: 3px;
+  align-content: center;
   min-width: 0;
-  min-height: 42px;
+  min-height: 48px;
   padding: 9px 8px;
   border-radius: 8px;
   font-size: 13px;
   overflow-wrap: anywhere;
+}
+
+.outlaw-sim-pad button span,
+.outlaw-sim-pad button small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.outlaw-sim-pad button small {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.outlaw-sim-pad button:disabled {
+  cursor: not-allowed;
+  color: #64748b;
+  background: rgba(226, 232, 240, 0.62);
 }
 
 .outlaw-sim-pad button.recommended {

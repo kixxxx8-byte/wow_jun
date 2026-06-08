@@ -69,6 +69,8 @@ test("guide tab exposes all supported specs with a shared template", async ({ pa
   await page.getByLabel("무법 실전 허수아비 시나리오").getByRole("button", { name: "광역 풀" }).click();
   await page.getByLabel("무법 실전 허수아비 스킬 버튼").getByRole("button", { name: "폭풍의 칼날" }).click();
   await expect(page.locator(".outlaw-combat-feedback").getByText("좋습니다. 지금은 폭풍의 칼날이 맞습니다.")).toBeVisible();
+  await expect(page.getByLabel("무법 실전 허수아비 스킬 버튼").getByRole("button", { name: /속결/ })).toBeDisabled();
+  await expect(page.getByText("마무리 일격을 쓰기엔 CP가 부족합니다.").first()).toBeVisible();
   await page.getByLabel("무법 실전 허수아비 시나리오").getByRole("button", { name: "단일 허수아비" }).click();
   await expect(page.getByLabel("무법 실전 허수아비 추천 스킬").getByText("뼈주사위", { exact: true })).toBeVisible();
   await page.getByLabel("무법 실전 허수아비 시나리오").getByRole("button", { name: "쿨기 막힘" }).click();
