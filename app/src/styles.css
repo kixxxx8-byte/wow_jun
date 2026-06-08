@@ -3531,6 +3531,14 @@ a {
   line-height: 1.45;
 }
 
+.outlaw-combat-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+  min-width: min(100%, 360px);
+}
+
 .outlaw-combat-session {
   display: flex;
   align-items: center;
@@ -3563,6 +3571,13 @@ a {
   line-height: 1.35;
 }
 
+.outlaw-combat-session small {
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
 .outlaw-combat-session-actions {
   display: flex;
   gap: 7px;
@@ -3575,6 +3590,45 @@ a {
   border-radius: 8px;
   font-weight: 950;
   white-space: nowrap;
+}
+
+.outlaw-difficulty-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-width: 0;
+  margin-top: 10px;
+}
+
+.outlaw-difficulty-row span {
+  color: #43515f;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.outlaw-difficulty-row button {
+  min-height: 34px;
+  padding: 7px 11px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.outlaw-difficulty-row button.active {
+  border-color: rgba(15, 118, 110, 0.45);
+  color: var(--teal);
+  background: var(--teal-soft);
+}
+
+.outlaw-difficulty-row small {
+  min-width: 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .outlaw-hint-toggle {
@@ -5423,6 +5477,12 @@ a {
 
   .outlaw-combat-head {
     display: grid;
+  }
+
+  .outlaw-combat-controls {
+    justify-content: flex-start;
+    min-width: 0;
+    width: 100%;
   }
 
   .outlaw-combat-session {

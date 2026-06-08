@@ -39,6 +39,23 @@ export type OutlawCombatScenario = {
   descriptionKo: string;
 };
 
+export type OutlawCombatDifficulty = "basic" | "practical" | "pressure";
+
+export type OutlawCombatRunOptions = {
+  dynamic?: boolean;
+  difficulty?: OutlawCombatDifficulty;
+};
+
+export type OutlawCombatDifficultyProfile = {
+  id: OutlawCombatDifficulty;
+  labelKo: string;
+  descriptionKo: string;
+  mechanicDurationOffset: number;
+  penaltyMultiplier: number;
+  wrongActionPenalty: number;
+  scoreMultiplier: number;
+};
+
 export type OutlawCombatMechanic = {
   id: string;
   triggerAt: number;
@@ -107,6 +124,36 @@ export type OutlawCombatLogEntry = {
 export type OutlawActionAvailability = {
   usable: boolean;
   reasonKo?: string;
+};
+
+export const outlawCombatDifficultyProfiles: Record<OutlawCombatDifficulty, OutlawCombatDifficultyProfile> = {
+  basic: {
+    id: "basic",
+    labelKo: "기초",
+    descriptionKo: "패턴 여유가 조금 있고 실수 피해가 낮습니다.",
+    mechanicDurationOffset: 2,
+    penaltyMultiplier: 0.75,
+    wrongActionPenalty: 5,
+    scoreMultiplier: 1,
+  },
+  practical: {
+    id: "practical",
+    labelKo: "실전",
+    descriptionKo: "기본 실전 속도입니다.",
+    mechanicDurationOffset: 0,
+    penaltyMultiplier: 1,
+    wrongActionPenalty: 8,
+    scoreMultiplier: 1,
+  },
+  pressure: {
+    id: "pressure",
+    labelKo: "고압",
+    descriptionKo: "패턴 시간이 짧고 실수 피해가 큽니다.",
+    mechanicDurationOffset: -1,
+    penaltyMultiplier: 1.3,
+    wrongActionPenalty: 12,
+    scoreMultiplier: 1.1,
+  },
 };
 
 export const outlawCombatActions: OutlawCombatAction[] = [
@@ -542,15 +589,16 @@ export function scoreOutlawAction(state: OutlawCombatState, action: OutlawCombat
   };
 }
 
-export function advanceOutlawTime(state: OutlawCombatState, seconds: number): OutlawCombatState {
+export function advanceOutlawTime(state: OutlawCombatState, seconds: number, options?: OutlawCombatRunOptions): OutlawCombatState {
   if (getOutlawSessionResult(state) !== "in_progress") return state;
 
+  const difficulty = getOutlawDifficultyProfile(options);
   const recovery = state.buffs.adrenalineRush > 0 ? 18 : 10;
   const nextEnergy = Math.min(100, state.energy + recovery * seconds);
   const tick = (value: number) => Math.max(0, Math.round((value - seconds) * 10) / 10);
   const activeMechanic = state.activeMechanic;
   const expiredMechanic = activeMechanic && state.elapsedSeconds + seconds > activeMechanic.triggerAt + activeMechanic.duration;
-  const penalty = expiredMechanic ? getMechanicPenalty(activeMechanic) : 0;
+  const penalty = expiredMechanic ? getMechanicPenalty(activeMechanic, difficulty) : 0;
 
   const nextState: OutlawCombatState = {
     ...state,
@@ -561,6 +609,7 @@ export function advanceOutlawTime(state: OutlawCombatState, seconds: number): Ou
     mistakes: state.mistakes + (expiredMechanic ? 1 : 0),
     streak: expiredMechanic ? 0 : state.streak,
     activeMechanic: expiredMechanic ? undefined : state.activeMechanic,
+    resolvedMechanicIds: expiredMechanic ? [...state.resolvedMechanicIds, activeMechanic.id] : state.resolvedMechanicIds,
     buffs: {
       bladeFlurry: tick(state.buffs.bladeFlurry),
       sliceAndDice: tick(state.buffs.sliceAndDice),
@@ -580,19 +629,20 @@ export function advanceOutlawTime(state: OutlawCombatState, seconds: number): Ou
     },
   };
 
-  return activateNextMechanic(nextState);
+  return activateNextMechanic(applyDynamicBattlefield(nextState, state.elapsedSeconds, options), options);
 }
 
-export function applyOutlawAction(state: OutlawCombatState, action: OutlawCombatAction): OutlawCombatState {
+export function applyOutlawAction(state: OutlawCombatState, action: OutlawCombatAction, options?: OutlawCombatRunOptions): OutlawCombatState {
   if (getOutlawSessionResult(state) !== "in_progress") return state;
 
+  const difficulty = getOutlawDifficultyProfile(options);
   const scored = scoreOutlawAction(state, action);
   if (scored.result === "unavailable") {
     return {
       ...state,
       mistakes: state.mistakes + 1,
       streak: 0,
-      score: Math.max(0, state.score - 30),
+      score: Math.max(0, state.score - Math.round(30 * difficulty.penaltyMultiplier)),
     };
   }
 
@@ -600,12 +650,12 @@ export function applyOutlawAction(state: OutlawCombatState, action: OutlawCombat
   const withScore = {
     ...withMechanicResult,
     gcdRemaining: 1,
-    score: Math.max(0, withMechanicResult.score + getActionScore(scored.result)),
+    score: Math.max(0, withMechanicResult.score + getActionScore(scored.result, difficulty)),
     mistakes: withMechanicResult.mistakes + (scored.result === "wrong" ? 1 : 0),
     streak: scored.result === "correct" ? withMechanicResult.streak + 1 : 0,
-    health: Math.max(0, withMechanicResult.health - (scored.result === "wrong" ? 8 : 0)),
+    health: Math.max(0, withMechanicResult.health - (scored.result === "wrong" ? difficulty.wrongActionPenalty : 0)),
   };
-  return advanceOutlawTime(withScore, 1);
+  return advanceOutlawTime(withScore, 1, options);
 }
 
 export function getOutlawActionAvailability(state: OutlawCombatState, action: OutlawCombatAction): OutlawActionAvailability {
@@ -775,7 +825,92 @@ function applySkillEffect(state: OutlawCombatState, skillKo: OutlawCombatSkill):
   return state;
 }
 
-function activateNextMechanic(state: OutlawCombatState): OutlawCombatState {
+function applyDynamicBattlefield(state: OutlawCombatState, previousElapsedSeconds: number, options?: OutlawCombatRunOptions): OutlawCombatState {
+  if (!options?.dynamic) return state;
+
+  const crossed = (interval: number) => Math.floor(previousElapsedSeconds / interval) !== Math.floor(state.elapsedSeconds / interval);
+  let nextState = state;
+
+  if (!nextState.activeMechanic && crossed(6)) {
+    const cycle: Array<OutlawCombatState["targets"]> = [1, 2, 4, 1, 4];
+    const nextTargets = cycle[Math.floor(state.elapsedSeconds / 6) % cycle.length];
+    nextState = {
+      ...nextState,
+      targets: nextTargets,
+      buffs: {
+        ...nextState.buffs,
+        bladeFlurry: nextTargets >= 2 ? nextState.buffs.bladeFlurry : 0,
+      },
+    };
+  }
+
+  if (crossed(5)) {
+    const opportunityStacks = Math.floor(state.elapsedSeconds / 5) % 2 === 0 ? 6 : 3;
+    nextState = { ...nextState, opportunityStacks: opportunityStacks as OutlawCombatState["opportunityStacks"] };
+  }
+
+  if (!nextState.activeMechanic && crossed(7)) {
+    const mechanicIndex = Math.floor(state.elapsedSeconds / 7);
+    const mechanic = createDynamicMechanic(nextState, mechanicIndex, options);
+    if (!nextState.resolvedMechanicIds.includes(mechanic.id)) {
+      nextState = {
+        ...nextState,
+        targets: mechanic.targetCount ?? nextState.targets,
+        activeMechanic: mechanic,
+      };
+    }
+  }
+
+  return nextState;
+}
+
+function createDynamicMechanic(state: OutlawCombatState, mechanicIndex: number, options?: OutlawCombatRunOptions): OutlawCombatMechanic {
+  const templates: Array<Omit<OutlawCombatMechanic, "id" | "triggerAt" | "duration"> & { key: string }> = [
+    {
+      key: "kick",
+      titleKo: "갑작스러운 위험 시전",
+      detailKo: "방금 쫄이 시전을 올렸습니다. 딜 버튼보다 차단이 먼저입니다.",
+      expectedSkillKo: "발차기",
+      severity: "high",
+    },
+    {
+      key: "adds",
+      titleKo: "추가 쫄 합류",
+      detailKo: "대상이 늘었습니다. 광역 스위치를 다시 확인합니다.",
+      expectedSkillKo: "폭풍의 칼날",
+      severity: "high",
+      targetCount: 4,
+    },
+    {
+      key: "defensive",
+      titleKo: "예상 밖 광역 피해",
+      detailKo: "힐이 밀릴 수 있는 광역 피해입니다. 교란을 먼저 봅니다.",
+      expectedSkillKo: "교란",
+      severity: "high",
+    },
+    {
+      key: "magic",
+      titleKo: "마법 폭발 대상",
+      detailKo: "맞으면 크게 흔들리는 마법 피해입니다. 그림자 망토로 넘깁니다.",
+      expectedSkillKo: "그림자 망토",
+      severity: "lethal",
+    },
+  ];
+  const template = templates[(mechanicIndex + (state.targets >= 2 ? 1 : 0)) % templates.length];
+
+  return {
+    id: `dynamic-${state.scenarioId}-${mechanicIndex}-${template.key}`,
+    triggerAt: state.elapsedSeconds,
+    duration: adjustMechanicDuration(4, options),
+    titleKo: template.titleKo,
+    detailKo: template.detailKo,
+    expectedSkillKo: template.expectedSkillKo,
+    severity: template.severity,
+    targetCount: template.targetCount,
+  };
+}
+
+function activateNextMechanic(state: OutlawCombatState, options?: OutlawCombatRunOptions): OutlawCombatState {
   if (state.activeMechanic) return state;
 
   const nextMechanic = outlawScenarioMechanics[state.scenarioId].find(
@@ -787,7 +922,10 @@ function activateNextMechanic(state: OutlawCombatState): OutlawCombatState {
   return {
     ...state,
     targets: nextMechanic.targetCount ?? state.targets,
-    activeMechanic: nextMechanic,
+    activeMechanic: {
+      ...nextMechanic,
+      duration: adjustMechanicDuration(nextMechanic.duration, options),
+    },
   };
 }
 
@@ -805,15 +943,23 @@ function resolveMechanicIfNeeded(state: OutlawCombatState, skillKo: OutlawCombat
   };
 }
 
-function getMechanicPenalty(mechanic: OutlawCombatMechanic): number {
-  if (mechanic.severity === "lethal") return 35;
-  if (mechanic.severity === "high") return 24;
-  return 14;
+function getOutlawDifficultyProfile(options?: OutlawCombatRunOptions): OutlawCombatDifficultyProfile {
+  return outlawCombatDifficultyProfiles[options?.difficulty ?? "practical"];
 }
 
-function getActionScore(result: OutlawCombatLogEntry["result"]): number {
-  if (result === "correct") return 100;
-  if (result === "okay") return 35;
-  if (result === "unavailable") return -30;
-  return -60;
+function adjustMechanicDuration(duration: number, options?: OutlawCombatRunOptions): number {
+  const difficulty = getOutlawDifficultyProfile(options);
+  return Math.max(2, duration + difficulty.mechanicDurationOffset);
+}
+
+function getMechanicPenalty(mechanic: OutlawCombatMechanic, difficulty: OutlawCombatDifficultyProfile): number {
+  const basePenalty = mechanic.severity === "lethal" ? 35 : mechanic.severity === "high" ? 24 : 14;
+  return Math.round(basePenalty * difficulty.penaltyMultiplier);
+}
+
+function getActionScore(result: OutlawCombatLogEntry["result"], difficulty: OutlawCombatDifficultyProfile): number {
+  if (result === "correct") return Math.round(100 * difficulty.scoreMultiplier);
+  if (result === "okay") return Math.round(35 * difficulty.scoreMultiplier);
+  if (result === "unavailable") return Math.round(-30 * difficulty.penaltyMultiplier);
+  return Math.round(-60 * difficulty.penaltyMultiplier);
 }

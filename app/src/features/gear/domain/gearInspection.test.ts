@@ -3,7 +3,7 @@ import type { Character } from "../../../types";
 import { midnightS1Items } from "../data/midnightS1Items";
 import { evaluateCharacterGear, evaluateGearSlot, getGearCandidatesForSlot } from "./gearInspection";
 import { advanceOutlawTime, applyOutlawAction, createOutlawScenarioState, getOutlawActionAvailability, getOutlawKeybindByCode, getOutlawRecommendation, getOutlawSessionResult, scoreOutlawAction } from "./outlawCombatSim";
-import type { OutlawCombatState } from "./outlawCombatSim";
+import type { OutlawCombatRunOptions, OutlawCombatState } from "./outlawCombatSim";
 import { classGuides, specProfiles } from "./specGuides";
 
 const character: Character = {
@@ -20,8 +20,8 @@ const character: Character = {
   },
 };
 
-function advanceOutlawMany(state: OutlawCombatState, seconds: number) {
-  return Array.from({ length: seconds }).reduce<OutlawCombatState>((nextState) => advanceOutlawTime(nextState, 1), state);
+function advanceOutlawMany(state: OutlawCombatState, seconds: number, options?: OutlawCombatRunOptions) {
+  return Array.from({ length: seconds }).reduce<OutlawCombatState>((nextState) => advanceOutlawTime(nextState, 1, options), state);
 }
 
 describe("gear inspection", () => {
@@ -264,6 +264,40 @@ describe("outlaw combat simulator", () => {
     expect(next.targetHealth).toBe(0);
     expect(getOutlawSessionResult(next)).toBe("success");
     expect(getOutlawActionAvailability(next, { skillKo: "사악한 일격" }).usable).toBe(false);
+  });
+
+  it("adds dynamic battlefield pressure when enabled", () => {
+    const staticState = advanceOutlawMany(createOutlawScenarioState("single_dummy"), 5);
+    const dynamicState = advanceOutlawMany(createOutlawScenarioState("single_dummy"), 5, { dynamic: true, difficulty: "practical" });
+
+    expect(staticState.opportunityStacks).toBe(0);
+    expect(dynamicState.opportunityStacks).toBeGreaterThan(0);
+  });
+
+  it("can create dynamic mechanics outside the fixed timeline", () => {
+    const state = advanceOutlawMany(
+      { ...createOutlawScenarioState("single_dummy"), resolvedMechanicIds: ["single-kick-1"] },
+      7,
+      { dynamic: true, difficulty: "practical" }
+    );
+
+    expect(state.activeMechanic?.id).toContain("dynamic-single_dummy");
+    expect(getOutlawRecommendation(state).skillKo).toBe(state.activeMechanic?.expectedSkillKo);
+  });
+
+  it("penalizes missed mechanics harder on pressure difficulty", () => {
+    const basic = advanceOutlawMany(
+      { ...createOutlawScenarioState("single_dummy"), activeMechanic: undefined, resolvedMechanicIds: ["single-kick-1"] },
+      22,
+      { difficulty: "basic" }
+    );
+    const pressure = advanceOutlawMany(
+      { ...createOutlawScenarioState("single_dummy"), activeMechanic: undefined, resolvedMechanicIds: ["single-kick-1"] },
+      22,
+      { difficulty: "pressure" }
+    );
+
+    expect(pressure.health).toBeLessThan(basic.health);
   });
 });
 

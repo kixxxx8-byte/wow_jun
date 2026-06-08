@@ -14,11 +14,12 @@ import {
   getOutlawSessionResult,
   outlawCombatActions,
   outlawDefaultKeybinds,
+  outlawCombatDifficultyProfiles,
   outlawCombatScenarios,
   outlawScenarioMechanics,
   scoreOutlawAction,
 } from "../features/gear/domain/outlawCombatSim";
-import type { OutlawCombatLogEntry, OutlawCombatScenarioId } from "../features/gear/domain/outlawCombatSim";
+import type { OutlawCombatDifficulty, OutlawCombatLogEntry, OutlawCombatScenarioId } from "../features/gear/domain/outlawCombatSim";
 
 type OutlawPracticeState = {
   targets: 1 | 2 | 4;
@@ -273,6 +274,8 @@ function OutlawCombatSimulator() {
   const [hintMode, setHintMode] = useState(true);
   const [keyboardMode, setKeyboardMode] = useState(false);
   const [realMode, setRealMode] = useState(false);
+  const [dynamicMode, setDynamicMode] = useState(false);
+  const [difficulty, setDifficulty] = useState<OutlawCombatDifficulty>("practical");
   const [running, setRunning] = useState(false);
   const [logs, setLogs] = useState<OutlawCombatLogEntry[]>([]);
   const [lastFeedback, setLastFeedback] = useState("스킬 버튼을 눌러보세요. 틀려도 상태는 진행되고, 왜 손해인지 알려줍니다.");
@@ -281,6 +284,7 @@ function OutlawCombatSimulator() {
   const sessionResult = getOutlawSessionResult(combatState);
   const mechanicTimeLeft = getOutlawMechanicTimeLeft(combatState);
   const currentScenario = outlawCombatScenarios.find((scenario) => scenario.id === scenarioId);
+  const difficultyProfile = outlawCombatDifficultyProfiles[difficulty];
   const upcomingMechanic = outlawScenarioMechanics[scenarioId].find(
     (mechanic) => mechanic.triggerAt > combatState.elapsedSeconds && !combatState.resolvedMechanicIds.includes(mechanic.id)
   );
@@ -288,10 +292,10 @@ function OutlawCombatSimulator() {
   useEffect(() => {
     if (!running || sessionResult !== "in_progress") return undefined;
     const timer = window.setInterval(() => {
-      setCombatState((prev) => advanceOutlawTime(prev, 1));
+      setCombatState((prev) => advanceOutlawTime(prev, 1, { dynamic: dynamicMode, difficulty }));
     }, 1000);
     return () => window.clearInterval(timer);
-  }, [running, sessionResult]);
+  }, [difficulty, dynamicMode, running, sessionResult]);
 
   useEffect(() => {
     setLastPromptAt(Date.now());
@@ -310,7 +314,7 @@ function OutlawCombatSimulator() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [keyboardMode, combatState, lastPromptAt]);
+  }, [difficulty, dynamicMode, keyboardMode, combatState, lastPromptAt]);
 
   const selectScenario = (nextScenarioId: OutlawCombatScenarioId) => {
     setRunning(false);
@@ -329,7 +333,7 @@ function OutlawCombatSimulator() {
 
   function pressAction(skillKo: OutlawCombatLogEntry["skillKo"], inputKey?: string) {
     const result = scoreOutlawAction(combatState, { skillKo });
-    const nextState = applyOutlawAction(combatState, { skillKo });
+    const nextState = applyOutlawAction(combatState, { skillKo }, { dynamic: dynamicMode, difficulty });
     const reactionMs = Math.max(0, Date.now() - lastPromptAt);
     setCombatState(nextState);
     setLastFeedback(inputKey ? `${inputKey} 입력 · ${skillKo} · ${Math.round(reactionMs / 100) / 10}초 반응 · ${result.messageKo}` : result.messageKo);
@@ -355,6 +359,8 @@ function OutlawCombatSimulator() {
     `실수 ${combatState.mistakes}`,
     `주사위 ${combatState.rollStage || "없음"}`,
     `기회 ${combatState.opportunityStacks || "없음"}`,
+    `난이도 ${difficultyProfile.labelKo}`,
+    dynamicMode ? "동적 전장 켜짐" : "고정 시나리오",
   ];
 
   const buffChips = [
@@ -381,29 +387,52 @@ function OutlawCombatSimulator() {
           <h3>무법 실전 허수아비</h3>
           <p>정확한 DPS 심크가 아니라, 상황에 맞게 지금 뭘 눌러야 하는지 익히는 추천 우선순위 훈련용입니다.</p>
         </div>
-        <label className="outlaw-hint-toggle">
-          <input type="checkbox" checked={hintMode} onChange={(event) => setHintMode(event.target.checked)} />
-          힌트 표시
-        </label>
-        <label className="outlaw-hint-toggle">
-          <input type="checkbox" checked={realMode} onChange={(event) => setRealMode(event.target.checked)} />
-          실전 모드
-        </label>
-        <label className="outlaw-hint-toggle">
-          <input type="checkbox" checked={keyboardMode} onChange={(event) => setKeyboardMode(event.target.checked)} />
-          키보드 입력
-        </label>
+        <div className="outlaw-combat-controls" aria-label="무법 실전 허수아비 모드">
+          <label className="outlaw-hint-toggle">
+            <input type="checkbox" checked={hintMode} onChange={(event) => setHintMode(event.target.checked)} />
+            힌트 표시
+          </label>
+          <label className="outlaw-hint-toggle">
+            <input type="checkbox" checked={realMode} onChange={(event) => setRealMode(event.target.checked)} />
+            실전 모드
+          </label>
+          <label className="outlaw-hint-toggle">
+            <input type="checkbox" checked={keyboardMode} onChange={(event) => setKeyboardMode(event.target.checked)} />
+            키보드 입력
+          </label>
+          <label className="outlaw-hint-toggle">
+            <input type="checkbox" checked={dynamicMode} onChange={(event) => setDynamicMode(event.target.checked)} />
+            동적 전장
+          </label>
+        </div>
       </div>
 
       <div className="outlaw-combat-session">
         <div>
           <b>{currentScenario?.labelKo}</b>
           <span>{currentScenario?.descriptionKo}</span>
+          <small>{dynamicMode ? "동적 전장: 대상 수, 기회 중첩, 위험 패턴이 중간에 흔들립니다." : "고정 시나리오: 정해진 상황을 반복 연습합니다."}</small>
         </div>
         <div className="outlaw-combat-session-actions">
           <button type="button" onClick={() => setRunning((prev) => !prev)}>{running ? "정지" : "전투 시작"}</button>
-          <button type="button" onClick={() => setCombatState((prev) => advanceOutlawTime(prev, 1))}>1초 진행</button>
+          <button type="button" onClick={() => setCombatState((prev) => advanceOutlawTime(prev, 1, { dynamic: dynamicMode, difficulty }))}>1초 진행</button>
         </div>
+      </div>
+
+      <div className="outlaw-difficulty-row" aria-label="무법 실전 허수아비 난이도">
+        <span>난이도</span>
+        {Object.values(outlawCombatDifficultyProfiles).map((profile) => (
+          <button
+            key={profile.id}
+            type="button"
+            className={profile.id === difficulty ? "active" : ""}
+            onClick={() => setDifficulty(profile.id)}
+            title={profile.descriptionKo}
+          >
+            {profile.labelKo}
+          </button>
+        ))}
+        <small>{difficultyProfile.descriptionKo}</small>
       </div>
 
       <div className="outlaw-preset-row" aria-label="무법 실전 허수아비 시나리오">
@@ -428,8 +457,14 @@ function OutlawCombatSimulator() {
             ) : (
               <>
                 <span>다음 위험 패턴</span>
-                <b>{upcomingMechanic ? `${Math.max(0, Math.ceil(upcomingMechanic.triggerAt - combatState.elapsedSeconds))}초 후 · ${upcomingMechanic.titleKo}` : "현재 예정 없음"}</b>
-                <p>{upcomingMechanic ? upcomingMechanic.detailKo : "지금은 딜 사이클과 버프 유지에 집중합니다."}</p>
+                <b>
+                  {upcomingMechanic
+                    ? `${Math.max(0, Math.ceil(upcomingMechanic.triggerAt - combatState.elapsedSeconds))}초 후 · ${upcomingMechanic.titleKo}`
+                    : dynamicMode
+                      ? "동적 전장 변수 대기"
+                      : "현재 예정 없음"}
+                </b>
+                <p>{upcomingMechanic ? upcomingMechanic.detailKo : dynamicMode ? "곧 대상 수나 위험 패턴이 흔들릴 수 있습니다." : "지금은 딜 사이클과 버프 유지에 집중합니다."}</p>
               </>
             )}
           </div>
