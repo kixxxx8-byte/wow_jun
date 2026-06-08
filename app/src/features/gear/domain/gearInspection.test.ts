@@ -32,6 +32,9 @@ describe("gear inspection", () => {
   it("keeps the detailed outlaw guide data separate from other specs", () => {
     const outlaw = classGuides["rogue-outlaw"];
     const serializedOutlaw = JSON.stringify(outlaw);
+    expect(outlaw.simpleCycleGuide?.titleKo).toBe("초간단 실전 사이클");
+    expect(outlaw.simpleCycleGuide?.subtitleKo).toContain("처음엔 이것만");
+    expect(outlaw.simpleCycleGuide?.steps.map((step) => step.titleKo)).toEqual(["버프 준비", "쿨기 톡톡", "버블 모으기", "마무리 쾅", "다시 반복"]);
     expect(outlaw.coreSummary?.headlineKo).toContain("쿨기 > 마무리 일격 > 생성기");
     expect(outlaw.deepGuide?.some((item) => item.titleKo.includes("미간 적중"))).toBe(true);
     expect(outlaw.deepGuide?.some((item) => item.titleKo.includes("Supercharger"))).toBe(true);
@@ -39,8 +42,11 @@ describe("gear inspection", () => {
     expect(outlaw.masteryGuide?.some((item) => item.titleKo.includes("숙련자를 위한 완벽함으로 가는 법"))).toBe(true);
     expect(outlaw.visualGuides?.keybindLayout.some((item) => item.labelKo === "미간 적중")).toBe(true);
     expect(serializedOutlaw).toContain("도박의 연속");
+    expect(serializedOutlaw).toContain("도박의 연속(KIR)");
     expect(serializedOutlaw).toContain("Supercharger");
+    expect(serializedOutlaw).not.toContain("계속 굴리기(KIR)");
 
+    expect(classGuides["rogue-assassination"].simpleCycleGuide).toBeUndefined();
     expect(classGuides["rogue-assassination"].coreSummary).toBeUndefined();
     expect(classGuides["rogue-subtlety"].masteryGuide).toBeUndefined();
   });

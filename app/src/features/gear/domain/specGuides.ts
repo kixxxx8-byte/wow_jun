@@ -44,6 +44,16 @@ export type ClassGuide = {
   rotation: string[];
   gearChecks: string[];
   cautions: string[];
+  simpleCycleGuide?: {
+    titleKo: string;
+    subtitleKo: string;
+    steps: Array<{
+      titleKo: string;
+      bodyKo: string;
+      skills: string[];
+      cautionKo?: string;
+    }>;
+  };
   coreSummary?: {
     headlineKo: string;
     cards: Array<{ titleKo: string; bodyKo: string; tone?: "ok" | "warn" | "danger" }>;
@@ -251,6 +261,42 @@ export const classGuides: Record<SpecKey, ClassGuide> = {
       "가속이 높다고 항상 정답은 아니며 현재 장비 기준 시뮬레이션이 필요합니다.",
       "아래 실전 운용은 도적 Discord 자료를 우선 반영한 요약입니다. 외부 가이드와 표현이 다른 항목은 예외로 표시했습니다.",
     ],
+    simpleCycleGuide: {
+      titleKo: "초간단 실전 사이클",
+      subtitleKo: "처음엔 이것만 따라가도 됩니다",
+      steps: [
+        {
+          titleKo: "버프 준비",
+          bodyKo: "아드레날린 촉진을 켜고, 뼈주사위를 굴리고, 난도질을 준비합니다. 적이 2마리 이상이면 폭풍의 칼날도 켜요. 뼈주사위가 3단계 이상이면 도박의 연속(KIR)로 좋은 버프를 붙잡습니다.",
+          skills: ["아드레날린 촉진", "뼈주사위", "난도질", "폭풍의 칼날", "도박의 연속(KIR)"],
+          cautionKo: "폭풍의 칼날은 적이 2마리 이상일 때 먼저 확인합니다.",
+        },
+        {
+          titleKo: "쿨기 톡톡",
+          bodyKo: "Blade Rush는 쿨마다 바로 확인합니다. 광기의 학살자는 연계 점수가 충분할 때 강한 적에게 눌러요.",
+          skills: ["Blade Rush", "광기의 학살자"],
+          cautionKo: "광기의 학살자는 5CP 이상에서 확인합니다.",
+        },
+        {
+          titleKo: "버블 모으기",
+          bodyKo: "기본은 사악한 일격입니다. 기회가 잘 쌓였고 조건이 맞으면 권총 사격으로 톡 쏩니다.",
+          skills: ["사악한 일격", "권총 사격"],
+          cautionKo: "권총 사격은 반짝인다고 무조건 누르지 않습니다.",
+        },
+        {
+          titleKo: "마무리 쾅",
+          bodyKo: "6CP 이상이면 먼저 미간 적중을 봅니다. 미간 적중이 쿨이면 속결로 마무리합니다.",
+          skills: ["미간 적중", "속결"],
+          cautionKo: "미간 적중은 가능하면 높은 CP에서 씁니다.",
+        },
+        {
+          titleKo: "다시 반복",
+          bodyKo: "마무리했으면 다시 버블을 모읍니다. 아드레날린 촉진, 미간 적중, Blade Rush가 모두 쿨이면 준비로 흐름을 다시 열어요.",
+          skills: ["준비", "아드레날린 촉진", "미간 적중", "Blade Rush"],
+          cautionKo: "아드레날린 촉진 쿨이 곧 오면 준비를 성급히 쓰지 않습니다.",
+        },
+      ],
+    },
     coreSummary: {
       headlineKo: "쿨기 > 마무리 일격 > 생성기",
       cards: [

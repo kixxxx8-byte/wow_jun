@@ -3469,6 +3469,7 @@ a {
 }
 
 .outlaw-summary-grid,
+.outlaw-simple-cycle-grid,
 .outlaw-visual-row,
 .outlaw-deep-grid,
 .outlaw-practice-grid,
@@ -3483,6 +3484,88 @@ a {
 
 .outlaw-summary-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.outlaw-simple-cycle-card {
+  border-color: rgba(15, 118, 110, 0.24);
+  background:
+    linear-gradient(135deg, rgba(240, 253, 250, 0.98), rgba(255, 255, 255, 0.98) 48%, rgba(255, 251, 235, 0.82));
+}
+
+.outlaw-simple-cycle-card > p:not(.eyebrow) {
+  color: #43515f;
+  font-weight: 850;
+}
+
+.outlaw-simple-cycle-grid {
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+
+.outlaw-simple-step {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgba(15, 118, 110, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.outlaw-simple-number {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid rgba(15, 118, 110, 0.22);
+  border-radius: 10px;
+  color: var(--teal);
+  background: var(--teal-soft);
+  font-weight: 950;
+}
+
+.outlaw-simple-step h3 {
+  margin: 2px 0 7px;
+  font-size: 17px;
+}
+
+.outlaw-simple-step p {
+  margin: 0;
+  color: #43515f;
+  line-height: 1.5;
+}
+
+.outlaw-skill-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.outlaw-skill-chip-row span {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 4px 8px;
+  border: 1px solid rgba(15, 118, 110, 0.2);
+  border-radius: 999px;
+  color: #123c36;
+  background: rgba(240, 253, 250, 0.82);
+  font-size: 12px;
+  font-weight: 950;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.outlaw-simple-step b {
+  display: block;
+  margin-top: 10px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  color: #9a3412;
+  background: rgba(255, 247, 237, 0.9);
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .outlaw-visual-row,
@@ -4286,6 +4369,7 @@ a {
   .wythic-command,
   .guide-grid,
   .outlaw-summary-grid,
+  .outlaw-simple-cycle-grid,
   .outlaw-visual-row,
   .outlaw-deep-grid,
   .outlaw-practice-grid,
@@ -4569,6 +4653,7 @@ a {
   .boss-micro-grid,
   .wythic-metrics,
   .outlaw-summary-grid,
+  .outlaw-simple-cycle-grid,
   .outlaw-visual-row,
   .outlaw-deep-grid,
   .outlaw-practice-grid,

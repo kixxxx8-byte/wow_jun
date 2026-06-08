@@ -5,10 +5,31 @@ import { classGuides, guideSpecOrder, specLabel, specProfiles } from "../feature
 import type { ClassGuide } from "../features/gear/domain/specGuides";
 
 function OutlawPracticalGuide({ guide }: { guide: ClassGuide }) {
-  if (!guide.coreSummary || !guide.deepGuide || !guide.practiceGuide || !guide.keybindGuide || !guide.masteryGuide || !guide.visualGuides) return null;
+  if (!guide.simpleCycleGuide || !guide.coreSummary || !guide.deepGuide || !guide.practiceGuide || !guide.keybindGuide || !guide.masteryGuide || !guide.visualGuides) return null;
 
   return (
     <>
+      <article className="panel guide-card outlaw-section-card outlaw-simple-cycle-card">
+        <p className="eyebrow">입문용 빠른 손순서</p>
+        <h2>{guide.simpleCycleGuide.titleKo}</h2>
+        <p>{guide.simpleCycleGuide.subtitleKo}</p>
+        <div className="outlaw-simple-cycle-grid">
+          {guide.simpleCycleGuide.steps.map((step, index) => (
+            <section key={step.titleKo} className="outlaw-simple-step">
+              <span className="outlaw-simple-number">{index + 1}</span>
+              <div>
+                <h3>{step.titleKo}</h3>
+                <p>{step.bodyKo}</p>
+                <div className="outlaw-skill-chip-row" aria-label={`${step.titleKo} 스킬 목록`}>
+                  {step.skills.map((skill) => <span key={skill}>{skill}</span>)}
+                </div>
+                {step.cautionKo ? <b>{step.cautionKo}</b> : null}
+              </div>
+            </section>
+          ))}
+        </div>
+      </article>
+
       <article className="panel guide-card outlaw-section-card">
         <p className="eyebrow">1. 핵심요약</p>
         <h2>{guide.coreSummary.headlineKo}</h2>
