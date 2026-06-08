@@ -31,14 +31,18 @@ describe("gear inspection", () => {
 
   it("keeps the detailed outlaw guide data separate from other specs", () => {
     const outlaw = classGuides["rogue-outlaw"];
-    expect(outlaw.priorityGuide?.summaryKo).toContain("우선순위");
-    expect(outlaw.priorityGuide?.groups.map((group) => group.titleKo)).toEqual(["1. 쿨기", "2. 마무리 일격", "3. 생성기"]);
-    expect(outlaw.openerGuide?.summaryKo).toContain("오프닝");
-    expect(outlaw.advancedGuide?.some((item) => item.titleKo.includes("Supercharger"))).toBe(true);
-    expect(outlaw.quickCheatSheet?.some((item) => item.includes("쿨기 > 마무리 일격 > 생성기"))).toBe(true);
+    const serializedOutlaw = JSON.stringify(outlaw);
+    expect(outlaw.coreSummary?.headlineKo).toContain("쿨기 > 마무리 일격 > 생성기");
+    expect(outlaw.deepGuide?.some((item) => item.titleKo.includes("미간 적중"))).toBe(true);
+    expect(outlaw.deepGuide?.some((item) => item.titleKo.includes("Supercharger"))).toBe(true);
+    expect(outlaw.keybindGuide?.summaryKo).toContain("스킬창");
+    expect(outlaw.masteryGuide?.some((item) => item.titleKo.includes("숙련자를 위한 완벽함으로 가는 법"))).toBe(true);
+    expect(outlaw.visualGuides?.keybindLayout.some((item) => item.labelKo === "미간 적중")).toBe(true);
+    expect(serializedOutlaw).toContain("도박의 연속");
+    expect(serializedOutlaw).toContain("Supercharger");
 
-    expect(classGuides["rogue-assassination"].priorityGuide).toBeUndefined();
-    expect(classGuides["rogue-subtlety"].advancedGuide).toBeUndefined();
+    expect(classGuides["rogue-assassination"].coreSummary).toBeUndefined();
+    expect(classGuides["rogue-subtlety"].masteryGuide).toBeUndefined();
   });
 
   it("finds slot candidates without returning already equipped items", () => {

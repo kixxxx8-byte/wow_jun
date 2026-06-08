@@ -5,68 +5,180 @@ import { classGuides, guideSpecOrder, specLabel, specProfiles } from "../feature
 import type { ClassGuide } from "../features/gear/domain/specGuides";
 
 function OutlawPracticalGuide({ guide }: { guide: ClassGuide }) {
-  if (!guide.priorityGuide || !guide.openerGuide || !guide.advancedGuide || !guide.quickCheatSheet) return null;
+  if (!guide.coreSummary || !guide.deepGuide || !guide.practiceGuide || !guide.keybindGuide || !guide.masteryGuide || !guide.visualGuides) return null;
+
   return (
     <>
-      <article className="panel guide-card outlaw-practical-card">
-        <p className="eyebrow">실전 우선순위</p>
-        <h2>쿨기 &gt; 마무리 일격 &gt; 생성기</h2>
-        <p>{guide.priorityGuide.summaryKo}</p>
-        <div className="outlaw-priority-grid">
-          {guide.priorityGuide.groups.map((group) => (
-            <section key={group.titleKo}>
-              <h3>{group.titleKo}</h3>
-              <b>{group.ruleKo}</b>
-              <ol>
-                {group.steps.map((step) => <li key={step}>{step}</li>)}
-              </ol>
+      <article className="panel guide-card outlaw-section-card">
+        <p className="eyebrow">1. 핵심요약</p>
+        <h2>{guide.coreSummary.headlineKo}</h2>
+        <div className="outlaw-summary-grid">
+          {guide.coreSummary.cards.map((card) => (
+            <section key={card.titleKo} className={`outlaw-summary-card ${card.tone ? `tone-${card.tone}` : ""}`}>
+              <b>{card.titleKo}</b>
+              <span>{card.bodyKo}</span>
+            </section>
+          ))}
+        </div>
+        <div className="outlaw-never-box">
+          <h3>절대 하지 말 것</h3>
+          <ul className="outlaw-never-list">
+            {guide.coreSummary.neverDo.map((item) => <li key={item}>{item}</li>)}
+          </ul>
+        </div>
+      </article>
+
+      <article className="panel guide-card outlaw-section-card">
+        <p className="eyebrow">시각 자료</p>
+        <h2>우선순위 사다리</h2>
+        <div className="outlaw-visual-row">
+          <div className="outlaw-ladder" aria-label="무법 도적 우선순위 사다리">
+            {guide.visualGuides.priorityLadder.map((item, index) => (
+              <div key={item.labelKo} className="outlaw-ladder-step">
+                <span>{index + 1}</span>
+                <b>{item.labelKo}</b>
+                <small>{item.detailKo}</small>
+              </div>
+            ))}
+          </div>
+          <div className="outlaw-timeline" aria-label="무법 도적 오프닝 타임라인">
+            {guide.visualGuides.openerTimeline.map((item) => (
+              <div key={item.labelKo} className="outlaw-timeline-item">
+                <b>{item.labelKo}</b>
+                <span>{item.detailKo}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </article>
+
+      <article className="panel guide-card outlaw-section-card">
+        <p className="eyebrow">2. 정밀 가이드</p>
+        <h2>무엇을, 언제, 왜 누르는가</h2>
+        <div className="outlaw-deep-grid">
+          {guide.deepGuide.map((item) => (
+            <section key={item.titleKo} className="outlaw-deep-card">
+              <h3>{item.titleKo}</h3>
+              <dl>
+                <div>
+                  <dt>무엇</dt>
+                  <dd>{item.whatKo}</dd>
+                </div>
+                <div>
+                  <dt>언제</dt>
+                  <dd>{item.whenKo}</dd>
+                </div>
+                <div>
+                  <dt>왜</dt>
+                  <dd>{item.whyKo}</dd>
+                </div>
+                <div>
+                  <dt>실수</dt>
+                  <dd>{item.mistakeKo}</dd>
+                </div>
+              </dl>
+              {item.exampleKo ? <p className="outlaw-example">{item.exampleKo}</p> : null}
             </section>
           ))}
         </div>
       </article>
 
-      <article className="panel guide-card outlaw-practical-card">
-        <p className="eyebrow">오프닝</p>
-        <h2>풀 전 준비와 첫 사이클</h2>
-        <p>{guide.openerGuide.summaryKo}</p>
-        <div className="outlaw-opener-grid">
-          {guide.openerGuide.sequences.map((sequence) => (
-            <section key={sequence.titleKo}>
-              <h3>{sequence.titleKo}</h3>
-              <ol>
-                {sequence.steps.map((step) => <li key={step}>{step}</li>)}
-              </ol>
+      <article className="panel guide-card outlaw-section-card">
+        <p className="eyebrow">3. 이것만 따라해라 실전 편</p>
+        <h2>전투 중 판단 순서</h2>
+        <p>{guide.practiceGuide.summaryKo}</p>
+        <div className="outlaw-practice-grid">
+          {guide.practiceGuide.phases.map((phase, index) => (
+            <section key={phase.titleKo}>
+              <span>{index + 1}</span>
+              <div>
+                <h3>{phase.titleKo}</h3>
+                {phase.cueKo ? <b>{phase.cueKo}</b> : null}
+                <ol>
+                  {phase.steps.map((step) => <li key={step}>{step}</li>)}
+                </ol>
+              </div>
             </section>
           ))}
         </div>
-        <ul className="guide-list">
-          {guide.openerGuide.cautions.map((item) => <li key={item}>{item}</li>)}
-        </ul>
       </article>
 
-      <article className="panel guide-card outlaw-practical-card">
-        <p className="eyebrow">미세 최적화</p>
-        <h2>숙련자용 예외 규칙</h2>
-        <div className="outlaw-advanced-grid">
-          {guide.advancedGuide.map((item) => (
+      <article className="panel guide-card outlaw-section-card">
+        <p className="eyebrow">4. 스킬창/키bind 배치 가이드</p>
+        <h2>손 이동을 줄이는 기준 배치</h2>
+        <p>{guide.keybindGuide.summaryKo}</p>
+        <div className="outlaw-keybind-layout" aria-label="무법 도적 추천 스킬창 배치 다이어그램">
+          {guide.visualGuides.keybindLayout.map((item) => (
+            <div key={`${item.key}-${item.labelKo}`} className={`outlaw-keycap group-${item.groupKo}`}>
+              <b>{item.key}</b>
+              <span>{item.labelKo}</span>
+              <small>{item.groupKo}</small>
+            </div>
+          ))}
+        </div>
+        <div className="outlaw-keybind-body">
+          <section className="outlaw-keybind-rules">
+            <h3>배치 원칙</h3>
+            <ul>
+              {guide.keybindGuide.rules.map((rule) => <li key={rule}>{rule}</li>)}
+            </ul>
+            <strong>{guide.keybindGuide.clickWarningKo}</strong>
+            <p>{guide.keybindGuide.mouseNoteKo}</p>
+          </section>
+          <div className="outlaw-keybind-grid">
+            {guide.keybindGuide.groups.map((group) => (
+              <section key={group.titleKo}>
+                <h3>{group.titleKo}</h3>
+                <div>
+                  {group.bindings.map((binding) => (
+                    <article key={`${binding.key}-${binding.skillKo}`} className={`outlaw-binding ${binding.priority ?? "core"}`}>
+                      <b>{binding.key}</b>
+                      <span>{binding.skillKo}</span>
+                      <small>{binding.reasonKo}</small>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        </div>
+      </article>
+
+      <article className="panel guide-card outlaw-section-card">
+        <p className="eyebrow">5. 숙련자를 위한 완벽함으로 가는 법</p>
+        <h2>기본을 망치지 않는 미세 최적화</h2>
+        <div className="outlaw-master-row">
+          <div className="outlaw-flow" aria-label="도박의 연속 KIR 판단 트리">
+            <h3>KIR 판단 트리</h3>
+            {guide.visualGuides.kirTree.map((item) => (
+              <div key={item.conditionKo} className={item.tone === "warn" ? "warn" : "ok"}>
+                <b>{item.conditionKo}</b>
+                <span>{item.actionKo}</span>
+              </div>
+            ))}
+          </div>
+          <div className="outlaw-flow" aria-label="Supercharger 미간 적중 보류 다이어그램">
+            <h3>Supercharger-BtE 보류</h3>
+            {guide.visualGuides.superchargerFlow.map((item) => (
+              <div key={item.conditionKo}>
+                <b>{item.conditionKo}</b>
+                <span>{item.actionKo}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="outlaw-mastery-grid">
+          {guide.masteryGuide.map((item) => (
             <section key={item.titleKo}>
               <h3>{item.titleKo}</h3>
-              <p>{item.detailKo}</p>
+              <p>{item.goalKo}</p>
               <ul>
-                {item.bullets.map((bullet) => <li key={bullet}>{bullet}</li>)}
+                {item.checks.map((check) => <li key={check}>{check}</li>)}
               </ul>
-              {item.noteKo ? <small>{item.noteKo}</small> : null}
+              {item.warningKo ? <small>{item.warningKo}</small> : null}
             </section>
           ))}
         </div>
-      </article>
-
-      <article className="panel guide-card outlaw-cheat-card">
-        <p className="eyebrow">바로 쓸 요약</p>
-        <h2>던전 중 10초 체크</h2>
-        <ol className="outlaw-cheat-list">
-          {guide.quickCheatSheet.map((item) => <li key={item}>{item}</li>)}
-        </ol>
       </article>
     </>
   );

@@ -44,17 +44,46 @@ export type ClassGuide = {
   rotation: string[];
   gearChecks: string[];
   cautions: string[];
-  priorityGuide?: {
-    summaryKo: string;
-    groups: Array<{ titleKo: string; ruleKo: string; steps: string[] }>;
+  coreSummary?: {
+    headlineKo: string;
+    cards: Array<{ titleKo: string; bodyKo: string; tone?: "ok" | "warn" | "danger" }>;
+    neverDo: string[];
   };
-  openerGuide?: {
+  deepGuide?: Array<{
+    titleKo: string;
+    whatKo: string;
+    whenKo: string;
+    whyKo: string;
+    mistakeKo: string;
+    exampleKo?: string;
+  }>;
+  practiceGuide?: {
     summaryKo: string;
-    sequences: Array<{ titleKo: string; steps: string[] }>;
-    cautions: string[];
+    phases: Array<{ titleKo: string; cueKo?: string; steps: string[] }>;
   };
-  advancedGuide?: Array<{ titleKo: string; detailKo: string; bullets: string[]; noteKo?: string }>;
-  quickCheatSheet?: string[];
+  keybindGuide?: {
+    summaryKo: string;
+    rules: string[];
+    groups: Array<{
+      titleKo: string;
+      bindings: Array<{
+        key: string;
+        skillKo: string;
+        reasonKo: string;
+        priority?: "core" | "reactive" | "utility" | "advanced";
+      }>;
+    }>;
+    mouseNoteKo: string;
+    clickWarningKo: string;
+  };
+  masteryGuide?: Array<{ titleKo: string; goalKo: string; checks: string[]; warningKo?: string }>;
+  visualGuides?: {
+    priorityLadder: Array<{ labelKo: string; detailKo: string }>;
+    openerTimeline: Array<{ labelKo: string; detailKo: string }>;
+    kirTree: Array<{ conditionKo: string; actionKo: string; tone?: "ok" | "warn" }>;
+    superchargerFlow: Array<{ conditionKo: string; actionKo: string }>;
+    keybindLayout: Array<{ key: string; labelKo: string; groupKo: string }>;
+  };
 };
 
 export const guideSpecOrder: SpecKey[] = [
@@ -222,126 +251,296 @@ export const classGuides: Record<SpecKey, ClassGuide> = {
       "가속이 높다고 항상 정답은 아니며 현재 장비 기준 시뮬레이션이 필요합니다.",
       "아래 실전 운용은 도적 Discord 자료를 우선 반영한 요약입니다. 외부 가이드와 표현이 다른 항목은 예외로 표시했습니다.",
     ],
-    priorityGuide: {
-      summaryKo: "무법은 매 글로벌마다 위에서 아래로 내려가며 가능한 가장 높은 우선순위 행동을 고르는 방식으로 운용합니다.",
-      groups: [
+    coreSummary: {
+      headlineKo: "쿨기 > 마무리 일격 > 생성기",
+      cards: [
         {
-          titleKo: "1. 쿨기",
-          ruleKo: "마무리 일격과 생성기보다 먼저 확인합니다.",
-          steps: [
-            "아드레날린 촉진: 활성화되어 있지 않고 현재 1~2연계 점수라면 사용합니다.",
-            "폭풍의 칼날: 2타겟 이상이고 비활성 상태라면 사용합니다.",
-            "뼈주사위: 비활성 상태이거나 1단계라면 다시 굴려 최소 2단계 이상을 노립니다.",
-            "준비: 특성 사용 시 아드레날린 촉진, 미간 적중, 광역 상황의 Blade Rush 리셋을 위해 사용합니다. 단, 아드레날린 촉진 쿨이 곧 오면 너무 빨리 쓰지 않습니다.",
-            "도박의 연속: 기본은 뼈주사위 3단계 이상일 때 사용합니다.",
-            "Blade Rush: 쿨마다 사용합니다.",
-            "엉겅퀴 차: 직접 신경 쓰기보다 필요 시 자동 소모되는 자원 보조로 봅니다.",
-          ],
+          titleKo: "판단은 위에서 아래로",
+          bodyKo: "무법은 정해진 순서표를 외워 누르는 직업이 아니라, 매 글쿨마다 쿨기, 마무리 일격, 생성기 순서로 가능한 최고 행동을 고르는 전문화입니다.",
+          tone: "ok",
         },
         {
-          titleKo: "2. 마무리 일격",
-          ruleKo: "기본은 6연계 점수 이상입니다. 운명결속 속결은 5연계 점수 이상 예외가 있습니다.",
-          steps: [
-            "난도질: 오프닝에서 한 번, 활성화되어 있지 않을 때만 직접 사용합니다.",
-            "미간 적중: 가능하면 최우선 마무리 일격으로 사용합니다.",
-            "광기의 학살자: 특성을 찍었고 사용 가능하면 사용합니다.",
-            "속결: 위 마무리 일격을 쓸 수 없을 때 사용합니다.",
-            "Coup de Grace: 직접 누르는 기술이 아니라 필요한 상황에 자동 시전되는 항목으로 봅니다.",
-          ],
+          titleKo: "아드레날린 촉진은 오래 들지 않기",
+          bodyKo: "전투가 계속된다면 1~2연계 점수에서 바로 켭니다. 너무 오래 들면 무법의 핵심인 쿨다운 감소 흐름이 무너집니다.",
+          tone: "warn",
         },
         {
-          titleKo: "3. 생성기",
-          ruleKo: "쿨기와 마무리 일격 조건이 없을 때만 확인합니다.",
-          steps: [
-            "폭풍의 칼날: 3타겟 이상이고 Deft Maneuvers 특성이 있으면 생성기처럼 사용합니다.",
-            "권총 사격: 기회가 6중첩이면 사용합니다.",
-            "권총 사격: 기회가 3중첩이고 현재 1~3연계 점수일 때만 사용합니다.",
-            "사악한 일격: 위 조건이 전부 없으면 기본 생성기로 사용합니다.",
-          ],
+          titleKo: "미간 적중(BtE)은 높은 CP에서",
+          bodyKo: "미간 적중은 가장 중요한 마무리 일격입니다. 5연계 점수에 급하게 쓰기보다 높은 연계 점수에서 쓰는 습관을 먼저 만듭니다.",
+          tone: "ok",
         },
+        {
+          titleKo: "광역은 폭풍의 칼날 유지",
+          bodyKo: "2타겟 이상이면 폭풍의 칼날이 꺼지지 않게 먼저 봅니다. 무법 광역은 이 버프가 꺼지는 순간 구조가 무너집니다.",
+          tone: "danger",
+        },
+      ],
+      neverDo: [
+        "아드레날린 촉진을 이유 없이 오래 들고 있지 않기",
+        "미간 적중을 5연계 점수에 습관적으로 쓰지 않기",
+        "2타겟 이상에서 폭풍의 칼날이 꺼진 채 딜하지 않기",
+        "발차기, 교란, 그림자 망토를 마우스로 클릭하지 않기",
+        "Supercharger나 KIR 예외 때문에 기본 우선순위를 망치지 않기",
       ],
     },
-    openerGuide: {
-      summaryKo: "오프닝은 쿨기를 쌓아두는 폭딜 구조가 아니라, 빠르게 일반 우선순위로 진입하기 위한 준비 과정입니다.",
-      sequences: [
-        {
-          titleKo: "일반 오프닝",
-          steps: [
-            "풀 1~2초 전: 아드레날린 촉진 + 뼈주사위 + 난도질을 준비합니다.",
-            "풀 시작 후 광역이면 폭풍의 칼날을 켭니다.",
-            "Blade Rush 사용 후 미간 적중까지 연계 점수를 쌓습니다.",
-            "미간 적중을 사용하고, 리셋되면 다시 미간 적중까지 빌드합니다.",
-            "미간 적중이 쿨일 때 준비를 사용해 다시 Blade Rush와 미간 적중 흐름으로 이어갑니다.",
-            "광기의 학살자까지 빌드한 뒤 일반 우선순위로 반복합니다.",
-          ],
-        },
-        {
-          titleKo: "쐐기 시작 전",
-          steps: [
-            "쐐기돌을 꽂기 전 아드레날린 촉진을 미리 사용할 수 있습니다.",
-            "이 운용은 납 주사위를 들고 첫 무리에 들어가기 위한 목적입니다.",
-            "첫 무리 전에는 뼈주사위를 먼저 굴리고, 이후 아드레날린 촉진을 사용해 다음 뼈주사위 품질을 보강합니다.",
-          ],
-        },
-      ],
-      cautions: [
-        "뼈주사위가 3단계 이상이면 도박의 연속을 잊지 않습니다.",
-        "난도질은 Supercharger를 소모하지 않기 때문에 오프닝에서 수동으로 쓰는 가치가 있습니다.",
-        "은신 중이라고 매번 Ambush로 여는 구조가 아닙니다. PvE에서 은신은 주로 이동 편의로 봅니다.",
-      ],
-    },
-    advancedGuide: [
+    deepGuide: [
+      {
+        titleKo: "아드레날린 촉진(AR)",
+        whatKo: "기력 회복과 글쿨 흐름을 빠르게 만들어 무법 전체 회전수를 올리는 핵심 유지 쿨기입니다.",
+        whenKo: "활성화되어 있지 않고 현재 1~2연계 점수라면 사용합니다. 곧 전투가 끊기거나 몹이 바로 죽는 상황만 예외입니다.",
+        whyKo: "무법은 쿨다운 감소로 다시 쿨기를 돌리는 구조라, AR을 들고 있는 시간이 곧 다음 쿨기 손실로 이어집니다.",
+        mistakeKo: "초보자가 가장 자주 하는 실수는 큰 폭딜기처럼 아껴두는 것입니다. 무법의 AR은 아껴서 터뜨리는 버튼이 아니라 회전 유지 버튼입니다.",
+        exampleKo: "풀 시작 직전 AR + 뼈주사위 + 난도질을 준비하면 첫 미간 적중까지 빠르게 진입합니다.",
+      },
+      {
+        titleKo: "폭풍의 칼날(Blade Flurry)",
+        whatKo: "무법 광역의 스위치입니다. 켜져 있어야 단일 우선순위가 광역 피해로 전환됩니다.",
+        whenKo: "2타겟 이상이고 비활성 상태라면 즉시 사용합니다. 3타겟 이상에 Deft Maneuvers가 있으면 생성기처럼 쓰는 예외도 봅니다.",
+        whyKo: "폭풍의 칼날이 꺼진 상태에서는 아무리 로테이션을 잘 눌러도 광역 구조가 성립하지 않습니다.",
+        mistakeKo: "광역 풀에서 미간 적중이나 Blade Rush부터 누르고 폭풍의 칼날을 늦게 켜는 실수가 큽니다.",
+        exampleKo: "쐐기 풀 시작: 폭풍의 칼날 → Blade Rush → 연계 점수 빌드 → 미간 적중.",
+      },
+      {
+        titleKo: "뼈주사위(RTB)",
+        whatKo: "전투 리듬을 바꾸는 유지 버프입니다. 단계가 낮으면 다시 굴려 최소 2단계 이상을 노립니다.",
+        whenKo: "비활성 상태이거나 1단계라면 다시 굴립니다. AR 사용 후 납 주사위가 있으면 다음 RTB 품질이 좋아집니다.",
+        whyKo: "좋은 RTB 상태는 연계 점수 생성, 쿨다운 회전, 치명타 흐름을 모두 안정화합니다.",
+        mistakeKo: "1단계를 오래 유지하거나, 3단계 이상을 얻고도 도박의 연속(KIR)을 잊는 것입니다.",
+        exampleKo: "3단계 이상이 뜨면 KIR을 눌러 좋은 상태를 붙잡습니다.",
+      },
       {
         titleKo: "도박의 연속(KIR)",
-        detailKo: "기본은 뼈주사위 3단계 이상이지만, Discord 자료 기준으로 2단계 예외가 있습니다.",
-        bullets: [
-          "납 주사위가 없고 곧 낮은 단계로 떨어질 가능성이 크면 2단계에서도 KIR을 눌러 1단계 추락을 막을 수 있습니다.",
-          "납 주사위가 활성화되어 있고 KIR이 준비되어 있다면 2단계 뼈주사위도 다시 굴릴 가치가 있습니다.",
-          "지속 광역에서는 Deft Maneuvers로 연계 점수 생성이 많아 2단계 이상 유지가 쉬운 편입니다.",
-        ],
-        noteKo: "외부 가이드는 2단계 또는 3단계 기준 표현이 갈립니다. 앱에서는 Discord 기준을 우선하고 예외 운용으로 표시합니다.",
+        whatKo: "현재 뼈주사위 상태를 연장하는 긴 쿨기입니다.",
+        whenKo: "기본은 RTB 3단계 이상입니다. 단, 납 주사위가 없고 1단계 추락 위험이 크면 2단계에서도 검토합니다.",
+        whyKo: "좋은 RTB 상태를 오래 유지하면 이후 쿨다운과 연계 점수 흐름이 안정됩니다.",
+        mistakeKo: "2단계 예외를 기본 규칙처럼 쓰는 것입니다. 초보자는 3단계 이상부터 먼저 익히는 편이 안전합니다.",
+        exampleKo: "단일 보스, 전투 공백이 잦은 쐐기에서는 2단계 KIR 예외가 더 자주 의미를 가질 수 있습니다.",
       },
       {
-        titleKo: "준비와 광기의 학살자",
-        detailKo: "준비는 광기의 학살자도 초기화하지만, KS 리셋만을 위해 아낄 필요는 낮습니다.",
-        bullets: [
-          "오프닝에서는 KS를 아직 쓰지 않았더라도 미간 적중을 바로 다시 쓰는 쪽을 우선합니다.",
-          "광기의 학살자 중 기력이 넘칠 것 같으면 다음 우선순위 행동으로 취소할 수 있지만, 보통은 끝까지 유지합니다.",
-          "광기의 학살자는 6연계 점수 이상이 아니어도 5연계 점수에서 사용할 수 있는 미세 최적화가 있습니다.",
-        ],
-        noteKo: "예상 이득 수치는 확정 DPS가 아니라 미세 최적화 참고로만 봅니다.",
+        titleKo: "미간 적중(BtE)",
+        whatKo: "무법의 핵심 마무리 일격입니다. 가능하면 높은 연계 점수에서 우선 사용합니다.",
+        whenKo: "6연계 점수 이상에서 우선 사용합니다. 운명결속 속결 같은 일부 예외를 제외하면 5CP 미간 적중은 피합니다.",
+        whyKo: "높은 CP에서 소모할수록 Zero In과 리셋 흐름을 더 안정적으로 가져갑니다.",
+        mistakeKo: "5CP가 됐다고 바로 BtE를 누르거나, Supercharger 최적화 때문에 너무 오래 보류해 전체 우선순위가 무너지는 것입니다.",
+        exampleKo: "AR 쿨이 약 30초 이하인 숙련자 상황에서는 BtE를 잠깐 보류해 Supercharger 안에 넣는 선택지가 있습니다.",
       },
       {
-        titleKo: "운명결속(Fatebound) 특수 규칙",
-        detailKo: "현재 메타가 아니거나 빌드가 다르면 사용하지 않는 조건부 최적화입니다.",
-        bullets: [
-          "운명결속, 뼈주사위 2단계 이상, 기회 3중첩, 현재 1연계 점수라면 권총 사격 대신 사악한 일격을 고려합니다.",
-          "이유는 사악한 일격 발동 시 6연계 점수까지 도달할 수 있고, 실패해도 이후 권총 사격으로 정확히 높은 연계 점수를 만들 수 있기 때문입니다.",
-          "1연계 점수에서 권총 사격을 먼저 쓰면 5연계 점수에 걸려 미간 적중 운용이 애매해질 수 있습니다.",
-        ],
-        noteKo: "운명결속 빌드 전용 예외로 표시합니다.",
+        titleKo: "권총 사격과 사악한 일격",
+        whatKo: "권총 사격은 조건부 생성기, 사악한 일격은 fallback 생성기입니다.",
+        whenKo: "기회 6중첩이면 권총 사격, 기회 3중첩 + 현재 1~3CP면 권총 사격, 그 외에는 사악한 일격을 누릅니다.",
+        whyKo: "권총 사격을 아무 때나 누르면 CP가 애매하게 차서 좋은 마무리 일격 타이밍을 망칩니다.",
+        mistakeKo: "기회가 보였다고 바로 누르는 것입니다. 현재 CP를 같이 봐야 합니다.",
+        exampleKo: "운명결속 + RTB 2단계 이상 + 기회 3중첩 + 현재 1CP에서는 권총 사격 대신 사악한 일격을 고려합니다.",
       },
       {
-        titleKo: "Supercharger와 미간 적중 보류",
-        detailKo: "아드레날린 촉진 쿨이 약 30초 이하라면 미간 적중을 잠깐 보류하는 최적화가 있습니다.",
-        bullets: [
-          "아드레날린 촉진을 켠 뒤 미간 적중을 사용해 Supercharger 안에 넣는 것이 목적입니다.",
-          "오프닝에서 준비로 아드레날린 촉진을 초기화했는데 기존 아드레날린 촉진이 아직 켜져 있다면, 기존 지속 중에는 미간 적중을 계속 사용합니다.",
-          "준비로 얻은 다음 아드레날린 촉진은 첫 아드레날린 촉진 종료 직후 쓰거나, 미간 적중 쿨을 잠깐 기다렸다가 사용할 수 있습니다.",
-        ],
-        noteKo: "이 항목은 숙련자용입니다. 기본 우선순위가 흔들리면 적용하지 않습니다.",
+        titleKo: "준비(Prep)",
+        whatKo: "아드레날린 촉진, 미간 적중, 광역 상황의 Blade Rush 흐름을 다시 여는 버튼입니다.",
+        whenKo: "핵심 쿨기가 빠진 뒤, 다음 미간 적중과 AR 회전을 살릴 수 있을 때 사용합니다. AR 쿨이 곧 오면 너무 빨리 쓰지 않습니다.",
+        whyKo: "준비는 KS만 초기화하려고 아끼는 버튼이 아닙니다. BtE와 AR을 다시 여는 가치가 더 중요할 때가 많습니다.",
+        mistakeKo: "광기의 학살자를 아직 안 썼다는 이유로 오프닝 준비를 늦추는 것입니다.",
+        exampleKo: "오프닝에서 BtE가 쿨일 때 준비 → Blade Rush → BtE까지 다시 빌드합니다.",
+      },
+      {
+        titleKo: "Supercharger",
+        whatKo: "아드레날린 촉진과 미간 적중 타이밍을 맞출 때 생기는 숙련자용 최적화 축입니다.",
+        whenKo: "AR 쿨이 약 30초 이하라면 미간 적중을 바로 쓰지 않고 AR 이후로 잠깐 보류할 수 있습니다.",
+        whyKo: "BtE와 BtE 리셋 가능성을 Supercharger 안에 넣기 위한 목적입니다.",
+        mistakeKo: "초보자가 이 규칙을 먼저 따라 하다가 BtE를 지나치게 오래 들고 있는 것입니다.",
+        exampleKo: "기본 우선순위가 안정된 뒤에만 적용합니다. 흔들리면 그냥 높은 CP BtE를 쓰는 편이 낫습니다.",
       },
     ],
-    quickCheatSheet: [
-      "기본 우선순위: 쿨기 > 마무리 일격 > 생성기",
-      "오프닝: 풀 1~2초 전 AR + RTB + SnD",
-      "광역 시작: 폭풍의 칼날 → Blade Rush → 미간 적중까지 빌드",
-      "KIR: 기본 3단계 이상, 단 2단계 예외는 상황부 미세 최적화",
-      "준비: KS보다 미간 적중/아드레날린 촉진 리셋 가치가 먼저",
-      "미간 적중: 5연계 점수에 급하게 쓰지 말고 높은 연계 점수에서 사용",
-      "아드레날린 촉진: 너무 오래 들고 있지 말 것",
-      "Supercharger: 아드레날린 촉진 쿨 30초 이하라면 미간 적중 보류를 고려",
+    practiceGuide: {
+      summaryKo: "전투 중에는 복잡하게 외우지 말고, 현재 상황을 이 순서로만 확인합니다. 광역 여부, 쿨기, 마무리 일격, 생성기 순서입니다.",
+      phases: [
+        {
+          titleKo: "풀 1~2초 전",
+          cueKo: "준비",
+          steps: [
+            "독이 발라져 있는지 확인합니다.",
+            "가능하면 아드레날린 촉진 + 뼈주사위 + 난도질을 준비합니다.",
+            "쐐기 시작 전에는 AR로 납 주사위 상태를 만들 수 있는지 확인합니다.",
+          ],
+        },
+        {
+          titleKo: "풀 시작",
+          cueKo: "진입",
+          steps: [
+            "광역이면 폭풍의 칼날부터 켭니다.",
+            "Blade Rush를 사용하고 미간 적중까지 연계 점수를 쌓습니다.",
+            "6CP 이상이면 미간 적중을 사용합니다.",
+          ],
+        },
+        {
+          titleKo: "일반 반복",
+          cueKo: "우선순위",
+          steps: [
+            "쿨기: AR, 폭풍의 칼날, RTB, KIR, Prep, Blade Rush를 먼저 확인합니다.",
+            "마무리 일격: 미간 적중, 광기의 학살자, 속결 순서로 확인합니다.",
+            "생성기: 권총 사격 조건이 아니면 사악한 일격을 누릅니다.",
+          ],
+        },
+        {
+          titleKo: "BtE 쿨 / 리셋",
+          cueKo: "리셋 대응",
+          steps: [
+            "BtE가 리셋되면 다시 높은 CP까지 빌드합니다.",
+            "BtE가 쿨이고 준비가 가능하면 준비로 다음 BtE 흐름을 엽니다.",
+            "AR 쿨이 30초 이하인 숙련자 상황만 BtE 보류를 검토합니다.",
+          ],
+        },
+        {
+          titleKo: "KIR 가능",
+          cueKo: "뼈주사위",
+          steps: [
+            "RTB 3단계 이상이면 KIR을 사용합니다.",
+            "2단계 예외는 납 주사위 없음, 1단계 추락 위험, 전투 공백이 있는 상황에서만 검토합니다.",
+            "처음 익힐 때는 3단계 이상 규칙만 지켜도 충분합니다.",
+          ],
+        },
+        {
+          titleKo: "실수 복구",
+          cueKo: "망했을 때",
+          steps: [
+            "폭풍의 칼날이 꺼졌다면 광역에서는 즉시 다시 켭니다.",
+            "AR을 오래 들었다면 다음 1~2CP에서 바로 사용합니다.",
+            "CP가 애매하면 무리한 BtE보다 다음 생성기로 6CP 이상을 만듭니다.",
+          ],
+        },
+      ],
+    },
+    keybindGuide: {
+      summaryKo: "스킬창/키bind는 딜 사이클보다 먼저 정리해야 합니다. 무법은 글쿨이 빠르고 반응 버튼이 많아서, 발차기와 생존기를 클릭하는 순간 던전 실수가 늘어납니다.",
+      rules: [
+        "1~5는 가장 자주 누르는 생성기와 마무리 일격에 둡니다.",
+        "Q/E/R/F/C/V는 이동 중에도 누르기 쉬운 핵심 전투 버튼에 둡니다.",
+        "Shift 조합은 긴 쿨기, 상황부 쿨기, 유틸에 둡니다.",
+        "마우스 사이드 버튼이 있으면 발차기, 그림자 망토, 교란을 우선 배치합니다.",
+        "차단과 생존기는 클릭 금지 영역입니다.",
+      ],
+      groups: [
+        {
+          titleKo: "주력 공격",
+          bindings: [
+            { key: "1", skillKo: "사악한 일격", reasonKo: "가장 기본 생성기", priority: "core" },
+            { key: "2", skillKo: "권총 사격", reasonKo: "기회 중첩을 보고 빠르게 반응", priority: "core" },
+            { key: "3", skillKo: "속결", reasonKo: "기본 마무리 일격", priority: "core" },
+            { key: "4", skillKo: "미간 적중", reasonKo: "핵심 마무리 일격이라 손가락 접근성이 높아야 함", priority: "core" },
+            { key: "5", skillKo: "난도질", reasonKo: "오프닝/유지 확인용", priority: "utility" },
+          ],
+        },
+        {
+          titleKo: "전투 유지",
+          bindings: [
+            { key: "Q", skillKo: "폭풍의 칼날", reasonKo: "광역 시작마다 즉시 켜야 함", priority: "core" },
+            { key: "E", skillKo: "Blade Rush", reasonKo: "쿨마다 누르는 공격 쿨기", priority: "core" },
+            { key: "R", skillKo: "아드레날린 촉진", reasonKo: "오래 들면 안 되는 핵심 쿨기", priority: "core" },
+            { key: "F", skillKo: "뼈주사위", reasonKo: "버프 상태를 보며 자주 확인", priority: "core" },
+            { key: "Shift+F", skillKo: "도박의 연속", reasonKo: "RTB 상태가 좋을 때 누르는 긴 쿨기", priority: "advanced" },
+          ],
+        },
+        {
+          titleKo: "생존/반응",
+          bindings: [
+            { key: "C", skillKo: "발차기", reasonKo: "차단은 마우스 클릭 금지", priority: "reactive" },
+            { key: "V", skillKo: "교란", reasonKo: "광역 피해 직전 즉시 반응", priority: "reactive" },
+            { key: "Shift+C", skillKo: "그림자 망토", reasonKo: "마법 피해/디버프 대응", priority: "reactive" },
+            { key: "Shift+V", skillKo: "소멸", reasonKo: "위험 복구와 일부 딜 최적화", priority: "reactive" },
+          ],
+        },
+        {
+          titleKo: "고급/상황부",
+          bindings: [
+            { key: "Shift+R", skillKo: "준비", reasonKo: "BtE/AR 재개용", priority: "advanced" },
+            { key: "Shift+E", skillKo: "광기의 학살자", reasonKo: "상황부 마무리 일격", priority: "advanced" },
+            { key: "Ctrl+Q", skillKo: "물약", reasonKo: "전투 계획용", priority: "utility" },
+            { key: "Ctrl+E", skillKo: "생석", reasonKo: "체력 급락 복구", priority: "reactive" },
+            { key: "Ctrl+R", skillKo: "장신구", reasonKo: "사용 장신구 대응", priority: "utility" },
+          ],
+        },
+      ],
+      mouseNoteKo: "마우스 사이드 버튼이 있다면 발차기, 그림자 망토, 교란 순서로 옮기는 것을 권장합니다. 손 이동 없이 즉시 눌러야 하는 버튼부터 옮깁니다.",
+      clickWarningKo: "발차기, 교란, 그림자 망토, 소멸은 클릭 금지입니다. 반응 버튼은 키bind로 눌러야 합니다.",
+    },
+    masteryGuide: [
+      {
+        titleKo: "숙련자를 위한 완벽함으로 가는 법",
+        goalKo: "기본 우선순위를 흔들지 않으면서 예외 규칙만 추가합니다.",
+        checks: [
+          "로그에서 AR을 이유 없이 들고 있던 시간이 있는지 확인합니다.",
+          "BtE가 5CP에서 습관적으로 나간 기록이 있는지 확인합니다.",
+          "광역 풀에서 폭풍의 칼날이 늦게 켜진 구간을 찾습니다.",
+        ],
+        warningKo: "이 단계는 기본 반복이 안정된 뒤에만 봅니다.",
+      },
+      {
+        titleKo: "KIR 2단계 예외",
+        goalKo: "1단계 추락을 막을 필요가 있을 때만 2단계 KIR을 검토합니다.",
+        checks: [
+          "납 주사위가 없는지 확인합니다.",
+          "곧 RTB를 다시 굴려야 할 위험이 있는지 확인합니다.",
+          "단일 또는 전투 공백이 있는 쐐기 상황인지 확인합니다.",
+        ],
+        warningKo: "처음에는 RTB 3단계 이상 KIR만 지켜도 충분합니다.",
+      },
+      {
+        titleKo: "Prep은 KS보다 BtE/AR 리셋 우선",
+        goalKo: "준비를 광기의 학살자 전용 초기화 버튼으로 오해하지 않습니다.",
+        checks: [
+          "오프닝에서 BtE 재진입을 위해 준비를 썼는지 확인합니다.",
+          "AR 쿨이 곧 돌아오는데 준비를 너무 빨리 쓰지 않았는지 확인합니다.",
+          "Blade Rush와 BtE 흐름이 이어졌는지 확인합니다.",
+        ],
+      },
+      {
+        titleKo: "Supercharger-BtE 보류",
+        goalKo: "AR 안에 BtE와 리셋 가능성을 넣는 숙련자용 판단입니다.",
+        checks: [
+          "AR 쿨이 약 30초 이하인지 확인합니다.",
+          "BtE를 보류해도 전체 우선순위가 무너지지 않는지 확인합니다.",
+          "첫 AR 지속 중에는 BtE를 계속 사용했는지 확인합니다.",
+        ],
+        warningKo: "BtE를 오래 들고 있으면 오히려 손해입니다. 자신 없으면 보류하지 않습니다.",
+      },
     ],
+    visualGuides: {
+      priorityLadder: [
+        { labelKo: "1. 쿨기", detailKo: "AR, 폭풍의 칼날, RTB, KIR, Prep, Blade Rush" },
+        { labelKo: "2. 마무리 일격", detailKo: "난도질, 미간 적중(BtE), 광기의 학살자, 속결" },
+        { labelKo: "3. 생성기", detailKo: "권총 사격 조건 확인 후 사악한 일격" },
+      ],
+      openerTimeline: [
+        { labelKo: "풀 -2초", detailKo: "AR + RTB + 난도질" },
+        { labelKo: "0초", detailKo: "광역이면 폭풍의 칼날" },
+        { labelKo: "초반", detailKo: "Blade Rush → BtE까지 빌드" },
+        { labelKo: "리셋", detailKo: "BtE 리셋 또는 Prep으로 재진입" },
+        { labelKo: "반복", detailKo: "KS까지 빌드 후 일반 우선순위" },
+      ],
+      kirTree: [
+        { conditionKo: "RTB 3단계 이상", actionKo: "도박의 연속(KIR) 사용", tone: "ok" },
+        { conditionKo: "RTB 2단계 + 납 주사위 없음 + 1단계 추락 위험", actionKo: "숙련자 예외로 KIR 검토", tone: "warn" },
+        { conditionKo: "RTB 1단계 또는 비활성", actionKo: "KIR이 아니라 RTB 재굴림", tone: "warn" },
+      ],
+      superchargerFlow: [
+        { conditionKo: "AR 쿨 30초 초과", actionKo: "높은 CP BtE를 평소대로 사용" },
+        { conditionKo: "AR 쿨 약 30초 이하", actionKo: "BtE 보류를 잠깐 검토" },
+        { conditionKo: "AR 사용 가능", actionKo: "AR 후 BtE로 Supercharger 안에 넣기" },
+        { conditionKo: "기본 우선순위 흔들림", actionKo: "보류 중단, BtE 사용" },
+      ],
+      keybindLayout: [
+        { key: "1", labelKo: "사악한 일격", groupKo: "주력" },
+        { key: "2", labelKo: "권총 사격", groupKo: "주력" },
+        { key: "3", labelKo: "속결", groupKo: "주력" },
+        { key: "4", labelKo: "미간 적중", groupKo: "주력" },
+        { key: "5", labelKo: "난도질", groupKo: "주력" },
+        { key: "Q", labelKo: "폭풍의 칼날", groupKo: "전투" },
+        { key: "E", labelKo: "Blade Rush", groupKo: "전투" },
+        { key: "R", labelKo: "아드레날린 촉진", groupKo: "전투" },
+        { key: "F", labelKo: "뼈주사위", groupKo: "전투" },
+        { key: "C", labelKo: "발차기", groupKo: "반응" },
+        { key: "V", labelKo: "교란", groupKo: "반응" },
+        { key: "Shift+C", labelKo: "그림자 망토", groupKo: "반응" },
+      ],
+    },
   },
   "rogue-subtlety": {
     specKey: "rogue-subtlety",

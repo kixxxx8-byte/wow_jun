@@ -3464,34 +3464,52 @@ a {
   font-weight: 950;
 }
 
-.outlaw-practical-card,
-.outlaw-cheat-card {
+.outlaw-section-card {
   grid-column: 1 / -1;
 }
 
-.outlaw-priority-grid,
-.outlaw-opener-grid,
-.outlaw-advanced-grid {
+.outlaw-summary-grid,
+.outlaw-visual-row,
+.outlaw-deep-grid,
+.outlaw-practice-grid,
+.outlaw-keybind-body,
+.outlaw-keybind-grid,
+.outlaw-master-row,
+.outlaw-mastery-grid {
   display: grid;
   gap: 10px;
   margin-top: 14px;
 }
 
-.outlaw-priority-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.outlaw-summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-.outlaw-opener-grid {
+.outlaw-visual-row,
+.outlaw-keybind-body,
+.outlaw-master-row {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.outlaw-advanced-grid {
+.outlaw-deep-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.outlaw-priority-grid section,
-.outlaw-opener-grid section,
-.outlaw-advanced-grid section {
+.outlaw-mastery-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.outlaw-keybind-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.outlaw-summary-card,
+.outlaw-deep-card,
+.outlaw-practice-grid section,
+.outlaw-keybind-rules,
+.outlaw-keybind-grid section,
+.outlaw-flow,
+.outlaw-mastery-grid section {
   min-width: 0;
   padding: 12px;
   border: 1px solid var(--line);
@@ -3499,48 +3517,332 @@ a {
   background: var(--surface-soft);
 }
 
-.outlaw-priority-grid h3,
-.outlaw-opener-grid h3,
-.outlaw-advanced-grid h3 {
+.outlaw-summary-card {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+}
+
+.outlaw-summary-card b,
+.outlaw-deep-card h3,
+.outlaw-practice-grid h3,
+.outlaw-keybind-rules h3,
+.outlaw-keybind-grid h3,
+.outlaw-flow h3,
+.outlaw-mastery-grid h3 {
   margin: 0 0 8px;
   font-size: 17px;
 }
 
-.outlaw-priority-grid b {
-  display: block;
-  margin-bottom: 9px;
-  color: var(--teal);
-  line-height: 1.4;
+.outlaw-summary-card span {
+  color: #43515f;
+  line-height: 1.48;
 }
 
-.outlaw-priority-grid ol,
-.outlaw-opener-grid ol,
-.outlaw-advanced-grid ul,
-.outlaw-cheat-list {
+.outlaw-summary-card.tone-ok {
+  border-color: rgba(15, 118, 110, 0.24);
+}
+
+.outlaw-summary-card.tone-warn {
+  border-color: rgba(217, 119, 6, 0.26);
+}
+
+.outlaw-summary-card.tone-danger {
+  border-color: rgba(220, 38, 38, 0.24);
+}
+
+.outlaw-never-box {
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  border-radius: 8px;
+  background: rgba(254, 242, 242, 0.62);
+}
+
+.outlaw-never-box h3 {
+  margin: 0 0 9px;
+  font-size: 17px;
+}
+
+.outlaw-never-list,
+.outlaw-deep-card dl,
+.outlaw-keybind-rules ul,
+.outlaw-mastery-grid ul {
   display: grid;
-  gap: 8px;
+  gap: 7px;
   margin: 0;
   padding-left: 20px;
   color: #43515f;
   line-height: 1.48;
 }
 
-.outlaw-advanced-grid p {
-  margin: 0 0 9px;
+.outlaw-ladder,
+.outlaw-timeline,
+.outlaw-keybind-layout {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgba(15, 118, 110, 0.18);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(240, 253, 250, 0.92), rgba(248, 250, 252, 0.96));
 }
 
-.outlaw-advanced-grid small {
+.outlaw-ladder {
+  display: grid;
+  gap: 8px;
+}
+
+.outlaw-ladder-step {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 0.45fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid rgba(15, 118, 110, 0.16);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.outlaw-ladder-step span {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--teal);
+  background: var(--teal-soft);
+  font-weight: 950;
+}
+
+.outlaw-ladder-step small,
+.outlaw-timeline-item span,
+.outlaw-keycap small,
+.outlaw-binding small,
+.outlaw-mastery-grid small {
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.outlaw-timeline {
+  position: relative;
+  display: grid;
+  gap: 8px;
+}
+
+.outlaw-timeline-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 9px 10px;
+  border: 1px solid rgba(15, 118, 110, 0.14);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.outlaw-timeline-item b {
+  color: var(--teal);
+}
+
+.outlaw-deep-card dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+
+.outlaw-deep-card dl div {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.outlaw-deep-card dt {
+  color: var(--teal);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.outlaw-deep-card dd {
+  margin: 0;
+  color: #43515f;
+  line-height: 1.48;
+}
+
+.outlaw-example {
+  margin-top: 10px !important;
+  padding: 9px 10px;
+  border-left: 3px solid var(--teal);
+  border-radius: 8px;
+  background: rgba(240, 253, 250, 0.72);
+  font-weight: 800;
+}
+
+.outlaw-practice-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.outlaw-practice-grid section {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.outlaw-practice-grid section > span {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--teal);
+  background: var(--teal-soft);
+  font-weight: 950;
+}
+
+.outlaw-practice-grid b {
+  display: inline-flex;
+  width: fit-content;
+  margin: 0 0 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: var(--teal);
+  background: var(--teal-soft);
+  font-size: 12px;
+}
+
+.outlaw-practice-grid ol {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding-left: 18px;
+  color: #43515f;
+  line-height: 1.45;
+}
+
+.outlaw-keybind-layout {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.outlaw-keycap {
+  display: grid;
+  min-height: 78px;
+  gap: 4px;
+  align-content: start;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid rgba(15, 118, 110, 0.18);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.outlaw-keycap b,
+.outlaw-binding b {
+  display: inline-grid;
+  width: fit-content;
+  min-width: 32px;
+  min-height: 28px;
+  place-items: center;
+  padding: 2px 7px;
+  border: 1px solid rgba(15, 118, 110, 0.24);
+  border-radius: 7px;
+  color: #123c36;
+  background: #f8fafc;
+  font-weight: 950;
+}
+
+.outlaw-keycap span,
+.outlaw-binding span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 900;
+}
+
+.outlaw-keybind-rules strong {
   display: block;
   margin-top: 10px;
-  color: var(--amber);
-  font-size: 12px;
-  font-weight: 850;
-  line-height: 1.42;
+  color: #b91c1c;
 }
 
-.outlaw-cheat-list {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  padding-left: 28px;
+.outlaw-keybind-rules p {
+  margin-top: 8px;
+}
+
+.outlaw-keybind-grid section > div {
+  display: grid;
+  gap: 8px;
+}
+
+.outlaw-binding {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.outlaw-binding.reactive,
+.outlaw-keycap.group-반응 {
+  border-color: rgba(220, 38, 38, 0.24);
+  background: rgba(254, 242, 242, 0.55);
+}
+
+.outlaw-binding.advanced,
+.outlaw-keycap.group-전투 {
+  border-color: rgba(217, 119, 6, 0.22);
+}
+
+.outlaw-binding.utility {
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.outlaw-flow {
+  display: grid;
+  gap: 8px;
+}
+
+.outlaw-flow div {
+  display: grid;
+  gap: 4px;
+  padding: 9px;
+  border: 1px solid rgba(15, 118, 110, 0.16);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.outlaw-flow div.warn {
+  border-color: rgba(217, 119, 6, 0.24);
+}
+
+.outlaw-flow div.ok {
+  border-color: rgba(15, 118, 110, 0.24);
+}
+
+.outlaw-flow span {
+  color: #43515f;
+  line-height: 1.45;
+}
+
+.outlaw-mastery-grid section {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+}
+
+.outlaw-mastery-grid p {
+  margin: 0;
+  color: var(--amber);
+  font-weight: 850;
+}
+
+.outlaw-mastery-grid small {
+  font-size: 12px;
+  font-weight: 850;
 }
 
 .talent-list {
@@ -3983,10 +4285,14 @@ a {
   .settings-grid,
   .wythic-command,
   .guide-grid,
-  .outlaw-priority-grid,
-  .outlaw-opener-grid,
-  .outlaw-advanced-grid,
-  .outlaw-cheat-list,
+  .outlaw-summary-grid,
+  .outlaw-visual-row,
+  .outlaw-deep-grid,
+  .outlaw-practice-grid,
+  .outlaw-keybind-body,
+  .outlaw-keybind-grid,
+  .outlaw-master-row,
+  .outlaw-mastery-grid,
   .dungeon-command,
   .dungeon-tools,
   .dungeon-guide-head,
@@ -4003,6 +4309,16 @@ a {
       "plan"
       "controls"
       "history";
+  }
+
+  .outlaw-keybind-layout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .outlaw-ladder-step,
+  .outlaw-timeline-item,
+  .outlaw-deep-card dl div {
+    grid-template-columns: 1fr;
   }
 
   .topbar {
@@ -4252,16 +4568,28 @@ a {
   .cinematic-bottom-grid,
   .boss-micro-grid,
   .wythic-metrics,
-  .outlaw-priority-grid,
-  .outlaw-opener-grid,
-  .outlaw-advanced-grid,
-  .outlaw-cheat-list {
+  .outlaw-summary-grid,
+  .outlaw-visual-row,
+  .outlaw-deep-grid,
+  .outlaw-practice-grid,
+  .outlaw-keybind-body,
+  .outlaw-keybind-grid,
+  .outlaw-master-row,
+  .outlaw-mastery-grid {
     grid-template-columns: 1fr;
   }
 
   .quick-metrics {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
+  }
+
+  .outlaw-keybind-layout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .outlaw-keycap {
+    min-height: 70px;
   }
 
   .quick-metrics article {
