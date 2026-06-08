@@ -18,6 +18,16 @@ type OutlawPracticeState = {
   opportunityStacks: 0 | 3 | 6;
 };
 
+type OutlawSequenceScenario = {
+  labelKo: string;
+  descriptionKo: string;
+  steps: Array<{
+    skillKo: string;
+    titleKo: string;
+    reasonKo: string;
+  }>;
+};
+
 const initialOutlawPracticeState: OutlawPracticeState = {
   targets: 2,
   comboPoints: 0,
@@ -88,6 +98,59 @@ const outlawPracticePresets: Array<{ labelKo: string; state: OutlawPracticeState
       opportunityStacks: 0,
     },
   },
+];
+
+const outlawSequenceScenarios: OutlawSequenceScenario[] = [
+  {
+    labelKo: "광역 오프닝",
+    descriptionKo: "2타겟 이상에서 광역 스위치를 켜고 첫 미간 적중까지 가는 연습입니다.",
+    steps: [
+      { skillKo: "폭풍의 칼날", titleKo: "광역 스위치", reasonKo: "적이 2마리 이상이면 먼저 켜야 합니다." },
+      { skillKo: "아드레날린 촉진", titleKo: "기력 흐름 열기", reasonKo: "초반 회전수를 올리고 다음 쿨기 흐름을 만듭니다." },
+      { skillKo: "뼈주사위", titleKo: "버프 굴리기", reasonKo: "주사위 상태를 만들어 전투 리듬을 잡습니다." },
+      { skillKo: "난도질", titleKo: "기본 유지", reasonKo: "오프닝에서 기본 공격 속도 흐름을 정리합니다." },
+      { skillKo: "Blade Rush", titleKo: "첫 공격 쿨기", reasonKo: "쿨마다 확인하는 공격 쿨기를 초반에 씁니다." },
+      { skillKo: "사악한 일격", titleKo: "CP 만들기", reasonKo: "미간 적중을 누를 CP를 모읍니다." },
+      { skillKo: "미간 적중", titleKo: "마무리 쾅", reasonKo: "높은 CP에서 핵심 마무리 일격을 씁니다." },
+    ],
+  },
+  {
+    labelKo: "단일 기본 반복",
+    descriptionKo: "단일 대상에서 버프, 쿨기, 생성기, 마무리 일격 순서를 익힙니다.",
+    steps: [
+      { skillKo: "뼈주사위", titleKo: "주사위 확인", reasonKo: "없거나 1단계라면 먼저 굴립니다." },
+      { skillKo: "아드레날린 촉진", titleKo: "쿨기 시작", reasonKo: "CP가 낮을 때 켜면 이후 흐름이 편합니다." },
+      { skillKo: "Blade Rush", titleKo: "쿨기 사용", reasonKo: "준비된 공격 쿨기는 오래 들지 않습니다." },
+      { skillKo: "사악한 일격", titleKo: "기본 생성", reasonKo: "조건이 없으면 기본 생성기로 CP를 모읍니다." },
+      { skillKo: "권총 사격", titleKo: "기회 반응", reasonKo: "기회 중첩과 CP가 맞을 때만 누릅니다." },
+      { skillKo: "미간 적중", titleKo: "핵심 마무리", reasonKo: "6CP 이상에서 가장 먼저 확인합니다." },
+    ],
+  },
+  {
+    labelKo: "준비 후 재진입",
+    descriptionKo: "핵심 쿨기가 막혔을 때 준비로 다시 흐름을 여는 연습입니다.",
+    steps: [
+      { skillKo: "준비", titleKo: "쿨기 다시 열기", reasonKo: "AR, 미간 적중, Blade Rush가 막혔을 때 흐름을 엽니다." },
+      { skillKo: "Blade Rush", titleKo: "재진입", reasonKo: "초기화된 공격 쿨기로 다시 시작합니다." },
+      { skillKo: "사악한 일격", titleKo: "CP 복구", reasonKo: "마무리 일격을 위한 CP를 다시 모읍니다." },
+      { skillKo: "미간 적중", titleKo: "다시 마무리", reasonKo: "높은 CP에서 핵심 마무리 일격을 씁니다." },
+    ],
+  },
+];
+
+const outlawSequenceSkillPool = [
+  "폭풍의 칼날",
+  "아드레날린 촉진",
+  "뼈주사위",
+  "난도질",
+  "도박의 연속(KIR)",
+  "Blade Rush",
+  "사악한 일격",
+  "권총 사격",
+  "미간 적중",
+  "속결",
+  "광기의 학살자",
+  "준비",
 ];
 
 function getOutlawPracticeRecommendation(state: OutlawPracticeState) {
@@ -183,6 +246,85 @@ function getOutlawPracticeRecommendation(state: OutlawPracticeState) {
   };
 }
 
+function OutlawSequenceTrainer() {
+  const [scenarioIndex, setScenarioIndex] = useState(0);
+  const [stepIndex, setStepIndex] = useState(0);
+  const [feedback, setFeedback] = useState("첫 버튼부터 눌러보세요.");
+  const scenario = outlawSequenceScenarios[scenarioIndex];
+  const currentStep = scenario.steps[stepIndex];
+  const completed = stepIndex >= scenario.steps.length;
+
+  const selectScenario = (nextIndex: number) => {
+    setScenarioIndex(nextIndex);
+    setStepIndex(0);
+    setFeedback("첫 버튼부터 눌러보세요.");
+  };
+
+  const resetScenario = () => {
+    setStepIndex(0);
+    setFeedback("처음부터 다시 눌러봅니다.");
+  };
+
+  const pressSkill = (skillKo: string) => {
+    if (completed) {
+      setFeedback("이미 완료했습니다. 다시 연습하려면 처음부터 버튼을 누르세요.");
+      return;
+    }
+
+    if (skillKo !== currentStep.skillKo) {
+      setFeedback(`지금은 ${currentStep.skillKo} 차례입니다. 이유: ${currentStep.reasonKo}`);
+      return;
+    }
+
+    const nextIndex = stepIndex + 1;
+    setStepIndex(nextIndex);
+    setFeedback(nextIndex >= scenario.steps.length ? "완료. 이 흐름을 손에 익히면 됩니다." : `좋습니다. 다음은 ${scenario.steps[nextIndex].skillKo}입니다.`);
+  };
+
+  return (
+    <section className="outlaw-sequence-trainer" aria-label="무법 도적 순차 연습">
+      <div className="outlaw-sequence-head">
+        <div>
+          <h3>순서대로 눌러보기</h3>
+          <p>{scenario.descriptionKo}</p>
+        </div>
+        <button type="button" onClick={resetScenario}>처음부터</button>
+      </div>
+
+      <div className="outlaw-preset-row">
+        {outlawSequenceScenarios.map((item, index) => (
+          <button key={item.labelKo} type="button" className={index === scenarioIndex ? "active" : ""} onClick={() => selectScenario(index)}>
+            {item.labelKo}
+          </button>
+        ))}
+      </div>
+
+      <div className="outlaw-sequence-progress">
+        {scenario.steps.map((step, index) => (
+          <div key={`${step.skillKo}-${index}`} className={index < stepIndex ? "done" : index === stepIndex && !completed ? "current" : ""}>
+            <span>{index + 1}</span>
+            <b>{step.skillKo}</b>
+            <small>{step.titleKo}</small>
+          </div>
+        ))}
+      </div>
+
+      <div className="outlaw-sequence-pad" aria-label="무법 도적 연습 스킬 버튼">
+        {outlawSequenceSkillPool.map((skill) => (
+          <button key={skill} type="button" onClick={() => pressSkill(skill)}>
+            {skill}
+          </button>
+        ))}
+      </div>
+
+      <div className={completed ? "outlaw-sequence-feedback done" : "outlaw-sequence-feedback"}>
+        <b>{completed ? "연습 완료" : currentStep ? `현재 단계: ${currentStep.titleKo}` : "연습 완료"}</b>
+        <span>{feedback}</span>
+      </div>
+    </section>
+  );
+}
+
 function OutlawCycleTrainer() {
   const [state, setState] = useState<OutlawPracticeState>(initialOutlawPracticeState);
   const recommendation = getOutlawPracticeRecommendation(state);
@@ -192,12 +334,14 @@ function OutlawCycleTrainer() {
   return (
     <article className="panel guide-card outlaw-section-card outlaw-trainer-card">
       <p className="eyebrow">딜사이클 연습용</p>
-      <h2>지금 뭐 누르지?</h2>
-      <p>완벽한 시뮬레이터는 아니지만, 대상 수·CP·버프·쿨기 상태를 바꿔 보며 무법의 우선순위를 현실적으로 연습하는 도구입니다.</p>
+      <h2>무법 연습장</h2>
+      <p>순서대로 눌러보는 연습과, 상황을 바꿔 다음 버튼을 확인하는 판단 연습을 같이 둡니다.</p>
+
+      <OutlawSequenceTrainer />
 
       <div className="outlaw-trainer-layout">
         <section className="outlaw-trainer-controls">
-          <h3>상황 고르기</h3>
+          <h3>상황 판단 보조</h3>
           <div className="outlaw-preset-row">
             {outlawPracticePresets.map((preset) => (
               <button key={preset.labelKo} type="button" onClick={() => setState(preset.state)}>

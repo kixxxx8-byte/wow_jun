@@ -56,7 +56,13 @@ test("guide tab exposes all supported specs with a shared template", async ({ pa
   await expect(page.getByRole("heading", { name: "암살 도적 핵심 결론" })).toBeVisible();
   await page.getByRole("button", { name: /무법/ }).click();
   await expect(page.getByRole("heading", { name: "무법 도적 핵심 결론" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "지금 뭐 누르지?" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "무법 연습장" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "순서대로 눌러보기" })).toBeVisible();
+  await expect(page.getByLabel("무법 도적 순차 연습").getByText("현재 단계: 광역 스위치")).toBeVisible();
+  await page.getByLabel("무법 도적 연습 스킬 버튼").getByRole("button", { name: "사악한 일격" }).click();
+  await expect(page.getByText("지금은 폭풍의 칼날 차례입니다.")).toBeVisible();
+  await page.getByLabel("무법 도적 연습 스킬 버튼").getByRole("button", { name: "폭풍의 칼날" }).click();
+  await expect(page.getByText("좋습니다. 다음은 아드레날린 촉진입니다.")).toBeVisible();
   await expect(page.getByLabel("무법 도적 다음 추천 스킬").getByText("폭풍의 칼날")).toBeVisible();
   await page.getByRole("button", { name: "준비 타이밍" }).click();
   await expect(page.getByLabel("무법 도적 다음 추천 스킬").getByText("준비")).toBeVisible();
@@ -64,7 +70,7 @@ test("guide tab exposes all supported specs with a shared template", async ({ pa
   await expect(page.getByText("처음엔 이것만 따라가도 됩니다")).toBeVisible();
   await expect(page.getByText("버프 준비")).toBeVisible();
   await expect(page.getByText("쿨기 톡톡")).toBeVisible();
-  await expect(page.getByText("마무리 쾅")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "마무리 쾅" })).toBeVisible();
   await expect(page.getByLabel("버프 준비 스킬 목록").getByText("도박의 연속(KIR)")).toBeVisible();
   await expect(page.getByText("권총 사격은 반짝인다고 무조건 누르지 않습니다.")).toBeVisible();
   await expect(page.getByRole("heading", { name: "쿨기 > 마무리 일격 > 생성기" })).toBeVisible();
