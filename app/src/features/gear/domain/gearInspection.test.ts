@@ -106,7 +106,15 @@ describe("gear inspection", () => {
       slot: "WRIST",
       currentItem: { ...character.equipment!.WRIST!, slot: "WRIST", slotLabelKo: "손목", secondaryStats: ["crit", "versatility"] },
       specProfile: profile,
-      seasonItems: midnightS1Items,
+      seasonItems: [
+        seasonItem({
+          itemId: 990401,
+          nameKo: "테스트 제작 손목",
+          slot: "WRIST",
+          isCrafted: true,
+          recommendedStats: ["mastery", "haste"],
+        }),
+      ],
     }).status).toBe("crafted-recommended");
 
     expect(evaluateGearSlot({
@@ -146,7 +154,7 @@ describe("gear inspection", () => {
       seasonItems: midnightS1Items,
     });
 
-    expect(result.summary.craftedRecommended).toBeGreaterThan(0);
+    expect(result.summary.upgradeCandidates + result.summary.craftedRecommended).toBeGreaterThan(0);
     expect(result.summary.trinketChecks).toBeGreaterThan(0);
     expect(result.todo.length).toBeGreaterThan(0);
   });

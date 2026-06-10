@@ -99,6 +99,7 @@ const slots = [
 ];
 const sourceTypes = ["dungeon", "raid", "craft", "delve", "catalyst", "vendor"];
 const classes = ["rogue", "demon-hunter"];
+const MIN_DUNGEON_ITEMS_FOR_PROGRESS = 5;
 
 console.log("Gear DB audit report");
 console.log("====================");
@@ -134,6 +135,10 @@ classes.forEach((classKey) => {
 const missingSlots = slots.filter((slot) => !items.some((item) => item.slot === slot));
 const missingSources = sourceTypes.filter((sourceType) => !items.some((item) => item.sourceType === sourceType));
 const dungeonsWithoutLoot = dungeonKeys.filter((key) => !items.some((item) => item.sourceDungeonKey === key));
+const sparseDungeons = dungeonKeys
+  .map((key) => ({ key, count: items.filter((item) => item.sourceDungeonKey === key).length }))
+  .filter((row) => row.count < MIN_DUNGEON_ITEMS_FOR_PROGRESS)
+  .sort((a, b) => a.count - b.count);
 const sharedWithoutUniqueGroup = items.filter((item) => /^(FINGER|TRINKET)_/.test(item.slot) && !item.hasUniqueEquipGroup);
 const raidWithoutVariants = items.filter((item) => item.sourceType === "raid" && !item.hasRaidVariants);
 const dungeonWithoutVariants = items.filter((item) => item.sourceType === "dungeon" && !item.hasMythicPlusVariants);
@@ -142,16 +147,13 @@ console.log("\nDB 빈틈");
 console.log(`  - 미등록 부위: ${missingSlots.length ? missingSlots.join(", ") : "없음"}`);
 console.log(`  - 미등록 출처 타입: ${missingSources.length ? missingSources.join(", ") : "없음"}`);
 console.log(`  - 아이템 없는 시즌 던전: ${dungeonsWithoutLoot.length ? dungeonsWithoutLoot.join(", ") : "없음"}`);
+console.log(`  - ${MIN_DUNGEON_ITEMS_FOR_PROGRESS}개 미만 시즌 던전: ${sparseDungeons.length ? sparseDungeons.map((row) => `${row.key}(${row.count})`).join(", ") : "없음"}`);
 console.log(`  - 고유 장착 그룹 없는 반지/장신구: ${sharedWithoutUniqueGroup.length}`);
 console.log(`  - 레이드 변형 없는 레이드템: ${raidWithoutVariants.length}`);
 console.log(`  - 쐐기 변형 없는 던전템: ${dungeonWithoutVariants.length}`);
 
 const nextFocus = [];
 if (missingSlots.length) nextFocus.push(`부위 미등록: ${missingSlots.join(", ")}`);
-const sparseDungeons = dungeonKeys
-  .map((key) => ({ key, count: items.filter((item) => item.sourceDungeonKey === key).length }))
-  .filter((row) => row.count < 3)
-  .sort((a, b) => a.count - b.count);
 if (sparseDungeons.length) nextFocus.push(`던전 보강 우선: ${sparseDungeons.map((row) => `${row.key}(${row.count})`).join(", ")}`);
 const unverifiedNames = items.filter((item) => !item.nameKoVerified).length;
 if (unverifiedNames) nextFocus.push(`한국어 공식명 미검증: ${unverifiedNames}개`);
