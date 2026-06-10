@@ -184,7 +184,11 @@ requiredSlotFamilies.forEach((family) => {
 });
 if (!midnightSourceTypes.has("dungeon")) failures.push("Midnight S1 DB must include dungeon items.");
 if (!midnightSourceTypes.has("raid")) failures.push("Midnight S1 DB must include raid items.");
-if (midnightBlocks.length < 25) failures.push(`Midnight S1 DB is too sparse: expected at least 25 items, found ${midnightBlocks.length}.`);
+if (midnightBlocks.length < 30) failures.push(`Midnight S1 DB is too sparse: expected at least 30 items, found ${midnightBlocks.length}.`);
+const tierSetClassKeys = new Set(tierSetBlocks.map((block) => fieldValue(block, "classKey")).filter(Boolean));
+["rogue", "demon-hunter"].forEach((classKey) => {
+  if (!tierSetClassKeys.has(classKey)) failures.push(`tierSetRecords must include ${classKey} coverage.`);
+});
 tierSetBlocks.forEach((block, index) => {
   const label = `tier set #${index + 1}`;
   if (!/setBonusKey:\s*"[^"]+"/.test(block)) failures.push(`${label} must include setBonusKey.`);

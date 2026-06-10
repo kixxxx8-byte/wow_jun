@@ -252,6 +252,29 @@ describe("gear inspection", () => {
     expect(tierItems.every((item) => item.variants?.some((variant) => variant.source === "raid_heroic"))).toBe(true);
     expect(tierItems.every((item) => item.recommendationState === "needs_check")).toBe(true);
   });
+
+  it("links Devourer Demon Hunter tier set records to raid item candidates", () => {
+    const devourerSet = tierSetRecords.find((set) => set.setBonusKey === "devouring-reavers-sheathe");
+    const tierItems = midnightS1Items.filter((item) => item.setBonusKey === "devouring-reavers-sheathe");
+
+    expect(devourerSet?.classKey).toBe("demon-hunter");
+    expect(devourerSet?.itemIds).toHaveLength(5);
+    expect(devourerSet?.bonusesKo).toContainEqual(expect.objectContaining({
+      pieces: 2,
+      specKey: "demon-hunter-devourer",
+    }));
+    expect(devourerSet?.bonusesKo).toContainEqual(expect.objectContaining({
+      pieces: 4,
+      specKey: "demon-hunter-devourer",
+    }));
+    expect(tierItems.map((item) => item.itemId).sort()).toEqual([250031, 250032, 250033, 250034, 250036].sort());
+    expect(tierItems.every((item) => item.isTierPiece)).toBe(true);
+    expect(tierItems.every((item) => item.allowedClasses?.includes("demon-hunter"))).toBe(true);
+    expect(tierItems.every((item) => item.allowedSpecs?.includes("demon-hunter-devourer"))).toBe(true);
+    expect(tierItems.every((item) => item.sourceType === "raid")).toBe(true);
+    expect(tierItems.every((item) => item.variants?.some((variant) => variant.source === "raid_heroic"))).toBe(true);
+    expect(tierItems.every((item) => item.recommendationState === "needs_check")).toBe(true);
+  });
 });
 
 describe("outlaw combat simulator", () => {
