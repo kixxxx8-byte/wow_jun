@@ -133,7 +133,7 @@ describe("gear inspection", () => {
       slot: "NECK",
       currentItem: { id: 1005, name: "현재 목걸이", level: 260, slot: "NECK", slotLabelKo: "목", secondaryStats: [] },
       specProfile: profile,
-      seasonItems: midnightS1Items,
+      seasonItems: [],
     });
     expect(missing.status).toBe("db-missing");
     expect(missing.summary).toContain("BIS라는 의미는 아닙니다");
@@ -200,12 +200,16 @@ describe("gear inspection", () => {
 
   it("tracks Midnight S1 item variants without promoting unverified Korean names", () => {
     const dungeonOrRaidItems = midnightS1Items.filter((item) => item.sourceType === "dungeon" || item.sourceType === "raid");
-    expect(midnightS1Items.length).toBeGreaterThan(8);
+    const coveredSlots = new Set(midnightS1Items.map((item) => item.slot));
+    expect(midnightS1Items.length).toBeGreaterThanOrEqual(25);
     expect(dungeonOrRaidItems.length).toBeGreaterThan(5);
     expect(dungeonOrRaidItems.every((item) => item.sourceRefs?.length)).toBe(true);
     expect(dungeonOrRaidItems.every((item) => item.variants?.length)).toBe(true);
     expect(midnightS1Items.filter((item) => !item.nameKoVerified).every((item) => item.recommendationState !== "recommended")).toBe(true);
     expect(midnightS1Items.find((item) => item.itemId === 250256)?.trinketTier?.needsSim).toBe(true);
+    expect(["HEAD", "NECK", "SHOULDER", "BACK", "CHEST", "WRIST", "HANDS", "WAIST", "LEGS", "FEET", "MAIN_HAND", "OFF_HAND"].every((slot) => coveredSlots.has(slot as SeasonItem["slot"]))).toBe(true);
+    expect(coveredSlots.has("FINGER_1") || coveredSlots.has("FINGER_2")).toBe(true);
+    expect(coveredSlots.has("TRINKET_1") || coveredSlots.has("TRINKET_2")).toBe(true);
   });
 
   it("represents the +10 Mythic+ vault variant distinctly from end-of-dungeon loot", () => {

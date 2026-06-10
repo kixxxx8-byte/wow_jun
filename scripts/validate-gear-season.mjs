@@ -67,6 +67,7 @@ if (!localization.includes('DEFAULT_REGION = "kr"') || !localization.includes('D
 const itemIds = Array.from(`${dungeonLoot}\n${craftedGear}\n${raidLoot}`.matchAll(/itemId:\s*(\d+)/g)).map((match) => match[1]);
 const duplicates = itemIds.filter((id, index) => itemIds.indexOf(id) !== index);
 if (duplicates.length) failures.push(`Duplicate itemId values found: ${Array.from(new Set(duplicates)).join(", ")}`);
+const seasonDungeonKeys = new Set(Array.from(season.matchAll(/key:\s*"([^"]+)"/g)).map((match) => match[1]));
 
 const dungeonBlocks = dungeonLoot.split(/itemId:/).slice(1);
 dungeonBlocks.forEach((block, index) => {
@@ -90,14 +91,21 @@ if (/"Wowhead BIS"|Upgrade Candidate|Best in Slot|DPS 수치/.test(`${dungeonLoo
 
 const midnightBlocks = extractArrayItemBlocks(midnightItems, "midnightS1Items");
 if (!midnightBlocks.length) failures.push("midnightS1Items must contain at least one item block.");
+const midnightItemIds = [];
+const midnightSlots = new Set();
+const midnightSourceTypes = new Set();
 midnightBlocks.forEach((block, index) => {
   const label = `midnight S1 item #${index + 1}`;
   const idMatch = block.match(/itemId:\s*(\d+)/);
   const itemId = idMatch?.[1];
+  const slot = fieldValue(block, "slot");
   const sourceType = fieldValue(block, "sourceType");
   const recommendationState = fieldValue(block, "recommendationState");
   const nameKoVerified = boolFieldValue(block, "nameKoVerified");
   if (!itemId || itemId === "0") failures.push(`${label} must not use placeholder itemId 0.`);
+  if (itemId) midnightItemIds.push(itemId);
+  if (slot) midnightSlots.add(slot);
+  if (sourceType) midnightSourceTypes.add(sourceType);
   if (!/nameKo:\s*"[^"]+"/.test(block)) failures.push(`${label} must include nameKo.`);
   if (!/nameKoVerified:\s*(true|false)/.test(block)) failures.push(`${label} must include nameKoVerified.`);
   if (!/slot:\s*"[A-Z0-9_]+"/.test(block)) failures.push(`${label} must include a slot.`);
@@ -109,7 +117,9 @@ midnightBlocks.forEach((block, index) => {
   if (recommendationState === "recommended" && nameKoVerified !== true) failures.push(`${label} cannot be recommended before Korean name verification.`);
   if ((sourceType === "dungeon" || sourceType === "raid") && !/sourceRefs:\s*\[/.test(block)) failures.push(`${label} ${sourceType} item must include sourceRefs.`);
   if (sourceType === "dungeon") {
-    if (!/sourceDungeonKey:\s*"[a-z0-9_-]+"/.test(block)) failures.push(`${label} dungeon item must include sourceDungeonKey.`);
+    const dungeonKey = fieldValue(block, "sourceDungeonKey");
+    if (!dungeonKey) failures.push(`${label} dungeon item must include sourceDungeonKey.`);
+    if (dungeonKey && !seasonDungeonKeys.has(dungeonKey)) failures.push(`${label} dungeon key ${dungeonKey} is not in currentSeason dungeonPool.`);
     if (!/isSeasonalReward:\s*true/.test(block)) failures.push(`${label} dungeon item must be marked as a seasonal reward.`);
     if (!/variants:\s*mythicPlusVariants\(\d+\)/.test(block)) failures.push(`${label} dungeon item must include mythicPlusVariants.`);
   }
@@ -125,6 +135,31 @@ midnightBlocks.forEach((block, index) => {
     if (!/sources:\s*\[/.test(block)) failures.push(`${label} trinket tier must include sources.`);
   }
 });
+
+const midnightDuplicates = midnightItemIds.filter((id, index) => midnightItemIds.indexOf(id) !== index);
+if (midnightDuplicates.length) failures.push(`Duplicate midnight itemId values found: ${Array.from(new Set(midnightDuplicates)).join(", ")}`);
+const requiredSlotFamilies = [
+  ["HEAD"],
+  ["NECK"],
+  ["SHOULDER"],
+  ["BACK"],
+  ["CHEST"],
+  ["WRIST"],
+  ["HANDS"],
+  ["WAIST"],
+  ["LEGS"],
+  ["FEET"],
+  ["FINGER_1", "FINGER_2"],
+  ["TRINKET_1", "TRINKET_2"],
+  ["MAIN_HAND"],
+  ["OFF_HAND"],
+];
+requiredSlotFamilies.forEach((family) => {
+  if (!family.some((slot) => midnightSlots.has(slot))) failures.push(`Midnight S1 DB lacks slot coverage for ${family.join("/")}.`);
+});
+if (!midnightSourceTypes.has("dungeon")) failures.push("Midnight S1 DB must include dungeon items.");
+if (!midnightSourceTypes.has("raid")) failures.push("Midnight S1 DB must include raid items.");
+if (midnightBlocks.length < 25) failures.push(`Midnight S1 DB is too sparse: expected at least 25 items, found ${midnightBlocks.length}.`);
 
 if (/"예시|Example/.test(midnightItems)) failures.push("Midnight S1 item DB must not expose example placeholder data.");
 if (!/keyLevel:\s*10,\s*endItemLevel:\s*266,\s*endTrack:\s*"hero",\s*endRank:\s*3,\s*vaultItemLevel:\s*272,\s*vaultTrack:\s*"myth",\s*vaultRank:\s*1/.test(midnightItems)) {
