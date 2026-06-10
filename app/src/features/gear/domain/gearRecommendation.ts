@@ -134,9 +134,21 @@ function visibilityStatusForCandidate(candidate: GearCandidate): PriorityUpgrade
   return "recommended";
 }
 
+function isSharedDuplicateSlot(slot: EquipmentSlotKey) {
+  return slot === "FINGER_1" || slot === "FINGER_2" || slot === "TRINKET_1" || slot === "TRINKET_2";
+}
+
+function uniqueEquipKey(candidate: GearCandidate) {
+  if (candidate.uniqueEquipGroup?.trim()) return `group:${candidate.uniqueEquipGroup.trim()}`;
+  if (isSharedDuplicateSlot(candidate.slot)) return `item:${candidate.itemId}`;
+  return undefined;
+}
+
 function buildPriorityUpgrades(input: RecommendGearInput, candidates: GearCandidate[]) {
   const selected = bestBySlot(input, candidates);
-  return Array.from(selected.entries())
+  const rejected: RejectedCandidate[] = [];
+  const usedUniqueEquipKeys = new Map<string, PriorityUpgrade>();
+  const upgrades = Array.from(selected.entries())
     .filter(([slot]) => Boolean(equipmentItemForSlot(input.character, slot)))
     .map(([slot, row]): PriorityUpgrade => {
       const currentItem = equipmentItemForSlot(input.character, slot);
@@ -158,6 +170,24 @@ function buildPriorityUpgrades(input: RecommendGearInput, candidates: GearCandid
     })
     .filter((row) => row.recommendationScore > 0)
     .sort((a, b) => b.recommendationScore - a.recommendationScore);
+
+  const deduped = upgrades.filter((upgrade) => {
+    const key = uniqueEquipKey(upgrade.recommendedItem);
+    if (!key) return true;
+    const existing = usedUniqueEquipKeys.get(key);
+    if (!existing) {
+      usedUniqueEquipKeys.set(key, upgrade);
+      return true;
+    }
+    rejected.push(baseReject(
+      upgrade.recommendedItem,
+      "duplicate_unique_equip",
+      `${existing.slotLabelKo}에 같은 고유 장착 후보가 이미 선택되어 ${upgrade.slotLabelKo} 추천에서 제외합니다.`
+    ));
+    return false;
+  });
+
+  return { upgrades: deduped, rejected };
 }
 
 function buildFarmingRoutes(upgrades: PriorityUpgrade[]): FarmingRoute[] {
@@ -252,7 +282,8 @@ function buildScores(character: Character, upgrades: PriorityUpgrade[]) {
 export function recommendGear(input: RecommendGearInput): GearRecommendationResult {
   const profile = gearProfile(input.mode);
   const { visible, rejected } = visibleCandidates(input);
-  const priorityUpgrades = buildPriorityUpgrades(input, visible);
+  const { upgrades: priorityUpgrades, rejected: duplicateRejected } = buildPriorityUpgrades(input, visible);
+  const rejectedCandidates = [...rejected, ...duplicateRejected];
   const farmingRoutes = buildFarmingRoutes(priorityUpgrades);
   const guaranteedUpgrades = priorityUpgrades.filter((row) => row.recommendedItem.acquisition?.certainty === "guaranteed");
   const rngFarmingTargets = priorityUpgrades.filter((row) => row.recommendedItem.acquisition?.certainty !== "guaranteed");
@@ -283,7 +314,7 @@ export function recommendGear(input: RecommendGearInput): GearRecommendationResu
     priorityUpgrades,
     farmingRoutes,
     slotDetails,
-    rejectedCandidates: rejected,
+    rejectedCandidates,
     warnings,
   };
 }

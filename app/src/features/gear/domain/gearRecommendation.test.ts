@@ -105,6 +105,105 @@ describe("v9 gear recommendation domain", () => {
     }));
   });
 
+  it("does not recommend the same unique ring or trinket into both shared slots", () => {
+    const sharedRingCandidate: GearCandidate = {
+      ...baseDungeonCandidate,
+      itemId: 990001,
+      nameKo: "고유 반지 후보",
+      slot: "FINGER_1",
+      sourceType: "craft",
+      sourceNameKo: "보석세공",
+      sourceDungeonKey: undefined,
+      acquisition: { certainty: "guaranteed", timeCost: "medium", weeklyLimited: false, requiresGroup: false },
+      itemLevelMax: 300,
+      confidence: "high",
+    };
+    const sharedTrinketCandidate: GearCandidate = {
+      ...baseDungeonCandidate,
+      itemId: 990002,
+      nameKo: "고유 장신구 후보",
+      slot: "TRINKET_1",
+      sourceType: "dungeon",
+      sourceNameKo: "사론의 구덩이",
+      sourceDungeonKey: "saron",
+      itemLevelMax: 300,
+      confidence: "high",
+    };
+    const result = recommendGear({
+      character: {
+        ...defaultCharacter,
+        equipment: {
+          FINGER_1: { id: 100001, name: "현재 반지 1", level: 250 },
+          FINGER_2: { id: 100002, name: "현재 반지 2", level: 250 },
+          TRINKET_1: { id: 100003, name: "현재 장신구 1", level: 250 },
+          TRINKET_2: { id: 100004, name: "현재 장신구 2", level: 250 },
+        },
+      },
+      mode: "all_sources",
+      season: currentSeason,
+      candidates: [
+        sharedRingCandidate,
+        { ...sharedRingCandidate, slot: "FINGER_2" },
+        sharedTrinketCandidate,
+        { ...sharedTrinketCandidate, slot: "TRINKET_2" },
+      ],
+    });
+
+    expect(result.priorityUpgrades.filter((row) => row.recommendedItem.itemId === 990001)).toHaveLength(1);
+    expect(result.priorityUpgrades.filter((row) => row.recommendedItem.itemId === 990002)).toHaveLength(1);
+    expect(result.targetBestSet.items.filter((item) => item.itemId === 990001)).toHaveLength(1);
+    expect(result.targetBestSet.items.filter((item) => item.itemId === 990002)).toHaveLength(1);
+    expect(result.rejectedCandidates.filter((row) => row.reason === "duplicate_unique_equip")).toHaveLength(2);
+  });
+
+  it("deduplicates candidates that share an explicit unique equip group", () => {
+    const result = recommendGear({
+      character: {
+        ...defaultCharacter,
+        equipment: {
+          FINGER_1: { id: 100001, name: "현재 반지 1", level: 250 },
+          FINGER_2: { id: 100002, name: "현재 반지 2", level: 250 },
+        },
+      },
+      mode: "all_sources",
+      season: currentSeason,
+      candidates: [
+        {
+          ...baseDungeonCandidate,
+          itemId: 990011,
+          nameKo: "고유 그룹 반지 1",
+          slot: "FINGER_1",
+          sourceType: "craft",
+          sourceNameKo: "보석세공",
+          sourceDungeonKey: undefined,
+          acquisition: { certainty: "guaranteed", timeCost: "medium", weeklyLimited: false, requiresGroup: false },
+          itemLevelMax: 300,
+          uniqueEquipGroup: "unique-ring-family",
+          confidence: "high",
+        },
+        {
+          ...baseDungeonCandidate,
+          itemId: 990012,
+          nameKo: "고유 그룹 반지 2",
+          slot: "FINGER_2",
+          sourceType: "craft",
+          sourceNameKo: "보석세공",
+          sourceDungeonKey: undefined,
+          acquisition: { certainty: "guaranteed", timeCost: "medium", weeklyLimited: false, requiresGroup: false },
+          itemLevelMax: 300,
+          uniqueEquipGroup: "unique-ring-family",
+          confidence: "high",
+        },
+      ],
+    });
+
+    expect(result.priorityUpgrades).toHaveLength(1);
+    expect(result.rejectedCandidates).toContainEqual(expect.objectContaining({
+      itemId: 990012,
+      reason: "duplicate_unique_equip",
+    }));
+  });
+
   it("rejects candidates that are not a higher verified variant than current gear", () => {
     const result = recommendGear({
       character: {
