@@ -27,6 +27,7 @@ export const raidLootCandidates: GearCandidate[] = [
       confidence: "medium",
       notesKo: "레이드 장신구는 모드에 따라 비교용으로만 표시됩니다.",
     },
+    uniqueEquipGroup: "trinket-249343",
     dataSource: "manual",
     confidence: "medium",
     verifiedAt: "2026-05-20",

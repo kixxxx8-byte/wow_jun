@@ -81,6 +81,19 @@ dungeonBlocks.forEach((block, index) => {
   if (!/nameKo:\s*"[^"]+"/.test(block)) warnings.push(`${label} has no Korean item name.`);
 });
 
+function validateSharedSlotUniqueGroups(blocks, labelPrefix) {
+  blocks.forEach((block, index) => {
+    const label = `${labelPrefix} #${index + 1}`;
+    if (/slot:\s*"(FINGER_[12]|TRINKET_[12])"/.test(block) && !/uniqueEquipGroup:\s*"[^"]+"/.test(block)) {
+      failures.push(`${label} shared ring/trinket candidate must include uniqueEquipGroup.`);
+    }
+  });
+}
+
+validateSharedSlotUniqueGroups(extractArrayItemBlocks(dungeonLoot, "currentDungeonLootCandidates"), "current dungeon candidate");
+validateSharedSlotUniqueGroups(extractArrayItemBlocks(craftedGear, "crafted gear candidate"), "crafted gear candidate");
+validateSharedSlotUniqueGroups(extractArrayItemBlocks(raidLoot, "raid candidate"), "raid candidate");
+
 if (/sourceType:\s*"raid"/.test(craftedGear) || /sourceType:\s*"raid"/.test(dungeonLoot.replace(/confidence:\s*"low"/g, ""))) {
   failures.push("Raid candidates must not be present in default dungeon/craft data.");
 }
@@ -130,11 +143,15 @@ midnightBlocks.forEach((block, index) => {
     if (!/variants:\s*raidVariants\(\d+\)/.test(block)) failures.push(`${label} raid item must include raidVariants.`);
   }
   if (/slot:\s*"TRINKET_[12]"/.test(block)) {
+    if (!/uniqueEquipGroup:\s*"[^"]+"/.test(block)) failures.push(`${label} shared trinket slot must include uniqueEquipGroup.`);
     if (!/trinketTier:\s*[^,\n]+/.test(block)) failures.push(`${label} trinket must include trinketTier.`);
     if (!/tier:\s*"(S|A|B|C|주의)"/.test(block)) failures.push(`${label} trinket tier must include tier.`);
     if (!/contentFocus:\s*"(mythic_plus|raid|balanced)"/.test(block)) failures.push(`${label} trinket tier must include contentFocus.`);
     if (!/needsSim:\s*(true|false)/.test(block)) failures.push(`${label} trinket tier must include needsSim.`);
     if (!/sources:\s*\[/.test(block)) failures.push(`${label} trinket tier must include sources.`);
+  }
+  if (/slot:\s*"FINGER_[12]"/.test(block) && !/uniqueEquipGroup:\s*"[^"]+"/.test(block)) {
+    failures.push(`${label} shared ring slot must include uniqueEquipGroup.`);
   }
   if (/isTierPiece:\s*true/.test(block)) {
     if (!/setBonusKey:\s*"[^"]+"/.test(block)) failures.push(`${label} tier piece must include setBonusKey.`);

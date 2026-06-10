@@ -293,6 +293,7 @@ export const midnightS1Items: SeasonItem[] = [
     wowheadUrl: "https://www.wowhead.com/item=249343",
     sourceRefs: [wowheadItemRef(249343)],
     variants: raidVariants(249343),
+    uniqueEquipGroup: "trinket-249343",
     season: "midnight-s1",
     confidence: "medium",
     recommendationState: "needs_check",

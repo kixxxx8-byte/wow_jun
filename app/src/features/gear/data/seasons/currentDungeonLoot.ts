@@ -30,6 +30,7 @@ export const currentDungeonLootCandidates: GearCandidate[] = [
       confidence: "low",
       notesKo: "장신구는 실제 성능 차이가 클 수 있어 SimC/Raidbots 확인이 필요합니다.",
     },
+    uniqueEquipGroup: "trinket-193701",
     dataSource: "manual",
     confidence: "low",
     verifiedAt: "2026-05-20",
