@@ -132,19 +132,38 @@ function sameSlot(candidateSlot: EquipmentSlotKey, slot: EquipmentSlotKey) {
   return false;
 }
 
+function isSharedDuplicateSlot(slot: EquipmentSlotKey) {
+  return slot === "FINGER_1" || slot === "FINGER_2" || slot === "TRINKET_1" || slot === "TRINKET_2";
+}
+
+function uniqueEquipKey(item: SeasonItem) {
+  if (item.uniqueEquipGroup?.trim()) return `group:${item.uniqueEquipGroup.trim()}`;
+  if (isSharedDuplicateSlot(item.slot)) return `item:${item.itemId}`;
+  return undefined;
+}
+
+function equippedItemIds(character: Character) {
+  return new Set(Object.values(character.equipment || {}).map((item) => numericItemId(item?.id)).filter(Boolean));
+}
+
 export function getGearCandidatesForSlot(params: {
   slot: EquipmentSlotKey;
   specProfile: SpecProfile;
   currentItem?: NormalizedGearItem;
   seasonItems: SeasonItem[];
+  equippedItemIds?: Set<number>;
+  excludedUniqueEquipKeys?: Set<string>;
 }) {
-  const { slot, specProfile, currentItem, seasonItems } = params;
+  const { slot, specProfile, currentItem, seasonItems, excludedUniqueEquipKeys } = params;
   const equippedId = numericItemId(currentItem?.id);
   const classKey = specProfile.classNameKo === "도적" ? "rogue" : specProfile.classNameKo === "악마사냥꾼" ? "demon-hunter" : "";
   return seasonItems.filter((item) => {
     if (item.confidence === "low") return false;
     if (item.recommendationState === "hidden" || item.recommendationState === "rejected") return false;
     if (equippedId && item.itemId === equippedId) return false;
+    if (params.equippedItemIds?.has(item.itemId)) return false;
+    const key = uniqueEquipKey(item);
+    if (key && excludedUniqueEquipKeys?.has(key)) return false;
     if (!sameSlot(item.slot, slot)) return false;
     if (item.allowedSpecs && !item.allowedSpecs.includes(specProfile.specKey)) return false;
     if (item.allowedClasses?.length && !item.allowedClasses.includes(classKey as "rogue" | "demon-hunter")) return false;
@@ -225,9 +244,11 @@ export function evaluateGearSlot(params: {
   currentItem?: NormalizedGearItem;
   specProfile: SpecProfile;
   seasonItems: SeasonItem[];
+  equippedItemIds?: Set<number>;
+  excludedUniqueEquipKeys?: Set<string>;
 }): GearSlotEvaluation {
-  const { slot, currentItem, specProfile, seasonItems } = params;
-  const candidates = getGearCandidatesForSlot({ slot, currentItem, specProfile, seasonItems })
+  const { slot, currentItem, specProfile, seasonItems, equippedItemIds: allEquippedItemIds, excludedUniqueEquipKeys } = params;
+  const candidates = getGearCandidatesForSlot({ slot, currentItem, specProfile, seasonItems, equippedItemIds: allEquippedItemIds, excludedUniqueEquipKeys })
     .map((item) => ({ item, ...scoreGearItemForSpec(item, specProfile) }))
     .sort((a, b) => b.score - a.score);
   const topCandidate = candidates[0];
@@ -356,12 +377,23 @@ export function evaluateCharacterGear(params: {
   seasonItems: SeasonItem[];
 }) {
   const { character, specProfile, seasonItems } = params;
-  const evaluations = inspectionSlotOrder.map((slot) => evaluateGearSlot({
-    slot,
-    currentItem: currentSlotItem(character, slot),
-    specProfile,
-    seasonItems,
-  }));
+  const allEquippedItemIds = equippedItemIds(character);
+  const usedUniqueEquipKeys = new Set<string>();
+  const evaluations = inspectionSlotOrder.map((slot) => {
+    const evaluation = evaluateGearSlot({
+      slot,
+      currentItem: currentSlotItem(character, slot),
+      specProfile,
+      seasonItems,
+      equippedItemIds: allEquippedItemIds,
+      excludedUniqueEquipKeys: usedUniqueEquipKeys,
+    });
+    const key = evaluation.topCandidate ? uniqueEquipKey(evaluation.topCandidate.item) : undefined;
+    if (key && ["weapon-priority", "trinket-check", "crafted-recommended", "tier-check", "upgrade-candidate", "keep"].includes(evaluation.status)) {
+      usedUniqueEquipKeys.add(key);
+    }
+    return evaluation;
+  });
 
   const summary = {
     upgradeCandidates: evaluations.filter((row) => row.status === "upgrade-candidate" || row.status === "weapon-priority").length,

@@ -21,6 +21,43 @@ const localization = read(files.localization);
 const failures = [];
 const warnings = [];
 
+function extractArrayItemBlocks(source, exportName) {
+  const marker = `export const ${exportName}`;
+  const markerIndex = source.indexOf(marker);
+  if (markerIndex < 0) return [];
+  const assignmentIndex = source.indexOf("=", markerIndex);
+  const arrayStart = assignmentIndex >= 0 ? source.indexOf("[", assignmentIndex) : -1;
+  if (arrayStart < 0) return [];
+  const blocks = [];
+  let depth = 0;
+  let objectStart = -1;
+  for (let i = arrayStart; i < source.length; i += 1) {
+    const char = source[i];
+    if (char === "{") {
+      depth += 1;
+      if (depth === 1) objectStart = i;
+    } else if (char === "}") {
+      if (depth === 1 && objectStart >= 0) {
+        blocks.push(source.slice(objectStart, i + 1));
+        objectStart = -1;
+      }
+      depth -= 1;
+    } else if (char === "]" && depth === 0) {
+      break;
+    }
+  }
+  return blocks;
+}
+
+function fieldValue(block, field) {
+  return block.match(new RegExp(`${field}:\\s*"([^"]+)"`))?.[1];
+}
+
+function boolFieldValue(block, field) {
+  const value = block.match(new RegExp(`${field}:\\s*(true|false)`))?.[1];
+  return value ? value === "true" : undefined;
+}
+
 if (!season.includes('labelKo: "현재 시즌"')) failures.push("currentSeason must expose a Korean current season label.");
 if (!season.includes("dungeonPool")) failures.push("currentSeason must define a dungeonPool.");
 if (!localization.includes('DEFAULT_REGION = "kr"') || !localization.includes('DEFAULT_LOCALE = "ko_KR"')) {
@@ -51,19 +88,35 @@ if (/"Wowhead BIS"|Upgrade Candidate|Best in Slot|DPS 수치/.test(`${dungeonLoo
   failures.push("User-facing gear data contains banned wording.");
 }
 
-const midnightData = midnightItems.split("export const midnightS1Items")[1] || "";
-const midnightBlocks = midnightData.split(/itemId:/).slice(1);
+const midnightBlocks = extractArrayItemBlocks(midnightItems, "midnightS1Items");
+if (!midnightBlocks.length) failures.push("midnightS1Items must contain at least one item block.");
 midnightBlocks.forEach((block, index) => {
   const label = `midnight S1 item #${index + 1}`;
-  const idMatch = block.match(/^\s*(\d+)/);
-  if (!idMatch || idMatch[1] === "0") failures.push(`${label} must not use placeholder itemId 0.`);
+  const idMatch = block.match(/itemId:\s*(\d+)/);
+  const itemId = idMatch?.[1];
+  const sourceType = fieldValue(block, "sourceType");
+  const recommendationState = fieldValue(block, "recommendationState");
+  const nameKoVerified = boolFieldValue(block, "nameKoVerified");
+  if (!itemId || itemId === "0") failures.push(`${label} must not use placeholder itemId 0.`);
   if (!/nameKo:\s*"[^"]+"/.test(block)) failures.push(`${label} must include nameKo.`);
+  if (!/nameKoVerified:\s*(true|false)/.test(block)) failures.push(`${label} must include nameKoVerified.`);
   if (!/slot:\s*"[A-Z0-9_]+"/.test(block)) failures.push(`${label} must include a slot.`);
   if (!/sourceType:\s*"(dungeon|raid|craft|delve|catalyst|vendor|unknown)"/.test(block)) failures.push(`${label} must include a valid sourceType.`);
   if (!/sourceNameKo:\s*"[^"]+"/.test(block)) failures.push(`${label} must include sourceNameKo.`);
   if (!/season:\s*"midnight-s1"/.test(block)) failures.push(`${label} must be tagged as midnight-s1.`);
   if (!/confidence:\s*"(high|medium|low)"/.test(block)) failures.push(`${label} must include confidence.`);
   if (!/recommendationState:\s*"(recommended|needs_check|hidden|rejected|db_missing)"/.test(block)) failures.push(`${label} must include recommendationState.`);
+  if (recommendationState === "recommended" && nameKoVerified !== true) failures.push(`${label} cannot be recommended before Korean name verification.`);
+  if ((sourceType === "dungeon" || sourceType === "raid") && !/sourceRefs:\s*\[/.test(block)) failures.push(`${label} ${sourceType} item must include sourceRefs.`);
+  if (sourceType === "dungeon") {
+    if (!/sourceDungeonKey:\s*"[a-z0-9_-]+"/.test(block)) failures.push(`${label} dungeon item must include sourceDungeonKey.`);
+    if (!/isSeasonalReward:\s*true/.test(block)) failures.push(`${label} dungeon item must be marked as a seasonal reward.`);
+    if (!/variants:\s*mythicPlusVariants\(\d+\)/.test(block)) failures.push(`${label} dungeon item must include mythicPlusVariants.`);
+  }
+  if (sourceType === "raid") {
+    if (!/sourceRaidKey:\s*"[a-z0-9_-]+"/.test(block)) failures.push(`${label} raid item must include sourceRaidKey.`);
+    if (!/variants:\s*raidVariants\(\d+\)/.test(block)) failures.push(`${label} raid item must include raidVariants.`);
+  }
   if (/slot:\s*"TRINKET_[12]"/.test(block)) {
     if (!/trinketTier:\s*[^,\n]+/.test(block)) failures.push(`${label} trinket must include trinketTier.`);
     if (!/tier:\s*"(S|A|B|C|주의)"/.test(block)) failures.push(`${label} trinket tier must include tier.`);
@@ -74,6 +127,12 @@ midnightBlocks.forEach((block, index) => {
 });
 
 if (/"예시|Example/.test(midnightItems)) failures.push("Midnight S1 item DB must not expose example placeholder data.");
+if (!/keyLevel:\s*10,\s*endItemLevel:\s*266,\s*endTrack:\s*"hero",\s*endRank:\s*3,\s*vaultItemLevel:\s*272,\s*vaultTrack:\s*"myth",\s*vaultRank:\s*1/.test(midnightItems)) {
+  failures.push("Midnight S1 Mythic+ variant table must include +10 end/vault Hero/Myth values.");
+}
+if (!/variantId:/.test(midnightItems) || !/itemLevel:/.test(midnightItems) || !/track:/.test(midnightItems) || !/rank:/.test(midnightItems) || !/maxRank:/.test(midnightItems) || !/sourceRef:/.test(midnightItems)) {
+  failures.push("Season item variants must define variantId, itemLevel, track, rank, maxRank, and sourceRef.");
+}
 
 warnings.forEach((warning) => console.warn(`Warning: ${warning}`));
 if (failures.length) {
@@ -81,4 +140,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`Gear season validation passed (${itemIds.length} candidates checked).`);
+console.log(`Gear season validation passed (${itemIds.length} legacy candidates, ${midnightBlocks.length} midnight DB items checked).`);

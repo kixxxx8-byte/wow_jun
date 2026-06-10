@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Character } from "../../../types";
-import { midnightS1Items } from "../data/midnightS1Items";
+import { midnightS1Items, midnightS1MythicPlusItemLevelTable, type SeasonItem } from "../data/midnightS1Items";
 import { evaluateCharacterGear, evaluateGearSlot, getGearCandidatesForSlot } from "./gearInspection";
 import { advanceOutlawTime, applyOutlawAction, createOutlawScenarioState, getOutlawActionAvailability, getOutlawKeybindByCode, getOutlawRecommendation, getOutlawSessionResult, scoreOutlawAction } from "./outlawCombatSim";
 import type { OutlawCombatRunOptions, OutlawCombatState } from "./outlawCombatSim";
@@ -19,6 +19,21 @@ const character: Character = {
     HEAD: { id: 1004, name: "현재 머리", level: 260 },
   },
 };
+
+const seasonItem = (overrides: Partial<SeasonItem>): SeasonItem => ({
+  itemId: 990000,
+  nameKo: "테스트 후보",
+  nameKoVerified: true,
+  slot: "FINGER_1",
+  allowedClasses: ["rogue"],
+  sourceType: "craft",
+  sourceNameKo: "테스트 제작",
+  isCrafted: true,
+  season: "midnight-s1",
+  confidence: "high",
+  recommendationState: "needs_check",
+  ...overrides,
+});
 
 function advanceOutlawMany(state: OutlawCombatState, seconds: number, options?: OutlawCombatRunOptions) {
   return Array.from({ length: seconds }).reduce<OutlawCombatState>((nextState) => advanceOutlawTime(nextState, 1, options), state);
@@ -115,8 +130,8 @@ describe("gear inspection", () => {
     }).status).toBe("weapon-priority");
 
     const missing = evaluateGearSlot({
-      slot: "HEAD",
-      currentItem: { ...character.equipment!.HEAD!, slot: "HEAD", slotLabelKo: "머리", secondaryStats: [] },
+      slot: "NECK",
+      currentItem: { id: 1005, name: "현재 목걸이", level: 260, slot: "NECK", slotLabelKo: "목", secondaryStats: [] },
       specProfile: profile,
       seasonItems: midnightS1Items,
     });
@@ -134,6 +149,91 @@ describe("gear inspection", () => {
     expect(result.summary.craftedRecommended).toBeGreaterThan(0);
     expect(result.summary.trinketChecks).toBeGreaterThan(0);
     expect(result.todo.length).toBeGreaterThan(0);
+  });
+
+  it("does not show an already equipped shared-slot item as a candidate for the other slot", () => {
+    const result = evaluateCharacterGear({
+      character: {
+        ...character,
+        equipment: {
+          FINGER_1: { id: 990101, name: "이미 낀 반지", level: 270 },
+          FINGER_2: { id: 100002, name: "다른 반지", level: 260 },
+        },
+      },
+      specProfile: specProfiles["rogue-assassination"],
+      seasonItems: [
+        seasonItem({ itemId: 990101, nameKo: "이미 낀 반지", slot: "FINGER_2" }),
+        seasonItem({ itemId: 990102, nameKo: "새 반지 후보", slot: "FINGER_2" }),
+      ],
+    });
+
+    const candidateIds = result.evaluations.flatMap((row) => row.candidates.map((candidate) => candidate.item.itemId));
+    const topCandidateIds = result.evaluations.map((row) => row.topCandidate?.item.itemId);
+    expect(candidateIds).not.toContain(990101);
+    expect(topCandidateIds).toContain(990102);
+  });
+
+  it("does not reuse the same ring or trinket candidate across both shared slots", () => {
+    const result = evaluateCharacterGear({
+      character: {
+        ...character,
+        equipment: {
+          FINGER_1: { id: 100001, name: "현재 반지 1", level: 250 },
+          FINGER_2: { id: 100002, name: "현재 반지 2", level: 250 },
+          TRINKET_1: { id: 100003, name: "현재 장신구 1", level: 250 },
+          TRINKET_2: { id: 100004, name: "현재 장신구 2", level: 250 },
+        },
+      },
+      specProfile: specProfiles["rogue-assassination"],
+      seasonItems: [
+        seasonItem({ itemId: 990201, nameKo: "고유 반지 후보", slot: "FINGER_1" }),
+        seasonItem({ itemId: 990201, nameKo: "고유 반지 후보", slot: "FINGER_2" }),
+        seasonItem({ itemId: 990301, nameKo: "고유 장신구 후보", slot: "TRINKET_1", sourceType: "raid", sourceNameKo: "테스트 레이드", isCrafted: false, hasSpecialEffect: true }),
+        seasonItem({ itemId: 990301, nameKo: "고유 장신구 후보", slot: "TRINKET_2", sourceType: "raid", sourceNameKo: "테스트 레이드", isCrafted: false, hasSpecialEffect: true }),
+      ],
+    });
+
+    const topCandidateIds = result.evaluations.map((row) => row.topCandidate?.item.itemId);
+    expect(topCandidateIds.filter((id) => id === 990201)).toHaveLength(1);
+    expect(topCandidateIds.filter((id) => id === 990301)).toHaveLength(1);
+  });
+
+  it("tracks Midnight S1 item variants without promoting unverified Korean names", () => {
+    const dungeonOrRaidItems = midnightS1Items.filter((item) => item.sourceType === "dungeon" || item.sourceType === "raid");
+    expect(midnightS1Items.length).toBeGreaterThan(8);
+    expect(dungeonOrRaidItems.length).toBeGreaterThan(5);
+    expect(dungeonOrRaidItems.every((item) => item.sourceRefs?.length)).toBe(true);
+    expect(dungeonOrRaidItems.every((item) => item.variants?.length)).toBe(true);
+    expect(midnightS1Items.filter((item) => !item.nameKoVerified).every((item) => item.recommendationState !== "recommended")).toBe(true);
+    expect(midnightS1Items.find((item) => item.itemId === 250256)?.trinketTier?.needsSim).toBe(true);
+  });
+
+  it("represents the +10 Mythic+ vault variant distinctly from end-of-dungeon loot", () => {
+    const key10 = midnightS1MythicPlusItemLevelTable.find((row) => row.keyLevel === 10);
+    const windrunnerTrinket = midnightS1Items.find((item) => item.itemId === 250256);
+
+    expect(key10).toMatchObject({
+      endItemLevel: 266,
+      endTrack: "hero",
+      endRank: 3,
+      vaultItemLevel: 272,
+      vaultTrack: "myth",
+      vaultRank: 1,
+    });
+    expect(windrunnerTrinket?.variants).toContainEqual(expect.objectContaining({
+      variantId: "250256:mplus-10-end",
+      itemLevel: 266,
+      source: "mythic_plus_end",
+      track: "hero",
+      rank: 3,
+    }));
+    expect(windrunnerTrinket?.variants).toContainEqual(expect.objectContaining({
+      variantId: "250256:mplus-10-vault",
+      itemLevel: 272,
+      source: "great_vault",
+      track: "myth",
+      rank: 1,
+    }));
   });
 });
 
