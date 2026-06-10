@@ -90,7 +90,9 @@ if (/"Wowhead BIS"|Upgrade Candidate|Best in Slot|DPS 수치/.test(`${dungeonLoo
 }
 
 const midnightBlocks = extractArrayItemBlocks(midnightItems, "midnightS1Items");
+const tierSetBlocks = extractArrayItemBlocks(midnightItems, "tierSetRecords");
 if (!midnightBlocks.length) failures.push("midnightS1Items must contain at least one item block.");
+if (!tierSetBlocks.length) failures.push("tierSetRecords must contain at least one tier set record.");
 const midnightItemIds = [];
 const midnightSlots = new Set();
 const midnightSourceTypes = new Set();
@@ -134,6 +136,12 @@ midnightBlocks.forEach((block, index) => {
     if (!/needsSim:\s*(true|false)/.test(block)) failures.push(`${label} trinket tier must include needsSim.`);
     if (!/sources:\s*\[/.test(block)) failures.push(`${label} trinket tier must include sources.`);
   }
+  if (/isTierPiece:\s*true/.test(block)) {
+    if (!/setBonusKey:\s*"[^"]+"/.test(block)) failures.push(`${label} tier piece must include setBonusKey.`);
+    if (!/sourceRefs:\s*\[/.test(block)) failures.push(`${label} tier piece must include sourceRefs.`);
+    if (!/variants:\s*raidVariants\(\d+\)/.test(block)) failures.push(`${label} tier piece must include raidVariants.`);
+    if (recommendationState === "recommended") failures.push(`${label} tier piece must not be auto-promoted before set/sim validation.`);
+  }
 });
 
 const midnightDuplicates = midnightItemIds.filter((id, index) => midnightItemIds.indexOf(id) !== index);
@@ -160,6 +168,19 @@ requiredSlotFamilies.forEach((family) => {
 if (!midnightSourceTypes.has("dungeon")) failures.push("Midnight S1 DB must include dungeon items.");
 if (!midnightSourceTypes.has("raid")) failures.push("Midnight S1 DB must include raid items.");
 if (midnightBlocks.length < 25) failures.push(`Midnight S1 DB is too sparse: expected at least 25 items, found ${midnightBlocks.length}.`);
+tierSetBlocks.forEach((block, index) => {
+  const label = `tier set #${index + 1}`;
+  if (!/setBonusKey:\s*"[^"]+"/.test(block)) failures.push(`${label} must include setBonusKey.`);
+  if (!/classKey:\s*"(rogue|demon-hunter)"/.test(block)) failures.push(`${label} must include classKey.`);
+  if (!/sourceRefs:\s*\[/.test(block)) failures.push(`${label} must include sourceRefs.`);
+  const itemIdSection = block.match(/itemIds:\s*\[([^\]]+)\]/s)?.[1] || "";
+  const tierItemIds = Array.from(itemIdSection.matchAll(/\d+/g)).map((match) => match[0]);
+  if (tierItemIds.length < 5) failures.push(`${label} must include at least 5 tier itemIds.`);
+  tierItemIds.forEach((id) => {
+    if (!midnightItemIds.includes(id)) failures.push(`${label} references itemId ${id}, but it is not present in midnightS1Items.`);
+  });
+  if (!/pieces:\s*2/.test(block) || !/pieces:\s*4/.test(block)) failures.push(`${label} must include 2-piece and 4-piece summaries.`);
+});
 
 if (/"예시|Example/.test(midnightItems)) failures.push("Midnight S1 item DB must not expose example placeholder data.");
 if (!/keyLevel:\s*10,\s*endItemLevel:\s*266,\s*endTrack:\s*"hero",\s*endRank:\s*3,\s*vaultItemLevel:\s*272,\s*vaultTrack:\s*"myth",\s*vaultRank:\s*1/.test(midnightItems)) {

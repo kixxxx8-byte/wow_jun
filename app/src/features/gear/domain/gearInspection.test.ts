@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Character } from "../../../types";
-import { midnightS1Items, midnightS1MythicPlusItemLevelTable, type SeasonItem } from "../data/midnightS1Items";
+import { midnightS1Items, midnightS1MythicPlusItemLevelTable, tierSetRecords, type SeasonItem } from "../data/midnightS1Items";
 import { evaluateCharacterGear, evaluateGearSlot, getGearCandidatesForSlot } from "./gearInspection";
 import { advanceOutlawTime, applyOutlawAction, createOutlawScenarioState, getOutlawActionAvailability, getOutlawKeybindByCode, getOutlawRecommendation, getOutlawSessionResult, scoreOutlawAction } from "./outlawCombatSim";
 import type { OutlawCombatRunOptions, OutlawCombatState } from "./outlawCombatSim";
@@ -238,6 +238,19 @@ describe("gear inspection", () => {
       track: "myth",
       rank: 1,
     }));
+  });
+
+  it("links rogue tier set records to raid item candidates", () => {
+    const rogueSet = tierSetRecords.find((set) => set.setBonusKey === "motley-of-the-grim-jest");
+    const tierItems = midnightS1Items.filter((item) => item.setBonusKey === "motley-of-the-grim-jest");
+
+    expect(rogueSet?.itemIds).toHaveLength(5);
+    expect(rogueSet?.bonusesKo.some((bonus) => bonus.specKey === "rogue-outlaw" && bonus.pieces === 4)).toBe(true);
+    expect(tierItems.map((item) => item.itemId).sort()).toEqual([250004, 250005, 250006, 250007, 250009].sort());
+    expect(tierItems.every((item) => item.isTierPiece)).toBe(true);
+    expect(tierItems.every((item) => item.sourceType === "raid")).toBe(true);
+    expect(tierItems.every((item) => item.variants?.some((variant) => variant.source === "raid_heroic"))).toBe(true);
+    expect(tierItems.every((item) => item.recommendationState === "needs_check")).toBe(true);
   });
 });
 

@@ -45,6 +45,20 @@ export type TrinketTierRecord = {
   }>;
 };
 
+export type TierSetRecord = {
+  setBonusKey: string;
+  classKey: "rogue" | "demon-hunter";
+  nameKo: string;
+  nameEn: string;
+  itemIds: number[];
+  sourceRefs: ItemSourceReference[];
+  bonusesKo: Array<{
+    pieces: 2 | 4;
+    specKey: SpecKey;
+    summaryKo: string;
+  }>;
+};
+
 export type SeasonItem = {
   itemId: number;
   nameKo: string;
@@ -160,6 +174,13 @@ const seasonLootRef: ItemSourceReference = {
   noteKo: "도적용 전체 슬롯/출처 목록 대조용입니다. itemId는 Wowhead 개별 페이지로 확인합니다.",
 };
 
+const rogueTierSetRef: ItemSourceReference = {
+  name: "Wowhead",
+  url: "https://www.wowhead.com/item-set=1987/motley-of-the-grim-jest",
+  checkedAt: "2026-06-10",
+  noteKo: "도적 한밤 시즌1 티어 세트 효과와 구성 부위 대조용입니다.",
+};
+
 export const trinketTierRecords: TrinketTierRecord[] = [
   {
     itemId: 249343,
@@ -172,6 +193,49 @@ export const trinketTierRecords: TrinketTierRecord[] = [
     sources: [
       { name: "Manual", checkedAt: "2026-05-20" },
       { name: "Wowhead", url: "https://www.wowhead.com/ko/guide/classes/rogue/assassination/bis-gear", checkedAt: "2026-05-20" },
+    ],
+  },
+];
+
+export const tierSetRecords: TierSetRecord[] = [
+  {
+    setBonusKey: "motley-of-the-grim-jest",
+    classKey: "rogue",
+    nameKo: "음산한 농담꾼의 의복",
+    nameEn: "Motley of the Grim Jest",
+    itemIds: [250006, 250004, 250009, 250007, 250005],
+    sourceRefs: [rogueTierSetRef],
+    bonusesKo: [
+      {
+        pieces: 2,
+        specKey: "rogue-assassination",
+        summaryKo: "목조르기 피해 증가 및 독 적용 관련 2세트 효과입니다.",
+      },
+      {
+        pieces: 4,
+        specKey: "rogue-assassination",
+        summaryKo: "목조르기 기력 비용 감소와 독 대상 공격 강화 관련 4세트 효과입니다.",
+      },
+      {
+        pieces: 2,
+        specKey: "rogue-outlaw",
+        summaryKo: "Blade Rush 피해 증가와 주 대상 추가 피해 관련 2세트 효과입니다.",
+      },
+      {
+        pieces: 4,
+        specKey: "rogue-outlaw",
+        summaryKo: "Blade Rush 재사용 대기시간 감소와 짧은 피해 증가 관련 4세트 효과입니다.",
+      },
+      {
+        pieces: 2,
+        specKey: "rogue-subtlety",
+        summaryKo: "마무리 일격이 사용한 연계 점수에 따라 추가 피해를 주는 2세트 효과입니다.",
+      },
+      {
+        pieces: 4,
+        specKey: "rogue-subtlety",
+        summaryKo: "어둠의 칼날 지속시간 증가와 추가 암흑 피해 관련 4세트 효과입니다.",
+      },
     ],
   },
 ];
@@ -965,6 +1029,131 @@ export const midnightS1Items: SeasonItem[] = [
     },
     tags: ["specialEffect", "needsSim"],
     note: "장신구는 티어/효과/실제 전투 상황 차이가 커서 기본 추천이 아니라 확인 후보로만 표시합니다.",
+  },
+  {
+    itemId: 250006,
+    nameKo: "음산한 농담꾼의 가장무도회 가면",
+    nameKoVerified: false,
+    nameEn: "Masquerade of the Grim Jest",
+    slot: "HEAD",
+    armorType: "leather",
+    allowedClasses: ["rogue"],
+    allowedSpecs: ["rogue-assassination", "rogue-outlaw", "rogue-subtlety"],
+    sourceType: "raid",
+    sourceNameKo: "한밤 시즌1 레이드/티어 변환",
+    sourceNameEn: "Midnight Season 1 Raid/Tier Catalyst",
+    sourceRaidKey: "midnight-s1-raid",
+    stats: { mastery: true, versatility: true },
+    isTierPiece: true,
+    setBonusKey: "motley-of-the-grim-jest",
+    wowheadUrl: "https://www.wowhead.com/item=250006",
+    sourceRefs: [wowheadItemRef(250006), rogueTierSetRef],
+    variants: raidVariants(250006),
+    season: "midnight-s1",
+    confidence: "medium",
+    recommendationState: "needs_check",
+    tags: ["needsSim"],
+    note: "도적 한밤 시즌1 티어 머리입니다. 보스별 드랍/변환 경로와 한국어 공식명은 추가 검수 전까지 확정 추천하지 않습니다.",
+  },
+  {
+    itemId: 250004,
+    nameKo: "음산한 농담꾼의 독통 어깨덧대",
+    nameKoVerified: false,
+    nameEn: "Venom Casks of the Grim Jest",
+    slot: "SHOULDER",
+    armorType: "leather",
+    allowedClasses: ["rogue"],
+    allowedSpecs: ["rogue-assassination", "rogue-outlaw", "rogue-subtlety"],
+    sourceType: "raid",
+    sourceNameKo: "한밤 시즌1 레이드/티어 변환",
+    sourceNameEn: "Midnight Season 1 Raid/Tier Catalyst",
+    sourceRaidKey: "midnight-s1-raid",
+    stats: { haste: true, mastery: true },
+    isTierPiece: true,
+    setBonusKey: "motley-of-the-grim-jest",
+    wowheadUrl: "https://www.wowhead.com/item=250004",
+    sourceRefs: [wowheadItemRef(250004), rogueTierSetRef],
+    variants: raidVariants(250004),
+    season: "midnight-s1",
+    confidence: "medium",
+    recommendationState: "needs_check",
+    tags: ["needsSim"],
+    note: "도적 한밤 시즌1 티어 어깨입니다. 보스별 드랍/변환 경로와 한국어 공식명은 추가 검수 전까지 확정 추천하지 않습니다.",
+  },
+  {
+    itemId: 250009,
+    nameKo: "음산한 농담꾼의 화려한 의복",
+    nameKoVerified: false,
+    nameEn: "Fantastic Finery of the Grim Jest",
+    slot: "CHEST",
+    armorType: "leather",
+    allowedClasses: ["rogue"],
+    allowedSpecs: ["rogue-assassination", "rogue-outlaw", "rogue-subtlety"],
+    sourceType: "raid",
+    sourceNameKo: "한밤 시즌1 레이드/티어 변환",
+    sourceNameEn: "Midnight Season 1 Raid/Tier Catalyst",
+    sourceRaidKey: "midnight-s1-raid",
+    stats: { crit: true, mastery: true },
+    isTierPiece: true,
+    setBonusKey: "motley-of-the-grim-jest",
+    wowheadUrl: "https://www.wowhead.com/item=250009",
+    sourceRefs: [wowheadItemRef(250009), rogueTierSetRef],
+    variants: raidVariants(250009),
+    season: "midnight-s1",
+    confidence: "medium",
+    recommendationState: "needs_check",
+    tags: ["needsSim"],
+    note: "도적 한밤 시즌1 티어 가슴입니다. 보스별 드랍/변환 경로와 한국어 공식명은 추가 검수 전까지 확정 추천하지 않습니다.",
+  },
+  {
+    itemId: 250007,
+    nameKo: "음산한 농담꾼의 손놀림 장갑",
+    nameKoVerified: false,
+    nameEn: "Sleight of Hand of the Grim Jest",
+    slot: "HANDS",
+    armorType: "leather",
+    allowedClasses: ["rogue"],
+    allowedSpecs: ["rogue-assassination", "rogue-outlaw", "rogue-subtlety"],
+    sourceType: "raid",
+    sourceNameKo: "한밤 시즌1 레이드/티어 변환",
+    sourceNameEn: "Midnight Season 1 Raid/Tier Catalyst",
+    sourceRaidKey: "midnight-s1-raid",
+    stats: { crit: true, haste: true },
+    isTierPiece: true,
+    setBonusKey: "motley-of-the-grim-jest",
+    wowheadUrl: "https://www.wowhead.com/item=250007",
+    sourceRefs: [wowheadItemRef(250007), rogueTierSetRef],
+    variants: raidVariants(250007),
+    season: "midnight-s1",
+    confidence: "medium",
+    recommendationState: "needs_check",
+    tags: ["needsSim"],
+    note: "도적 한밤 시즌1 티어 손입니다. 보스별 드랍/변환 경로와 한국어 공식명은 추가 검수 전까지 확정 추천하지 않습니다.",
+  },
+  {
+    itemId: 250005,
+    nameKo: "음산한 농담꾼의 칼집 다리보호구",
+    nameKoVerified: false,
+    nameEn: "Blade Holsters of the Grim Jest",
+    slot: "LEGS",
+    armorType: "leather",
+    allowedClasses: ["rogue"],
+    allowedSpecs: ["rogue-assassination", "rogue-outlaw", "rogue-subtlety"],
+    sourceType: "raid",
+    sourceNameKo: "한밤 시즌1 레이드/티어 변환",
+    sourceNameEn: "Midnight Season 1 Raid/Tier Catalyst",
+    sourceRaidKey: "midnight-s1-raid",
+    stats: { haste: true, versatility: true },
+    isTierPiece: true,
+    setBonusKey: "motley-of-the-grim-jest",
+    wowheadUrl: "https://www.wowhead.com/item=250005",
+    sourceRefs: [wowheadItemRef(250005), rogueTierSetRef],
+    variants: raidVariants(250005),
+    season: "midnight-s1",
+    confidence: "medium",
+    recommendationState: "needs_check",
+    tags: ["needsSim"],
+    note: "도적 한밤 시즌1 티어 다리입니다. 보스별 드랍/변환 경로와 한국어 공식명은 추가 검수 전까지 확정 추천하지 않습니다.",
   },
 ];
 
