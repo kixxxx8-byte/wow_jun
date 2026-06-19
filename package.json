@@ -12,6 +12,8 @@
     "e2e": "node ./node_modules/@playwright/test/cli.js test",
     "gear:validate-season": "node scripts/validate-gear-season.mjs",
     "gear:audit-db": "node scripts/audit-gear-db.mjs",
+    "gear:verify-ko": "node scripts/verify-gear-localization.mjs",
+    "gear:verify-ko:write": "node scripts/verify-gear-localization.mjs --write",
     "preflight": "node scripts/preflight.mjs",
     "firebase": "node scripts/firebase-tools.mjs",
     "firebase:login": "node scripts/firebase-tools.mjs login",

@@ -123,6 +123,8 @@ midnightBlocks.forEach((block, index) => {
   if (sourceType) midnightSourceTypes.add(sourceType);
   if (!/nameKo:\s*"[^"]+"/.test(block)) failures.push(`${label} must include nameKo.`);
   if (!/nameKoVerified:\s*(true|false)/.test(block)) failures.push(`${label} must include nameKoVerified.`);
+  if (nameKoVerified === true && !/nameKoVerifiedAt:\s*"\d{4}-\d{2}-\d{2}"/.test(block)) failures.push(`${label} verified Korean name must include nameKoVerifiedAt.`);
+  if (nameKoVerified === true && !/nameKoSource:\s*"(blizzard|manual)"/.test(block)) failures.push(`${label} verified Korean name must include nameKoSource.`);
   if (!/slot:\s*"[A-Z0-9_]+"/.test(block)) failures.push(`${label} must include a slot.`);
   if (!/sourceType:\s*"(dungeon|raid|craft|delve|catalyst|vendor|unknown)"/.test(block)) failures.push(`${label} must include a valid sourceType.`);
   if (!/sourceNameKo:\s*"[^"]+"/.test(block)) failures.push(`${label} must include sourceNameKo.`);
