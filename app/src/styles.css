@@ -430,7 +430,7 @@ a {
   top: 10px;
   z-index: 20;
   display: grid;
-  grid-template-columns: minmax(210px, 0.7fr) minmax(0, 1fr) minmax(150px, auto);
+  grid-template-columns: minmax(190px, 0.75fr) minmax(260px, 1.25fr) minmax(0, auto);
   gap: 10px;
   align-items: center;
   min-height: 58px;
@@ -445,11 +445,16 @@ a {
 .brand {
   justify-content: flex-start;
   min-width: 0;
+  max-width: 100%;
   min-height: 40px;
   padding: 0 6px;
   border: 0;
   background: transparent;
   text-align: left;
+}
+
+.brand > span:last-child {
+  min-width: 0;
 }
 
 .brand:hover {
@@ -472,6 +477,9 @@ a {
 .brand strong,
 .brand small {
   display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .brand small {
@@ -486,6 +494,7 @@ a {
   justify-content: center;
   gap: 6px;
   min-width: 0;
+  max-width: 100%;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -524,6 +533,8 @@ a {
 .account-menu {
   justify-content: flex-end;
   flex-wrap: nowrap;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .topbar-tools {
@@ -532,6 +543,8 @@ a {
   justify-content: flex-end;
   gap: 8px;
   min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .ai-usage-counter {
@@ -562,12 +575,15 @@ a {
 
 .account-menu details {
   position: relative;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .account-menu summary {
   display: flex;
   align-items: center;
   gap: 8px;
+  max-width: min(270px, 100%);
   min-height: 38px;
   padding: 0 11px;
   border: 1px solid rgba(22, 134, 90, 0.28);
@@ -581,6 +597,14 @@ a {
 
 .account-menu summary::-webkit-details-marker {
   display: none;
+}
+
+.topbar-tools .account-strip button {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .account-state,
@@ -5317,6 +5341,7 @@ a {
   .topbar-tools {
     justify-content: flex-start;
     flex-wrap: wrap;
+    overflow: visible;
   }
 }
 
@@ -5332,7 +5357,7 @@ a {
 
   .topbar {
     top: 6px;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto);
     gap: 6px;
     min-height: 0;
     padding: 6px;
@@ -5358,6 +5383,7 @@ a {
     justify-content: flex-end;
     flex-wrap: nowrap;
     min-width: 0;
+    max-width: min(58vw, 260px);
   }
 
   .brand {
@@ -5374,6 +5400,23 @@ a {
   .ai-usage-counter {
     min-height: 34px;
     padding: 0 9px;
+  }
+
+  .ai-usage-counter span {
+    display: none;
+  }
+
+  .account-menu summary {
+    max-width: min(42vw, 170px);
+    padding: 0 9px;
+  }
+
+  .account-state {
+    display: none;
+  }
+
+  .account-name {
+    max-width: 112px;
   }
 
   .brand small {
