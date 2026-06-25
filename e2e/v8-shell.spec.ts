@@ -177,3 +177,23 @@ test("top navigation keeps notes settings visible on tablet widths", async ({ pa
   const hasOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
   expect(hasOverflow).toBe(false);
 });
+
+test("top navigation exposes every tab on narrow browser widths", async ({ page }) => {
+  await page.setViewportSize({ width: 540, height: 760 });
+  await page.goto("./");
+  const nav = page.getByRole("navigation", { name: "주요 화면" });
+  const labels = ["오늘", "AI 작전실", "장비 점검", "Wythic", "던전", "가이드", "메모/설정"];
+
+  for (const label of labels) {
+    const button = nav.getByRole("button", { name: label, exact: true });
+    await expect(button).toBeVisible();
+    const fits = await button.evaluate((node) => {
+      const rect = node.getBoundingClientRect();
+      return rect.left >= 0 && rect.right <= window.innerWidth;
+    });
+    expect(fits).toBe(true);
+  }
+
+  const hasOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
+  expect(hasOverflow).toBe(false);
+});
