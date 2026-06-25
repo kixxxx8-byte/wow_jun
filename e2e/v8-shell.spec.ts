@@ -179,9 +179,23 @@ test("raid tab opens one selected raid at a time", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "꿈의 균열" })).toBeVisible();
   await expect(page.getByText("검수 전 패턴은 확정 콜로 쓰지 않습니다.")).toBeVisible();
   await expect(page.getByRole("button", { name: "레이드 목록" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "키마이루스" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "키메루스" })).toBeVisible();
   await page.getByRole("button", { name: "레이드 목록" }).click();
   await expect(page.getByRole("heading", { name: "레이드를 선택하세요" })).toBeVisible();
+  const hasOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
+  expect(hasOverflow).toBe(false);
+});
+
+test("raid tab exposes detailed Sporefall Rotmire guide", async ({ page }) => {
+  await page.goto("./");
+  await page.getByRole("navigation", { name: "주요 화면" }).getByRole("button", { name: "레이드", exact: true }).click();
+  await page.getByLabel("레이드 선택").getByRole("button", { name: /진균나락/ }).click();
+  await expect(page.getByRole("heading", { name: "진균나락" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "부식수렁: 전투 루프" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "쫄 정리와 시체 더미" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "독 시전 차단" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "버섯 폭발 구간" })).toBeVisible();
+  await expect(page.getByText("폭풍의 칼날은 쫄이 붙는 순간 켜고")).toBeVisible();
   const hasOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
   expect(hasOverflow).toBe(false);
 });
