@@ -2566,6 +2566,144 @@ a {
   background: var(--warn-soft);
 }
 
+.raid-quick-guide {
+  display: grid;
+  gap: 12px;
+  margin: 12px 16px 0;
+  padding: 14px;
+  border: 1px solid rgba(15, 118, 110, 0.24);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #f4fbfa, #ffffff);
+}
+
+.raid-quick-head {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(260px, 1.1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.raid-quick-head h3 {
+  margin: 0;
+  font-size: 26px;
+}
+
+.raid-quick-head strong {
+  display: block;
+  padding: 12px;
+  border: 1px solid rgba(15, 118, 110, 0.2);
+  border-radius: 8px;
+  color: #0f766e;
+  background: var(--teal-soft);
+  line-height: 1.45;
+}
+
+.raid-quick-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.raid-quick-columns section {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.raid-quick-columns section.danger {
+  border-color: rgba(194, 65, 75, 0.22);
+  background: #fff7f7;
+}
+
+.raid-quick-columns b {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+
+.raid-quick-columns ol {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding-left: 20px;
+  color: #43515f;
+  line-height: 1.45;
+}
+
+.raid-timeline {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.raid-timeline article {
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid rgba(15, 118, 110, 0.18);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.raid-timeline b,
+.raid-timeline span,
+.raid-timeline small {
+  display: block;
+}
+
+.raid-timeline b {
+  margin-bottom: 7px;
+}
+
+.raid-timeline span {
+  color: #263544;
+  line-height: 1.42;
+}
+
+.raid-timeline small {
+  margin-top: 7px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.raid-recovery-guide {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.raid-recovery-guide summary {
+  cursor: pointer;
+  padding: 11px 12px;
+  font-weight: 950;
+}
+
+.raid-recovery-guide div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+.raid-recovery-guide article {
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.raid-recovery-guide b,
+.raid-recovery-guide span {
+  display: block;
+}
+
+.raid-recovery-guide span {
+  margin-top: 5px;
+  color: #43515f;
+  line-height: 1.42;
+}
+
 .raid-boss-list {
   display: grid;
   gap: 12px;
@@ -5531,8 +5669,15 @@ a {
   }
 
   .raid-picker-grid,
-  .raid-boss-grid {
+  .raid-boss-grid,
+  .raid-quick-head,
+  .raid-quick-columns,
+  .raid-recovery-guide div {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .raid-timeline {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .outlaw-ladder-step,
@@ -5824,7 +5969,11 @@ a {
   .outlaw-mastery-grid,
   .dungeon-picker-grid,
   .raid-picker-grid,
-  .raid-boss-grid {
+  .raid-boss-grid,
+  .raid-quick-head,
+  .raid-quick-columns,
+  .raid-timeline,
+  .raid-recovery-guide div {
     grid-template-columns: 1fr;
   }
 

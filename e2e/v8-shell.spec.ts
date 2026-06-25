@@ -191,6 +191,11 @@ test("raid tab exposes detailed Sporefall Rotmire guide", async ({ page }) => {
   await page.getByRole("navigation", { name: "주요 화면" }).getByRole("button", { name: "레이드", exact: true }).click();
   await page.getByLabel("레이드 선택").getByRole("button", { name: /진균나락/ }).click();
   await expect(page.getByRole("heading", { name: "진균나락" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "부식수렁 한눈 공략" })).toBeVisible();
+  await expect(page.getByText("쫄은 빨리 모아 죽이고, 독은 차단하고, 버섯 폭발 전에는 교란으로 버팁니다.")).toBeVisible();
+  await expect(page.getByText("지금 할 것")).toBeVisible();
+  await expect(page.getByText("하지 말 것")).toBeVisible();
+  await expect(page.getByText("2. 쫄 등장")).toBeVisible();
   await expect(page.getByRole("heading", { name: "부식수렁: 전투 루프" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "쫄 정리와 시체 더미" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "독 시전 차단" })).toBeVisible();

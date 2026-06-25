@@ -23,6 +23,14 @@ export type RaidGuide = {
   confidence: RaidAuditConfidence;
   lastChecked: string;
   sources: { labelKo: string; href: string }[];
+  quickGuide?: {
+    titleKo: string;
+    oneLineKo: string;
+    doFirstKo: string[];
+    avoidKo: string[];
+    timelineKo: { stepKo: string; actionKo: string; survivalKo: string }[];
+    recoveryKo: { mistakeKo: string; fixKo: string }[];
+  };
   bosses: RaidBossGuide[];
 };
 
@@ -48,6 +56,35 @@ export const raidGuides: RaidGuide[] = [
       { labelKo: "Method 부식수렁 공략", href: "https://www.method.gg/guides/sporefall/rotmire" },
       { labelKo: "Wowhead 한밤 레이드 치트시트", href: "https://www.wowhead.com/guide/midnight/raids/all-boss-cheat-sheets" },
     ],
+    quickGuide: {
+      titleKo: "부식수렁 한눈 공략",
+      oneLineKo: "쫄은 빨리 모아 죽이고, 독은 차단하고, 버섯 폭발 전에는 교란으로 버팁니다.",
+      doFirstKo: [
+        "쫄 나오면 폭풍의 칼날 켜고 쫄부터 정리",
+        "독 시전 보이면 발차기 먼저",
+        "부식수렁 기력이 높으면 교란 준비",
+        "바닥 대상자는 쫄 처치 위치와 겹치지 않게 옆으로 배출",
+      ],
+      avoidKo: [
+        "쫄 남은 상태로 버섯 폭발 맞기",
+        "시체 더미/처치 구역 위에 바닥 버리기",
+        "발차기 아끼다가 독 시전 새기",
+        "광역 피해 직전 혼자 힐 범위 밖에 있기",
+      ],
+      timelineKo: [
+        { stepKo: "1. 기본 위치", actionKo: "보스 뒤 유지, 바닥 배출 방향 확인", survivalKo: "체력 안정 구간. 생존기 아낌" },
+        { stepKo: "2. 쫄 등장", actionKo: "폭풍의 칼날 켜고 쫄 처리 위치로 붙음", survivalKo: "쫄 피해가 겹치면 교란" },
+        { stepKo: "3. 독 시전", actionKo: "시전바 보이면 발차기. 차단 비면 내가 메움", survivalKo: "차단 실패 시 교란/그망 가능성 확인" },
+        { stepKo: "4. 버섯 폭발", actionKo: "남은 쫄/버섯 마무리 후 힐 범위 복귀", survivalKo: "광역 직전 교란, 위험하면 생석/물약" },
+        { stepKo: "5. 반복", actionKo: "전장 정리 상태 확인 후 다시 1번으로", survivalKo: "구역이 더러우면 다음 바닥을 더 멀리 버림" },
+      ],
+      recoveryKo: [
+        { mistakeKo: "쫄이 늦게 죽음", fixKo: "보스 딜 중단, 폭풍의 칼날 켜고 쫄 우선. 다음 광역 전 교란" },
+        { mistakeKo: "독 차단이 샘", fixKo: "다음 독은 내가 발차기 예약. 피가 낮으면 생석 먼저" },
+        { mistakeKo: "바닥을 중앙에 버림", fixKo: "다음 대상자는 외곽으로. 중앙 이동 경로를 더럽히지 않음" },
+        { mistakeKo: "광역 때 혼자 밖에 있음", fixKo: "딜 포기하고 힐 범위 복귀. 늦으면 물약/그망/교란 순서로 생존" },
+      ],
+    },
     bosses: [
       {
         id: "rotmire-loop",
