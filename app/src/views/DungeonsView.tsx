@@ -440,6 +440,7 @@ export default function DungeonsView({
 }) {
   const [query, setQuery] = useState("");
   const [onlyTargets, setOnlyTargets] = useState(false);
+  const [selectedDungeonId, setSelectedDungeonId] = useState("");
   const [activeCinematicId, setActiveCinematicId] = useState("windrunner");
   const priorityById = useMemo(() => new Map(recommendations.map((row) => [row.id, row])), [recommendations]);
   const sorted = useMemo(() => [...dungeonGuideCatalog].sort((a, b) => {
@@ -454,8 +455,15 @@ export default function DungeonsView({
     if (!normalizedQuery) return true;
     return [guide.name, guide.short, guide.en, guide.danger, guide.route, microGuideSearchText(guide)].filter(Boolean).some((value) => String(value).toLowerCase().includes(normalizedQuery));
   });
-  const top = sorted[0];
-  const activeCinematicGuide = visible.find((guide) => guide.id === activeCinematicId && guide.cinematicGuide) || visible.find((guide) => guide.cinematicGuide);
+  const selectedGuide = visible.find((guide) => guide.id === selectedDungeonId) || null;
+  const activeCinematicGuide = selectedGuide?.cinematicGuide && selectedGuide.id === activeCinematicId ? selectedGuide : selectedGuide?.cinematicGuide ? selectedGuide : null;
+  const openDungeon = (guide: RichDungeonGuide) => {
+    setSelectedDungeonId(guide.id);
+    if (guide.cinematicGuide) setActiveCinematicId(guide.id);
+  };
+  const showDungeonList = () => {
+    setSelectedDungeonId("");
+  };
   return (
     <div className="view-stack">
       {gearRecommendation?.farmingRoutes.length ? (
@@ -480,38 +488,59 @@ export default function DungeonsView({
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="던전, 보스, 위험 요소 검색" />
           <button type="button" className={onlyTargets ? "active" : ""} onClick={() => setOnlyTargets((value) => !value)}>오늘 목표만</button>
         </div>
-        {top ? (
+        {selectedGuide ? (
           <section className="dungeon-command">
             <div>
               <p className="eyebrow">Dungeon briefing</p>
-              <h3>{top.name}</h3>
-              <p>{top.route} · {top.danger}</p>
+              <h3>{selectedGuide.name}</h3>
+              <p>{selectedGuide.route} · {selectedGuide.danger}</p>
             </div>
             <div className="command-actions">
-              {top.videoUrl ? <a className="link-btn primary-link" href={top.videoUrl} target="_blank" rel="noreferrer">공식 영상</a> : null}
-              <a className="link-btn" href={top.meta.href} target="_blank" rel="noreferrer">Wythic</a>
+              <button type="button" onClick={showDungeonList}>던전 목록</button>
+              {selectedGuide.videoUrl ? <a className="link-btn primary-link" href={selectedGuide.videoUrl} target="_blank" rel="noreferrer">공식 영상</a> : null}
+              <a className="link-btn" href={selectedGuide.meta.href} target="_blank" rel="noreferrer">Wythic</a>
               <a className="link-btn" href={WOW_KR_YOUTUBE} target="_blank" rel="noreferrer">WoW 한국 유튜브</a>
             </div>
           </section>
-        ) : null}
-        <div className="dungeon-tabs">
-          {visible.map((guide, index) => {
+        ) : (
+          <section className="dungeon-select-intro">
+            <p className="eyebrow">Dungeon select</p>
+            <h3>던전을 선택하세요</h3>
+            <p>목록에서 던전을 누르면 해당 던전 공략만 표시합니다.</p>
+          </section>
+        )}
+        {!selectedGuide ? (
+          <div className="dungeon-picker-grid" aria-label="던전 선택">
+            {visible.map((guide) => {
+              const priority = priorityById.get(guide.id);
+              return (
+                <button key={guide.id} type="button" className={priority?.count ? "priority" : ""} onClick={() => openDungeon(guide)}>
+                  <span>{guide.short || guide.name}</span>
+                  <b>{guide.name}</b>
+                  <small>{priority?.count ? `오늘 목표 ${priority.count}` : guide.timer}</small>
+                  <em>{guide.danger}</em>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="dungeon-tabs">
+            {visible.map((guide) => {
             const priority = priorityById.get(guide.id);
             return (
-              <a
+              <button
                 key={guide.id}
-                className={guide.id === (activeCinematicGuide?.id || "") || (!activeCinematicGuide && index === 0) ? "active" : ""}
-                href={`#dungeon-${guide.id}`}
-                onClick={() => {
-                  if (guide.cinematicGuide) setActiveCinematicId(guide.id);
-                }}
+                type="button"
+                className={guide.id === selectedGuide.id ? "active" : ""}
+                onClick={() => openDungeon(guide)}
               >
                 {guide.short || guide.name}
                 <span>{priority?.count ? `목표 ${priority.count}` : guide.timer}</span>
-              </a>
+              </button>
             );
-          })}
-        </div>
+            })}
+          </div>
+        )}
         {activeCinematicGuide ? (
           <CinematicDungeonGuide
             guide={activeCinematicGuide}
@@ -522,10 +551,7 @@ export default function DungeonsView({
           />
         ) : null}
         <div className="dungeon-guide-list">
-          {visible.map((guide) => {
-            const priority = priorityById.get(guide.id);
-            return <DungeonGuideCard key={guide.id} guide={guide} priority={priority} onOpenCinematic={setActiveCinematicId} />;
-          })}
+          {selectedGuide ? <DungeonGuideCard key={selectedGuide.id} guide={selectedGuide} priority={priorityById.get(selectedGuide.id)} onOpenCinematic={setActiveCinematicId} /> : null}
           {!visible.length ? <EmptyState title="검색 결과 없음" body="검색어를 줄이거나 오늘 목표만 필터를 꺼보세요." /> : null}
         </div>
       </section>

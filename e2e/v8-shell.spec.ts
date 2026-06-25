@@ -134,10 +134,13 @@ test("dungeon tab shows personal micro survival notes", async ({ page }) => {
   await page.goto("./");
   await page.getByRole("navigation", { name: "주요 화면" }).getByRole("button", { name: "던전", exact: true }).click();
   await expect(page.getByRole("heading", { name: "던전 컨닝" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "던전을 선택하세요" })).toBeVisible();
+  await expect(page.getByLabel("던전 선택").getByRole("button")).toHaveCount(8);
+  await page.getByLabel("던전 선택").getByRole("button", { name: /윈드러너 첨탑/ }).click();
   await expect(page.getByText("초정밀 생존 노트").first()).toBeVisible();
   await expect(page.getByText("오늘 죽지 말 것").first()).toBeVisible();
-  await expect(page.getByText("피드백 필요").first()).toBeVisible();
-  await expect(page.getByRole("button", { name: /상세 작전 보기/ })).toHaveCount(8);
+  await expect(page.getByText("검수 기준").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: /상세 작전 보기/ })).toHaveCount(1);
   await page.getByPlaceholder("던전, 보스, 위험 요소 검색").fill("그망");
   await expect(page.getByText("오늘 죽지 말 것").first()).toBeVisible();
   const hasOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
@@ -147,6 +150,7 @@ test("dungeon tab shows personal micro survival notes", async ({ page }) => {
 test("dungeon tab exposes cinematic field guides and locked feedback in preview", async ({ page }) => {
   await page.goto("./");
   await page.getByRole("navigation", { name: "주요 화면" }).getByRole("button", { name: "던전", exact: true }).click();
+  await page.getByLabel("던전 선택").getByRole("button", { name: /윈드러너 첨탑/ }).click();
   await expect(page.getByRole("heading", { name: "윈드러너 첨탑 실전 작전" })).toBeVisible();
   await expect(page.getByText("바닥은 외곽, 갈고리는 어보미-벤시-대상자, 막넴은 화살로 바람 고리를 넘습니다.")).toBeVisible();
   await expect(page.getByText("검수 기준")).toBeVisible();
@@ -156,9 +160,10 @@ test("dungeon tab exposes cinematic field guides and locked feedback in preview"
   await expect(page.getByText("쫄 구간 위험 시전")).toBeVisible();
   await expect(page.locator(".guide-feedback-panel:visible").getByRole("heading", { name: /피드백/ }).first()).toBeVisible();
   await expect(page.getByRole("button", { name: "로그인 후 피드백 저장 가능" })).toBeDisabled();
-  await page.getByRole("link", { name: /마법정원/ }).click({ force: true });
+  await page.getByRole("button", { name: /마법정원/ }).click({ force: true });
   await expect(page.getByRole("heading", { name: "마법학자의 정원 실전 작전" })).toBeVisible();
   await page.getByPlaceholder("던전, 보스, 위험 요소 검색").fill("바람 고리");
+  await page.getByLabel("던전 선택").getByRole("button", { name: /윈드러너 첨탑/ }).click();
   await expect(page.getByRole("heading", { name: "윈드러너 첨탑 실전 작전" })).toBeVisible();
   const hasOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
   expect(hasOverflow).toBe(false);

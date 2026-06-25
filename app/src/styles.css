@@ -2268,6 +2268,89 @@ a {
   line-height: 1.52;
 }
 
+.dungeon-select-intro {
+  margin: 14px 16px 0;
+  padding: 14px 16px;
+  border: 1px solid rgba(15, 118, 110, 0.2);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #f7fcfb, #ffffff);
+}
+
+.dungeon-select-intro h3 {
+  margin: 0 0 6px;
+  font-size: 24px;
+}
+
+.dungeon-select-intro p:not(.eyebrow) {
+  margin: 0;
+  color: #43515f;
+  line-height: 1.52;
+}
+
+.dungeon-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px 16px 16px;
+}
+
+.dungeon-picker-grid button {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  min-height: 118px;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  text-align: left;
+  align-content: start;
+}
+
+.dungeon-picker-grid button:hover,
+.dungeon-picker-grid button:focus-visible {
+  border-color: rgba(15, 118, 110, 0.34);
+  background: var(--teal-soft);
+}
+
+.dungeon-picker-grid button.priority {
+  border-color: rgba(183, 121, 31, 0.28);
+  background: linear-gradient(180deg, #fffaf0, #ffffff);
+}
+
+.dungeon-picker-grid span,
+.dungeon-picker-grid small,
+.dungeon-picker-grid em {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dungeon-picker-grid span {
+  color: var(--teal);
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.dungeon-picker-grid b {
+  font-size: 18px;
+}
+
+.dungeon-picker-grid small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.dungeon-picker-grid em {
+  color: #43515f;
+  font-size: 12px;
+  font-style: normal;
+}
+
 .dungeon-tabs {
   display: flex;
   gap: 8px;
@@ -2281,7 +2364,8 @@ a {
   backdrop-filter: blur(10px);
 }
 
-.dungeon-tabs a {
+.dungeon-tabs a,
+.dungeon-tabs button {
   flex: 0 0 auto;
   min-width: 130px;
   scroll-margin-top: 190px;
@@ -2294,7 +2378,8 @@ a {
   text-decoration: none;
 }
 
-.dungeon-tabs a.active {
+.dungeon-tabs a.active,
+.dungeon-tabs button.active {
   border-color: rgba(15, 118, 110, 0.32);
   color: var(--teal);
   background: var(--teal-soft);
@@ -5213,6 +5298,10 @@ a {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .dungeon-picker-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .outlaw-ladder-step,
   .outlaw-timeline-item,
   .outlaw-deep-card dl div {
@@ -5499,7 +5588,8 @@ a {
   .outlaw-keybind-body,
   .outlaw-keybind-grid,
   .outlaw-master-row,
-  .outlaw-mastery-grid {
+  .outlaw-mastery-grid,
+  .dungeon-picker-grid {
     grid-template-columns: 1fr;
   }
 
