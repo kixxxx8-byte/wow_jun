@@ -48,6 +48,7 @@ import type {
 
 const DungeonsView = lazy(() => import("./views/DungeonsView"));
 const AiView = lazy(() => import("./views/AiView"));
+const RaidsView = lazy(() => import("./views/RaidsView"));
 const GuidesView = lazy(() => import("./views/GuidesView"));
 const SettingsView = lazy(() => import("./views/SettingsView"));
 const WythicView = lazy(() => import("./views/WythicView"));
@@ -71,6 +72,7 @@ const views: Array<{ id: View; label: string }> = [
   { id: "gear", label: "장비 점검" },
   { id: "wythic", label: "Wythic" },
   { id: "dungeons", label: "던전" },
+  { id: "raids", label: "레이드" },
   { id: "guides", label: "가이드" },
   { id: "notes", label: "메모/설정" },
 ];
@@ -1301,6 +1303,7 @@ export default function App() {
           />
         ) : null}
         {view === "wythic" ? <WythicView character={character} score={score} ilvl={ilvl} onJump={jump} readOnlyPreview={isReadOnlyPreview} /> : null}
+        {view === "raids" ? <RaidsView /> : null}
         {view === "notes" ? (
           <SettingsView
             settings={settings}

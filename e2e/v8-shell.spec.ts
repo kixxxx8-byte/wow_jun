@@ -169,6 +169,23 @@ test("dungeon tab exposes cinematic field guides and locked feedback in preview"
   expect(hasOverflow).toBe(false);
 });
 
+test("raid tab opens one selected raid at a time", async ({ page }) => {
+  await page.goto("./");
+  await page.getByRole("navigation", { name: "주요 화면" }).getByRole("button", { name: "레이드", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "레이드 작전" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "레이드를 선택하세요" })).toBeVisible();
+  await expect(page.getByLabel("레이드 선택").getByRole("button")).toHaveCount(4);
+  await page.getByLabel("레이드 선택").getByRole("button", { name: /꿈의 균열/ }).click();
+  await expect(page.getByRole("heading", { name: "꿈의 균열" })).toBeVisible();
+  await expect(page.getByText("검수 전 패턴은 확정 콜로 쓰지 않습니다.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "레이드 목록" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "키마이루스" })).toBeVisible();
+  await page.getByRole("button", { name: "레이드 목록" }).click();
+  await expect(page.getByRole("heading", { name: "레이드를 선택하세요" })).toBeVisible();
+  const hasOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
+  expect(hasOverflow).toBe(false);
+});
+
 test("top navigation keeps notes settings visible on tablet widths", async ({ page }) => {
   await page.setViewportSize({ width: 900, height: 720 });
   await page.goto("./");
@@ -187,7 +204,7 @@ test("top navigation exposes every tab on narrow browser widths", async ({ page 
   await page.setViewportSize({ width: 540, height: 760 });
   await page.goto("./");
   const nav = page.getByRole("navigation", { name: "주요 화면" });
-  const labels = ["오늘", "AI 작전실", "장비 점검", "Wythic", "던전", "가이드", "메모/설정"];
+  const labels = ["오늘", "AI 작전실", "장비 점검", "Wythic", "던전", "레이드", "가이드", "메모/설정"];
 
   for (const label of labels) {
     const button = nav.getByRole("button", { name: label, exact: true });
