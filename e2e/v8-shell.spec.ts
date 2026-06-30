@@ -179,9 +179,27 @@ test("raid tab opens one selected raid at a time", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "꿈의 균열" })).toBeVisible();
   await expect(page.getByText("검수 전 패턴은 확정 콜로 쓰지 않습니다.")).toBeVisible();
   await expect(page.getByRole("button", { name: "레이드 목록" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "키메루스" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "키메루스: 딜러 전투 루프" })).toBeVisible();
   await page.getByRole("button", { name: "레이드 목록" }).click();
   await expect(page.getByRole("heading", { name: "레이드를 선택하세요" })).toBeVisible();
+  const hasOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
+  expect(hasOverflow).toBe(false);
+});
+
+test("raid tab exposes detailed Dreamrift Chimaerus DPS guide", async ({ page }) => {
+  await page.goto("./");
+  await page.getByRole("navigation", { name: "주요 화면" }).getByRole("button", { name: "레이드", exact: true }).click();
+  await page.getByLabel("레이드 선택").getByRole("button", { name: /꿈의 균열/ }).click();
+  await expect(page.getByRole("heading", { name: "꿈의 균열" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "키메루스 딜러 한눈 공략" })).toBeVisible();
+  await expect(page.getByText("쫄은 늦기 전에 전환하고, 시전은 끊고, 웅덩이는 지우며, 100기력 전에 전장을 정리합니다.")).toBeVisible();
+  await expect(page.getByText("쫄 나오면 보스 딜을 끊고 쫄부터 전환")).toBeVisible();
+  await expect(page.getByText("3. 웅덩이 처리")).toBeVisible();
+  await expect(page.getByText("5. 2단계 포탈")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "쫄 전환과 차단" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "웅덩이 제거" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "100기력 전 정리" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "2단계 포탈과 차원 이동" })).toBeVisible();
   const hasOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
   expect(hasOverflow).toBe(false);
 });
